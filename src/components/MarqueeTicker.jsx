@@ -1,0 +1,44 @@
+export default function MarqueeTicker() {
+    const items = [
+        "4130 CHROMOLY SPACEFRAME",
+        "380 NM PEAK TORQUE",
+        "FOX AIR SHOCK DAMPERS",
+        "100% LOCKUP BRAKING",
+        "CUSTOM CVT DYNAMICS",
+        "11.2\" INDEPENDENT SUSPENSION",
+        "SAEINDIA NATIONAL SERIES",
+        "AEROSPACE GRADE RIGIDITY",
+        "4-HOUR ENDURANCE TESTED",
+        "FEA OPTIMIZED CHASSIS"
+    ];
+
+    return (
+        <div className="w-full overflow-hidden bg-slate-900 border-y-4 border-slate-900 select-none relative z-20">
+            
+            {/* Top Marquee Ribbon (Sky Blue Background - Moving Left) */}
+            <div className="bg-sky-500 py-3 border-b-2 border-slate-900 flex overflow-hidden">
+                <div className="animate-marquee-left flex items-center gap-8 text-white font-black text-sm sm:text-base tracking-widest uppercase">
+                    {[...items, ...items].map((text, idx) => (
+                        <div key={idx} className="flex items-center gap-8 whitespace-nowrap">
+                            <span>{text}</span>
+                            <span className="text-slate-900 text-lg">✦</span>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* Bottom Marquee Ribbon (Slate Black Background - Moving Right) */}
+            <div className="bg-slate-900 py-3 flex overflow-hidden">
+                <div className="animate-marquee-right flex items-center gap-8 text-sky-400 font-black text-sm sm:text-base tracking-widest uppercase">
+                    {[...items, ...items].map((text, idx) => (
+                        <div key={idx} className="flex items-center gap-8 whitespace-nowrap">
+                            <span>{text}</span>
+                            <span className="text-white text-lg">✦</span>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+        </div>
+    );
+}

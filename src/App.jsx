@@ -1,0 +1,135 @@
+import { useState, useEffect } from "react";
+import Lenis from "lenis";
+import useScrollAssembly from "./hooks/useScrollAssembly";
+import CyberNavbar from "./components/CyberNavbar";
+import CyberHero from "./components/CyberHero";
+import MarqueeTicker from "./components/MarqueeTicker";
+import TheSquad from "./components/TheSquad";
+import TeamGallery from "./components/TeamGallery";
+import TeamUpdates from "./components/TeamUpdates";
+import OurStoryCurvedWave from "./components/OurStoryCurvedWave";
+import CyberNewsletterCTA from "./components/CyberNewsletterCTA";
+import CyberFooter from "./components/CyberFooter";
+import SubsystemDetail from "./components/SubsystemDetail";
+import FloatingBackground from "./components/FloatingBackground";
+import BajaModelPage from "./components/BajaModelPage";
+
+export default function App() {
+    const [selectedSubsystem, setSelectedSubsystem] = useState(null);
+    const [isModelPage, setIsModelPage] = useState(false);
+    const [lenisInstance, setLenisInstance] = useState(null);
+
+    useEffect(() => {
+        // Initialize Lenis smooth momentum scrolling
+        const lenis = new Lenis({
+            duration: 1.6,
+            easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+            orientation: 'vertical',
+            gestureOrientation: 'vertical',
+            smoothWheel: true,
+            wheelMultiplier: 0.9,
+            touchMultiplier: 1.5,
+        });
+
+        setLenisInstance(lenis);
+
+        function raf(time) {
+            lenis.raf(time);
+            requestAnimationFrame(raf);
+        }
+        const rafId = requestAnimationFrame(raf);
+
+        return () => {
+            cancelAnimationFrame(rafId);
+            lenis.destroy();
+        };
+    }, []);
+
+    // Activate the global scroll assembly/forming effect across all sections and pages
+    useScrollAssembly(lenisInstance, selectedSubsystem);
+
+    const handleSelectSubsystem = (id) => {
+        setSelectedSubsystem(id);
+        setIsModelPage(false);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const handleOpenModelViewer = () => {
+        setIsModelPage(true);
+        setSelectedSubsystem(null);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const handleBackToHome = () => {
+        setSelectedSubsystem(null);
+        setIsModelPage(false);
+        setTimeout(() => {
+            const squadEl = document.getElementById('squad');
+            if (squadEl) {
+                squadEl.scrollIntoView({ behavior: 'smooth' });
+            }
+        }, 50);
+    };
+
+    // Dedicated Full-Screen 3D Baja Model Inspector Page
+    if (isModelPage) {
+        return <BajaModelPage onBack={() => setIsModelPage(false)} />;
+    }
+
+    return (
+        <div className="relative min-h-screen bg-white text-slate-900 selection:bg-sky-500 selection:text-white overflow-x-hidden font-sans">
+            
+            {/* Photorealistic 3D Floating Baja Buggy Canvas & Swimming Goldfish */}
+            <FloatingBackground />
+
+            {/* Main Content Layer */}
+            <div className="relative z-10">
+                {/* Cyberbites Chunky Brutalist Navigation */}
+                <CyberNavbar 
+                    onSelectSubsystem={handleSelectSubsystem}
+                    isDetailPage={Boolean(selectedSubsystem)}
+                    onBackToHome={handleBackToHome}
+                />
+
+                {selectedSubsystem ? (
+                    /* Dedicated Subsystem Detail Page (Shows all team members, CAD methodology, specs) */
+                    <main>
+                        <SubsystemDetail 
+                            subsystemId={selectedSubsystem}
+                            onBack={handleBackToHome}
+                            onSelectSubsystem={handleSelectSubsystem}
+                        />
+                    </main>
+                ) : (
+                    /* Main Landing Page */
+                    <main>
+                        {/* Hero Section with Filled & Stroke Typography, Badges and 3D Baja Inspector Option */}
+                        <CyberHero onOpenModelViewer={handleOpenModelViewer} />
+
+                        {/* Infinite Double Marquee Ribbon */}
+                        <MarqueeTicker />
+
+                        {/* "THE SQUAD" - Integrated with React Bits <CardSwap /> Component */}
+                        <TheSquad onSelectSubsystem={handleSelectSubsystem} />
+
+                        {/* "OUR GALLERY" - Interactive 3D DriftWall Photo Archive */}
+                        <TeamGallery />
+
+                        {/* "TEAM UPDATES" - Integrated with React Bits <FlyingPosters /> Component */}
+                        <TeamUpdates />
+
+                        {/* "OUR STORY" - Animated Sinusoidal Wave SVG Curved Text */}
+                        <OurStoryCurvedWave />
+
+                        {/* "JOIN THE ALLIANCE" - Brutalist Sponsor / Newsletter Form */}
+                        <CyberNewsletterCTA />
+                    </main>
+                )}
+
+                {/* 4-Column Cyberbites Brutalist Footer */}
+                <CyberFooter />
+            </div>
+
+        </div>
+    );
+}
