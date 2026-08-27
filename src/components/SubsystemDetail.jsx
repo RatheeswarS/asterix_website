@@ -1,7 +1,9 @@
 import { useEffect } from 'react';
-import { subsystems } from '../data/subsystemsData';
+import { useWebsiteData } from '../context/WebsiteDataContext';
 
 export default function SubsystemDetail({ subsystemId, onBack, onSelectSubsystem }) {
+    const { siteData } = useWebsiteData();
+    const subsystems = siteData.subsystems;
     const currentSystem = subsystems.find(s => s.id === subsystemId) || subsystems[0];
     const currentIndex = subsystems.findIndex(s => s.id === currentSystem.id);
     const nextSystem = subsystems[(currentIndex + 1) % subsystems.length];
@@ -147,22 +149,38 @@ export default function SubsystemDetail({ subsystemId, onBack, onSelectSubsystem
                         {currentSystem.teamMembers.map((member, idx) => (
                             <div
                                 key={idx}
-                                className="cyber-card p-6 flex flex-col justify-between bg-sky-50/40 group"
+                                className="cyber-card p-5 flex flex-col justify-between bg-white group hover:translate-y-[-2px] transition-all"
                             >
                                 <div>
-                                    <div className="flex items-center justify-between mb-4">
-                                        <div className="w-14 h-14 bg-slate-900 text-white border-2 border-slate-900 font-mono font-black text-lg flex items-center justify-center shadow-[3px_3px_0px_#0284c7] group-hover:bg-sky-500 transition-colors">
-                                            {member.initials}
-                                        </div>
-                                        <span className="px-2.5 py-0.5 bg-white border border-slate-900 font-mono font-black text-[10px] uppercase">
-                                            {member.badge}
+                                    {/* Member Photo Frame */}
+                                    <div className="w-full h-56 sm:h-60 overflow-hidden border-2 border-slate-900 bg-slate-100 relative mb-4 shadow-[3px_3px_0px_#0f172a]">
+                                        {member.photo ? (
+                                            <img
+                                                src={member.photo}
+                                                alt={member.name}
+                                                className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300"
+                                            />
+                                        ) : (
+                                            <div className="w-full h-full bg-gradient-to-br from-slate-100 to-sky-50 flex flex-col items-center justify-center p-4 text-center">
+                                                <div className="w-16 h-16 rounded-full bg-slate-900 text-white font-mono font-black text-xl flex items-center justify-center border-2 border-sky-400 shadow-[3px_3px_0px_#0284c7] mb-2">
+                                                    {member.initials || member.name?.slice(0, 2).toUpperCase() || 'TM'}
+                                                </div>
+                                                <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">
+                                                    [ PHOTO PENDING ]
+                                                </span>
+                                            </div>
+                                        )}
+
+                                        {/* Corner Role Badge */}
+                                        <span className="absolute top-2.5 right-2.5 px-2.5 py-0.5 bg-white/95 backdrop-blur-xs border-2 border-slate-900 font-mono font-black text-[10px] uppercase shadow-[2px_2px_0px_#0f172a]">
+                                            {member.badge || 'ENGINEER'}
                                         </span>
                                     </div>
 
-                                    <h4 className="text-xl font-black text-slate-900 uppercase mb-1">
+                                    <h4 className="text-lg sm:text-xl font-black text-slate-900 uppercase mb-0.5">
                                         {member.name}
                                     </h4>
-                                    <p className="text-xs font-mono font-bold text-sky-600 mb-3">
+                                    <p className="text-xs font-mono font-bold text-sky-600 mb-2.5">
                                         {member.role}
                                     </p>
                                     <p className="text-xs text-slate-600 font-medium leading-relaxed">
@@ -170,9 +188,9 @@ export default function SubsystemDetail({ subsystemId, onBack, onSelectSubsystem
                                     </p>
                                 </div>
 
-                                <div className="mt-6 pt-3 border-t border-slate-200 text-[10px] font-mono font-bold text-slate-400 uppercase flex items-center justify-between">
+                                <div className="mt-5 pt-3 border-t border-slate-200 text-[10px] font-mono font-bold text-slate-400 uppercase flex items-center justify-between">
                                     <span>TEAM ASTERIX</span>
-                                    <span className="text-sky-600">ACTIVE</span>
+                                    <span className="text-sky-600 font-black">● ACTIVE CREW</span>
                                 </div>
                             </div>
                         ))}

@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import CardSwap, { Card } from './CardSwap';
-import { subsystems } from '../data/subsystemsData';
+import { useWebsiteData } from '../context/WebsiteDataContext';
 
 export default function TheSquad({ onSelectSubsystem }) {
+    const { siteData } = useWebsiteData();
+    const subsystems = siteData.subsystems;
     const [cardSize, setCardSize] = useState({
         width: 480,
         height: 360,

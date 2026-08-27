@@ -13,11 +13,24 @@ import CyberFooter from "./components/CyberFooter";
 import SubsystemDetail from "./components/SubsystemDetail";
 import FloatingBackground from "./components/FloatingBackground";
 import BajaModelPage from "./components/BajaModelPage";
+import AdminDashboard from "./components/admin/AdminDashboard";
+import { WebsiteDataProvider } from "./context/WebsiteDataContext";
 
-export default function App() {
+function MainApp() {
     const [selectedSubsystem, setSelectedSubsystem] = useState(null);
     const [isModelPage, setIsModelPage] = useState(false);
+    const [isAdminOpen, setIsAdminOpen] = useState(() => window.location.hash === '#admin');
     const [lenisInstance, setLenisInstance] = useState(null);
+
+    useEffect(() => {
+        const handleHashChange = () => {
+            if (window.location.hash === '#admin') {
+                setIsAdminOpen(true);
+            }
+        };
+        window.addEventListener('hashchange', handleHashChange);
+        return () => window.removeEventListener('hashchange', handleHashChange);
+    }, []);
 
     useEffect(() => {
         // Initialize Lenis smooth momentum scrolling
@@ -51,18 +64,24 @@ export default function App() {
     const handleSelectSubsystem = (id) => {
         setSelectedSubsystem(id);
         setIsModelPage(false);
+        setIsAdminOpen(false);
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     const handleOpenModelViewer = () => {
         setIsModelPage(true);
         setSelectedSubsystem(null);
+        setIsAdminOpen(false);
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     const handleBackToHome = () => {
         setSelectedSubsystem(null);
         setIsModelPage(false);
+        setIsAdminOpen(false);
+        if (window.location.hash === '#admin') {
+            window.history.replaceState(null, '', ' ');
+        }
         setTimeout(() => {
             const squadEl = document.getElementById('squad');
             if (squadEl) {
@@ -70,6 +89,20 @@ export default function App() {
             }
         }, 50);
     };
+
+    // Dedicated Full-Screen Admin Management Interface
+    if (isAdminOpen) {
+        return (
+            <AdminDashboard
+                onExit={() => {
+                    setIsAdminOpen(false);
+                    if (window.location.hash === '#admin') {
+                        window.history.replaceState(null, '', ' ');
+                    }
+                }}
+            />
+        );
+    }
 
     // Dedicated Full-Screen 3D Baja Model Inspector Page
     if (isModelPage) {
@@ -127,9 +160,17 @@ export default function App() {
                 )}
 
                 {/* 4-Column Cyberbites Brutalist Footer */}
-                <CyberFooter />
+                <CyberFooter onOpenAdmin={() => setIsAdminOpen(true)} />
             </div>
 
         </div>
+    );
+}
+
+export default function App() {
+    return (
+        <WebsiteDataProvider>
+            <MainApp />
+        </WebsiteDataProvider>
     );
 }

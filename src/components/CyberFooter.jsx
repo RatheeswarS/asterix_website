@@ -1,6 +1,10 @@
 import teamLogo from '../assets/Screenshot 2026-08-26 232320.png';
+import { useWebsiteData } from '../context/WebsiteDataContext';
 
-export default function CyberFooter() {
+export default function CyberFooter({ onOpenAdmin }) {
+    const { siteData } = useWebsiteData();
+    const { contact } = siteData;
+
     return (
         <footer className="bg-white border-t-4 border-slate-900 text-slate-900 py-16 px-4 sm:px-8 relative z-10 select-none">
             <div className="max-w-7xl mx-auto">
@@ -22,13 +26,13 @@ export default function CyberFooter() {
                         </p>
 
                         <div className="flex flex-col gap-2 pt-2 text-xs font-mono font-bold text-slate-700">
-                            <a href="mailto:contact@teamasterix.org" className="flex items-center gap-2 hover:text-sky-600">
+                            <a href={`mailto:${contact.email || 'asterix.psgitech@gmail.com'}`} className="flex items-center gap-2 hover:text-sky-600">
                                 <span className="p-1 bg-sky-100 border border-slate-900">✉</span>
-                                <span>asterix.psgitech@gmail.com</span>
+                                <span>{contact.email || 'asterix.psgitech@gmail.com'}</span>
                             </a>
                             <div className="flex items-center gap-2">
                                 <span className="p-1 bg-sky-100 border border-slate-900">📍</span>
-                                <span>PSG iTech, Neelambur, Coimbatore, Tamil Nadu</span>
+                                <span>{contact.address || 'PSG iTech, Neelambur, Coimbatore, Tamil Nadu'}</span>
                             </div>
                             <div className="flex items-center gap-2">
                                 <span className="p-1 bg-sky-100 border border-slate-900">⚡</span>
@@ -80,18 +84,25 @@ export default function CyberFooter() {
 
                 </div>
 
-                {/* Bottom Row with Social Pop Buttons */}
+                {/* Bottom Row with Social Pop Buttons and Admin Access */}
                 <div className="pt-8 flex flex-col sm:flex-row justify-between items-center gap-6">
-                    <div className="text-xs font-mono font-black text-slate-500 uppercase">
-                        © 2026 TEAM ASTERIX • ALL RIGHTS RESERVED • BAJA SAEINDIA
+                    <div className="flex flex-wrap items-center gap-4 text-xs font-mono font-black text-slate-500 uppercase">
+                        <span>© 2026 TEAM ASTERIX • ALL RIGHTS RESERVED</span>
+                        <button
+                            onClick={onOpenAdmin}
+                            className="px-2 py-0.5 bg-slate-100 hover:bg-sky-500 hover:text-white border border-slate-400 text-[10px] font-mono tracking-wider transition-colors cursor-pointer"
+                            title="Open Admin Management Interface"
+                        >
+                            // ADMIN PORTAL
+                        </button>
                     </div>
 
                     {/* Social Pop Buttons (Cyberbites Style) */}
                     <div className="flex items-center gap-3">
                         {[
-                            { name: 'INSTAGRAM', url: 'https://www.instagram.com/asterix_itech/' },
-                            { name: 'LINKEDIN', url: 'https://www.linkedin.com/company/teamasterix/' },
-                            { name: 'GITHUB', url: 'https://github.com/Team-Asterix264016/' }
+                            { name: 'INSTAGRAM', url: contact.instagramUrl || 'https://www.instagram.com/asterix_itech/' },
+                            { name: 'LINKEDIN', url: contact.linkedinUrl || 'https://www.linkedin.com/company/teamasterix/' },
+                            { name: 'GITHUB', url: contact.githubUrl || 'https://github.com/Team-Asterix264016/' }
                         ].map((net) => (
                             <a
                                 key={net.name}

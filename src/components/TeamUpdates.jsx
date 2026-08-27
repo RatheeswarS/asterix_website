@@ -1,45 +1,9 @@
 import AccordionGallery from './AccordionGallery';
-
-import imgPaddock from '../assets/gallery/01_team_paddock.jpg';
-import imgWelding from '../assets/gallery/02_workshop_welding.jpg';
-import imgLidar from '../assets/gallery/03_lidar_sensor_tuning.jpg';
-import imgTrack from '../assets/gallery/04_track_dirt_action.jpg';
-import imgCelebration from '../assets/gallery/06_team_celebration.jpg';
-
-const updateItems = [
-    {
-        image: imgPaddock,
-        label: "Paddock Lineup & Shakedown",
-        tag: "FEB 2026 • PIT LANE",
-        link: "#"
-    },
-    {
-        image: imgWelding,
-        label: "Spaceframe TIG Welding",
-        tag: "NOV 2025 • CHASSIS BAY",
-        link: "#"
-    },
-    {
-        image: imgLidar,
-        label: "LiDAR & Neural Perception",
-        tag: "JAN 2026 • AI LAB",
-        link: "#"
-    },
-    {
-        image: imgTrack,
-        label: "High-Speed Dirt Testing",
-        tag: "JAN 2026 • PROVING GROUNDS",
-        link: "#"
-    },
-    {
-        image: imgCelebration,
-        label: "Endurance Podium Victory",
-        tag: "FEB 2026 • NATIONAL FINALS",
-        link: "#"
-    }
-];
+import { useWebsiteData } from '../context/WebsiteDataContext';
 
 export default function TeamUpdates() {
+    const { siteData } = useWebsiteData();
+    const updateItems = siteData.updates;
     return (
         <section id="updates" className="py-28 px-4 sm:px-8 bg-sky-50/60 border-t-4 border-slate-900 relative overflow-hidden z-10 select-none">
 

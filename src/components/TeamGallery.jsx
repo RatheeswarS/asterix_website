@@ -1,78 +1,23 @@
 import { useState, useEffect, useMemo } from 'react';
 import DriftWall from './DriftWall';
-
-import imgPaddock from '../assets/gallery/01_team_paddock.jpg';
-import imgWelding from '../assets/gallery/02_workshop_welding.jpg';
-import imgLidar from '../assets/gallery/03_lidar_sensor_tuning.jpg';
-import imgTrack from '../assets/gallery/04_track_dirt_action.jpg';
-import imgMechanics from '../assets/gallery/05_pitlane_mechanics.jpg';
-import imgCelebration from '../assets/gallery/06_team_celebration.jpg';
-
-const galleryItems = [
-    {
-        id: 1,
-        title: "Full Crew Paddock Lineup",
-        category: "RACE DAY & CREW",
-        location: "SAEINDIA National Paddock • Pit Lane",
-        date: "FEB 2026",
-        image: imgPaddock,
-        badge: "OFFICIAL CREW",
-        description: "The complete Team Asterix engineering crew standing proudly alongside our autonomous buggy right before official tech inspection and endurance shakedown."
-    },
-    {
-        id: 2,
-        title: "Chassis Spaceframe TIG Welding",
-        category: "WORKSHOP & FAB",
-        location: "Collegiate Machine Shop • Chassis Bay",
-        date: "NOV 2025",
-        image: imgWelding,
-        badge: "FABRICATION",
-        description: "Precision tube notching and 100% GTAW purged TIG welding on the AISI 4130 chromoly tubular roll cage, ensuring superior driver safety factor."
-    },
-    {
-        id: 3,
-        title: "LiDAR & Neural Perception Calibration",
-        category: "AUTONOMOUS & SENSORS",
-        location: "Robotics & AI Systems Laboratory",
-        date: "JAN 2026",
-        image: imgLidar,
-        badge: "AI & PERCEPTION",
-        description: "Live calibration of the 3D solid-state LiDAR point clouds and stereo camera obstacle detection pipeline mounted on the vehicle's structural roll bar."
-    },
-    {
-        id: 4,
-        title: "High-Speed Dirt Drift Shakedown",
-        category: "TRACK DYNAMICS",
-        location: "Off-Road Proving Grounds • Sector 4",
-        date: "JAN 2026",
-        image: imgTrack,
-        badge: "DYNAMIC TESTING",
-        description: "Testing continuous torque delivery, steering response, and dual-rate suspension damping as the buggy drifts aggressively through high-speed dirt ruts."
-    },
-    {
-        id: 5,
-        title: "Paddock Brake & Hub Service",
-        category: "WORKSHOP & FAB",
-        location: "Pit Tent • Redline Proving Grounds",
-        date: "FEB 2026",
-        image: imgMechanics,
-        badge: "PIT CREW",
-        description: "Race mechanics performing high-precision torque checks, brake caliper bleeding, and upright hub adjustments between high-speed qualification runs."
-    },
-    {
-        id: 6,
-        title: "Endurance Victory & Podium",
-        category: "RACE DAY & CREW",
-        location: "Main Stage • Paddock Finish Line",
-        date: "FEB 2026",
-        image: imgCelebration,
-        badge: "PODIUM CELEBRATION",
-        description: "Jubilant celebrations after completing the punishing 4-hour endurance challenge and bringing home top collegiate engineering honors."
-    }
-];
+import { useWebsiteData } from '../context/WebsiteDataContext';
 
 export default function TeamGallery() {
+    const { siteData } = useWebsiteData();
     const [lightboxIndex, setLightboxIndex] = useState(null);
+
+    const galleryItems = useMemo(() => {
+        return siteData.gallery.map((g, idx) => ({
+            id: g.id || idx,
+            title: g.title,
+            category: g.category || "PADDOCK & TRACK",
+            location: g.location || "SAEINDIA Circuit & Workshop",
+            date: g.year || "2026",
+            image: g.src,
+            badge: g.category || "GALLERY",
+            description: g.desc || ""
+        }));
+    }, [siteData.gallery]);
 
     // Multiplied list to provide a continuous, fluid drifting wall across columns
     const driftItems = useMemo(() => {
@@ -81,7 +26,7 @@ export default function TeamGallery() {
             ...galleryItems,
             ...galleryItems
         ];
-    }, []);
+    }, [galleryItems]);
 
     // Keyboard navigation for lightbox modal
     useEffect(() => {

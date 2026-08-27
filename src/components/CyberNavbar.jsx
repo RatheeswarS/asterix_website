@@ -1,9 +1,12 @@
 import { useState } from 'react';
-import { subsystems } from '../data/subsystemsData';
 import teamLogo from '../assets/Screenshot 2026-08-26 232320.png';
 import TextDock, { DockTextItem } from './Dock';
+import { useWebsiteData } from '../context/WebsiteDataContext';
 
 export default function CyberNavbar({ onSelectSubsystem, isDetailPage, onBackToHome }) {
+    const { siteData } = useWebsiteData();
+    const subsystems = siteData.subsystems;
+    const { contact, hero } = siteData;
     const [shopOpen, setShopOpen] = useState(false);
     const [contactOpen, setContactOpen] = useState(false);
     const [mobileOpen, setMobileOpen] = useState(false);
@@ -13,7 +16,7 @@ export default function CyberNavbar({ onSelectSubsystem, isDetailPage, onBackToH
         {
             name: 'Instagram',
             handle: '@asterix_itech',
-            url: 'https://www.instagram.com/asterix_itech/',
+            url: contact.instagramUrl || 'https://www.instagram.com/asterix_itech/',
             color: 'hover:bg-pink-50 hover:text-pink-600',
             icon: (
                 <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
@@ -236,11 +239,11 @@ export default function CyberNavbar({ onSelectSubsystem, isDetailPage, onBackToH
 
                                             <div className="mt-3 pt-2.5 border-t border-slate-200">
                                                 <a
-                                                    href="mailto:asterix.psgitech@gmail.com"
+                                                    href={`mailto:${contact.email || 'asterix.psgitech@gmail.com'}`}
                                                     className="text-[11px] font-mono font-bold text-slate-600 hover:text-sky-600 flex items-center gap-1.5"
                                                 >
                                                     <span>✉</span>
-                                                    <span className="truncate">asterix.psgitech@gmail.com</span>
+                                                    <span className="truncate">{contact.email || 'asterix.psgitech@gmail.com'}</span>
                                                 </a>
                                             </div>
                                         </div>
@@ -250,7 +253,7 @@ export default function CyberNavbar({ onSelectSubsystem, isDetailPage, onBackToH
                                 {/* Join Team Text Button with Dock Magnification */}
                                 <DockTextItem
                                     mouseX={mouseX}
-                                    onClick={() => window.open('https://forms.gle/6hHG6aXqrunnfj7V6', '_blank')}
+                                    onClick={() => window.open(hero.joinFormUrl || 'https://forms.gle/6hHG6aXqrunnfj7V6', '_blank')}
                                     className="px-3.5 py-2 border-2 border-slate-900 bg-amber-300 text-slate-900 shadow-[2px_2px_0px_#0f172a] hover:bg-amber-400 hover:shadow-[3px_3px_0px_#0f172a] flex items-center gap-1"
                                 >
                                     <span>Join Team</span>
@@ -336,10 +339,10 @@ export default function CyberNavbar({ onSelectSubsystem, isDetailPage, onBackToH
                     </div>
 
                     <a
-                        href="https://forms.gle/6hHG6aXqrunnfj7V6"
+                        href={hero.joinFormUrl || 'https://forms.gle/6hHG6aXqrunnfj7V6'}
                         target="_blank"
                         rel="noopener noreferrer"
-                        onClick={() => setMobileOpen(false)}
+                        onClick={() => setMobileOpen(false)} 
                         className="p-2 bg-amber-300 text-slate-900 border-2 border-slate-900 text-center flex items-center justify-center gap-1.5 shadow-[2px_2px_0px_#0f172a]"
                     >
                         <span>Join Team</span>
