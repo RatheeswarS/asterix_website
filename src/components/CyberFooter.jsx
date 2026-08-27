@@ -90,8 +90,8 @@ export default function CyberFooter() {
                     <div className="flex items-center gap-3">
                         {[
                             { name: 'INSTAGRAM', url: 'https://www.instagram.com/asterix_itech/' },
-                            { name: 'LINKEDIN', url: 'https://www.linkedin.com/company/team-asterix/' },
-                            { name: 'GITHUB', url: 'https://github.com/Team-Asterix' }
+                            { name: 'LINKEDIN', url: 'https://www.linkedin.com/company/teamasterix/' },
+                            { name: 'GITHUB', url: 'https://github.com/Team-Asterix264016/' }
                         ].map((net) => (
                             <a
                                 key={net.name}
