@@ -25,8 +25,9 @@ gsap.registerPlugin(ScrollTrigger);
  */
 
 const FRAME_COUNT = 80;
-const SCRUB_END = 0.72;   // frames finish here; the logo owns the rest
-const LOGO_START = 0.66;  // slight overlap so the two phases cross-fade
+const SCRUB_END = 0.62;   // frames finish here
+const LOGO_START = 0.55;  // slight overlap so the two phases cross-fade
+const LOGO_END = 0.9;     // mark fully resolved, and held until the handoff
 
 // Enough of the sequence to start without stalling; the rest streams in behind.
 const FRAMES_BEFORE_START = 14;
@@ -36,6 +37,7 @@ const framePath = (tier, index) =>
 
 export default function IntroScrollSequence() {
     const sectionRef = useRef(null);
+    const stageRef = useRef(null);
     const canvasRef = useRef(null);
     const logoRef = useRef(null);
     const captionRef = useRef(null);
@@ -84,14 +86,28 @@ export default function IntroScrollSequence() {
             const ch = canvas.height;
             if (!cw || !ch) return;
 
-            // Cover fit: fill the canvas, cropping the overflowing axis.
-            const scale = Math.max(cw / img.naturalWidth, ch / img.naturalHeight);
+            // The footage is landscape. Cover-fitting it into a portrait phone
+            // crops so aggressively that only a fragment of the vehicle is
+            // left on screen, so portrait viewports letterbox it instead and
+            // keep the whole buggy visible. Landscape still fills the frame.
+            // The 1.12 nudge past pure contain fills more of a phone screen.
+            // The vehicle sits inside roughly the middle 80% of the frame, so
+            // trimming ~6% from each edge does not reach the wheels.
+            const portrait = ch > cw;
+            const scale = portrait
+                ? Math.min(cw / img.naturalWidth, ch / img.naturalHeight) * 1.12
+                : Math.max(cw / img.naturalWidth, ch / img.naturalHeight);
+
             const dw = img.naturalWidth * scale;
             const dh = img.naturalHeight * scale;
 
+            // Sit the band a little above centre on portrait, leaving the
+            // lower third clear for the mark.
+            const originY = portrait ? (ch - dh) * 0.38 : (ch - dh) / 2;
+
             ctx.fillStyle = '#0f172a';
             ctx.fillRect(0, 0, cw, ch);
-            ctx.drawImage(img, (cw - dw) / 2, (ch - dh) / 2, dw, dh);
+            ctx.drawImage(img, (cw - dw) / 2, originY, dw, dh);
             currentFrame = index;
         };
 
@@ -156,6 +172,27 @@ export default function IntroScrollSequence() {
 
         // --- scroll wiring --------------------------------------------------
 
+        // Releasing the pin at the end of the range, the way GSAP's own pinning
+        // does. A fixed stage cannot scroll away on its own, so simply fading
+        // it out left the remaining viewport of the section as an empty dark
+        // gap before the hero. Parked at the section's bottom edge instead, it
+        // sits exactly where it was pinned and scrolls off with the section.
+        let pinned = null;
+        const setPinned = (next) => {
+            const stage = stageRef.current;
+            if (!stage || pinned === next) return;
+            pinned = next;
+            if (next) {
+                stage.style.position = 'fixed';
+                stage.style.top = '0px';
+                stage.style.bottom = '';
+            } else {
+                stage.style.position = 'absolute';
+                stage.style.top = 'auto';
+                stage.style.bottom = '0px';
+            }
+        };
+
         const setupTrigger = () => {
             trigger = ScrollTrigger.create({
                 trigger: section,
@@ -179,7 +216,7 @@ export default function IntroScrollSequence() {
                     const logoP = gsap.utils.clamp(
                         0,
                         1,
-                        (p - LOGO_START) / (1 - LOGO_START)
+                        (p - LOGO_START) / (LOGO_END - LOGO_START)
                     );
                     const eased = gsap.parseEase('power2.out')(logoP);
 
@@ -193,14 +230,25 @@ export default function IntroScrollSequence() {
                         opacity: gsap.utils.clamp(0, 1, (logoP - 0.35) / 0.65),
                         y: (1 - eased) * 18,
                     });
+
+                    setPinned(p < 1);
                 },
+                // onUpdate stops firing once scrolled clear of the range, so
+                // the pin state is settled explicitly at both edges.
+                onLeave: () => setPinned(false),
+                onEnterBack: () => setPinned(true),
             });
+
+            setPinned(true);
         };
 
         // Reduced motion: no scrub. Show the closing frame with the mark
         // already resolved, and let the section collapse to a single screen.
         const applyReducedMotion = () => {
             section.style.height = '100vh';
+            // Without a scrub there is nothing to drive the fixed stage out of
+            // the way, so it becomes a normal in-flow layer that scrolls off.
+            if (stageRef.current) stageRef.current.style.position = 'absolute';
             loadFrame(FRAME_COUNT - 1).then(() => {
                 if (cancelled) return;
                 resize();
@@ -241,7 +289,17 @@ export default function IntroScrollSequence() {
             className="relative w-full h-[280vh] bg-slate-900 select-none"
             aria-label="Team Asterix buggy walkaround"
         >
-            <div className="sticky top-0 h-screen w-full overflow-hidden">
+            {/* Fixed rather than sticky. The app root and body both set
+                overflow-x: hidden, which per spec makes the other axis compute
+                to auto -- that turns the ancestor into a scroll container and
+                silently breaks position: sticky, leaving the stage to scroll
+                away instead of holding. A fixed layer is unaffected by overflow
+                ancestors; setPinned parks it at the section's bottom edge once
+                the scrub is done so it scrolls off with the section. */}
+            <div
+                ref={stageRef}
+                className="fixed inset-x-0 top-0 h-screen w-full overflow-hidden pointer-events-none"
+            >
                 <canvas
                     ref={canvasRef}
                     className="absolute inset-0 w-full h-full block"
@@ -256,12 +314,18 @@ export default function IntroScrollSequence() {
                 />
 
                 {/* Emerging team mark */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-5 px-6 pointer-events-none">
+                {/* Portrait letterboxes the footage into the upper part of the
+                    screen, so the mark drops into the clear lower third rather
+                    than sitting on top of the vehicle. */}
+                <div className="absolute inset-0 flex flex-col items-center justify-end pb-24 gap-6 landscape:justify-center landscape:pb-0 sm:justify-center sm:pb-0 sm:gap-10 px-6 pointer-events-none">
+                    {/* The team mark is dark artwork intended for a light
+                        background. Knocked out to solid white so it reads
+                        against the scrim, with a sky glow behind it. */}
                     <img
                         ref={logoRef}
                         src={teamLogo}
                         alt="Team Asterix"
-                        className="w-40 sm:w-56 md:w-72 h-auto object-contain opacity-0 drop-shadow-[0_8px_30px_rgba(2,132,199,0.55)]"
+                        className="w-56 sm:w-80 md:w-[26rem] h-auto object-contain opacity-0 [filter:brightness(0)_invert(1)_drop-shadow(0_0_28px_rgba(56,189,248,0.65))]"
                     />
                     <div ref={captionRef} className="opacity-0 text-center">
                         <p className="text-2xl sm:text-4xl md:text-5xl font-black uppercase tracking-tight text-white leading-none">
