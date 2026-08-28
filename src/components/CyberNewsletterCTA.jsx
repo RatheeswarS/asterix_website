@@ -3,6 +3,7 @@ import { useState } from 'react';
 export default function CyberNewsletterCTA() {
     const [email, setEmail] = useState('');
     const [phone, setPhone] = useState('');
+    const [submitted, setSubmitted] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [statusNote, setStatusNote] = useState('');
 
