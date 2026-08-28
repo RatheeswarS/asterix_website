@@ -603,8 +603,21 @@ export default function Car3DCanvas() {
 
         const handleScroll = () => {
             const currentY = window.scrollY || window.pageYOffset;
-            const maxScroll = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
-            scrollRatio = Math.min(1, Math.max(0, currentY / maxScroll));
+
+            // The intro sequence occupies several viewports of scroll before any
+            // real content, and it covers this canvas completely while it runs.
+            // Measuring progress across it would spend the whole choreography
+            // on a section nobody can see it through, so the staging starts
+            // where the intro ends.
+            const introEl = document.getElementById('intro');
+            const introHeight = introEl ? introEl.offsetHeight : 0;
+
+            const contentY = currentY - introHeight;
+            const maxScroll = Math.max(
+                1,
+                document.documentElement.scrollHeight - window.innerHeight - introHeight
+            );
+            scrollRatio = Math.min(1, Math.max(0, contentY / maxScroll));
 
             scrollVelocity += currentY - lastScrollY;
             lastScrollY = currentY;

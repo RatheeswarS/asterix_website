@@ -125,6 +125,11 @@ export default function useScrollAssembly(lenis, dependency) {
             };
 
             sections.forEach((section) => {
+                // The intro sequence drives its own scrubbed timeline and paints
+                // to a canvas. The structural fallback below would otherwise
+                // grab its heading and loading bar and fade them independently.
+                if (section.id === 'intro') return;
+
                 const isHero = section.id === 'hero' || section.classList.contains('hero-section');
 
                 // The hero is above the fold on load; it plays on mount rather

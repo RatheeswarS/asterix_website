@@ -30,6 +30,10 @@ server/uploads/*
 !server/uploads/gallery/
 !server/uploads/.gitkeep
 
+# Source footage for the intro sequence. The extracted frames in public/intro
+# are committed instead; regenerate them with scripts/extract-intro-frames.ps1.
+media/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

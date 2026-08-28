@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import Lenis from "lenis";
 import useScrollAssembly from "./hooks/useScrollAssembly";
 import CyberNavbar from "./components/CyberNavbar";
+import IntroScrollSequence from "./components/IntroScrollSequence";
 import CyberHero from "./components/CyberHero";
 import MarqueeTicker from "./components/MarqueeTicker";
 import TheSquad from "./components/TheSquad";
@@ -149,6 +150,10 @@ function MainApp() {
                 ) : (
                     /* Main Landing Page */
                     <main>
+                        {/* Scroll-scrubbed buggy walkaround, resolving into the
+                            team mark. Frames live in public/intro. */}
+                        <IntroScrollSequence />
+
                         {/* Hero Section with Filled & Stroke Typography, Badges and 3D Baja Inspector Option */}
                         <CyberHero onOpenModelViewer={handleOpenModelViewer} />
 
