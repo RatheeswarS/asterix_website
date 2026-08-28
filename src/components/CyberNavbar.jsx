@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import teamLogo from '../assets/Screenshot 2026-08-26 232320.png';
 import TextDock, { DockTextItem } from './Dock';
 import { useWebsiteData } from '../context/WebsiteDataContext';
@@ -11,6 +11,25 @@ export default function CyberNavbar({ onSelectSubsystem, isDetailPage, onBackToH
     const [contactOpen, setContactOpen] = useState(false);
     const [mobileOpen, setMobileOpen] = useState(false);
     const [mobileContactOpen, setMobileContactOpen] = useState(false);
+    const [isScrolled, setIsScrolled] = useState(false);
+
+    useEffect(() => {
+        const handleScroll = () => {
+            const currentScrollY = window.scrollY || document.documentElement.scrollTop;
+            const shouldHide = currentScrollY > 20;
+            setIsScrolled(shouldHide);
+            if (shouldHide) {
+                setShopOpen(false);
+                setContactOpen(false);
+                setMobileOpen(false);
+                setMobileContactOpen(false);
+            }
+        };
+
+        handleScroll();
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
 
     const socialLinks = [
         {
@@ -73,7 +92,9 @@ export default function CyberNavbar({ onSelectSubsystem, isDetailPage, onBackToH
     };
 
     return (
-        <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b-4 border-slate-900 select-none">
+        <nav className={`fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b-4 border-slate-900 select-none transition-transform duration-300 ease-in-out ${
+            isScrolled ? '-translate-y-full pointer-events-none' : 'translate-y-0 pointer-events-auto'
+        }`}>
             <div className="max-w-7xl mx-auto px-4 sm:px-8 py-2.5 flex items-center justify-between relative">
 
                 {/* Brand Logo */}

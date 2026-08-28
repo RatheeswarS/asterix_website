@@ -6,22 +6,15 @@ gsap.registerPlugin(ScrollTrigger);
 
 /**
  * useScrollAssembly
- * Reveals each section once, as it enters the viewport, and leaves it alone
- * afterwards.
+ * Dynamically moves components, cards, headers, badges, and lists into their places
+ * as the user scrolls down the page.
  *
- * The earlier version scrubbed the reveal to scroll position, which meant
- * content sat at 30% opacity until the reader had scrolled far enough, and
- * un-revealed itself again on the way back up. Reveals are now one-shot: an
- * element animates from 0 to 1 and stays there.
- *
- * Bypassed entirely on standalone detail pages so their copy is crisp
- * immediately.
+ * Each element or element-cluster triggers independently as its own bounding box
+ * reaches `top 85%` of the viewport, creating an energetic neo-brutalist entrance
+ * with zero stale off-screen animations.
  */
 
-const ENTER_START = 'top 88%';
-
-// Every element the hook is willing to touch. Anything matching this is
-// hidden up front and is guaranteed to be un-hidden by a trigger below.
+const ENTER_START = 'top 85%';
 const MANAGED = '[data-assemble], [data-assemble-section]';
 
 const prefersReducedMotion = () =>
@@ -30,14 +23,8 @@ const prefersReducedMotion = () =>
 
 export default function useScrollAssembly(lenis, dependency) {
     useEffect(() => {
-        // Track only the triggers this hook created. The previous version
-        // called ScrollTrigger.getAll().kill() on cleanup, which would also
-        // destroy triggers belonging to any other component.
         const ownedTriggers = [];
         const ownedTweens = [];
-        // Every element this hook hid, including ones matched by the
-        // structural fallback rather than by a data-assemble attribute. All of
-        // them must be restored on cleanup or they stay at opacity 0.
         const ownedElements = new Set();
 
         const clearManaged = () => {
@@ -54,38 +41,35 @@ export default function useScrollAssembly(lenis, dependency) {
             }
         };
 
-        // A subpage or modal is open: no reveals, nothing hidden.
+        // If a modal or subpage is open, clear reveals
         if (dependency) {
             clearManaged();
             return;
         }
 
-        // Reduced motion: show everything immediately.
+        // Reduced motion: show everything statically
         if (prefersReducedMotion()) {
             clearManaged();
             return;
         }
 
-        // Keep ScrollTrigger in step with Lenis' virtual scroll position.
+        // Synchronize ScrollTrigger with Lenis
         let scrollHandler;
         if (lenis) {
             scrollHandler = () => ScrollTrigger.update();
             lenis.on('scroll', scrollHandler);
         }
 
-        // GSAP's lag smoothing fights a smooth-scroll library; without this,
-        // a single long frame makes the page and the reveals disagree.
         gsap.ticker.lagSmoothing(0);
 
         let refreshOnLoad;
 
         const timer = setTimeout(() => {
-            const sections = document.querySelectorAll('section, footer');
+            const sections = document.querySelectorAll('section, footer, .marquee-hold');
 
-            // Reveal helper: hide now, animate to visible once, then drop the
-            // inline styles so nothing is left with a stale transform or a
-            // lingering will-change layer.
-            const revealOnce = (targets, section, fromVars) => {
+            // Dynamic reveal helper: attaches ScrollTrigger directly to the target element
+            // so animation only fires when the specific component enters the reader's view.
+            const revealOnce = (targets, triggerEl, fromVars, stagger = 0.08) => {
                 const list = Array.isArray(targets) ? targets : Array.from(targets);
                 if (!list.length) return null;
 
@@ -93,6 +77,8 @@ export default function useScrollAssembly(lenis, dependency) {
                     el.classList.add('reveal-init');
                     ownedElements.add(el);
                 });
+
+                const trigger = triggerEl || list[0];
 
                 const tween = gsap.fromTo(
                     list,
@@ -102,9 +88,9 @@ export default function useScrollAssembly(lenis, dependency) {
                         y: 0,
                         scale: 1,
                         opacity: 1,
-                        duration: 0.55,
-                        ease: 'power2.out',
-                        stagger: 0.06,
+                        duration: 0.7,
+                        ease: 'power3.out',
+                        stagger: stagger,
                         paused: true,
                         onStart: () => list.forEach((el) => el.classList.remove('reveal-init')),
                         onComplete: () => gsap.set(list, { clearProps: 'transform,willChange' }),
@@ -114,7 +100,7 @@ export default function useScrollAssembly(lenis, dependency) {
                 ownedTweens.push(tween);
 
                 const st = ScrollTrigger.create({
-                    trigger: section,
+                    trigger: trigger,
                     start: ENTER_START,
                     once: true,
                     invalidateOnRefresh: true,
@@ -125,89 +111,70 @@ export default function useScrollAssembly(lenis, dependency) {
             };
 
             sections.forEach((section) => {
-                // The intro sequence drives its own scrubbed timeline and paints
-                // to a canvas. The structural fallback below would otherwise
-                // grab its heading and loading bar and fade them independently.
+                // Intro canvas sequence drives its own scrubbed turntable
                 if (section.id === 'intro') return;
 
                 const isHero = section.id === 'hero' || section.classList.contains('hero-section');
 
-                // The hero is above the fold on load; it plays on mount rather
-                // than waiting for a scroll that may never come.
+                // CyberHero entrance
                 if (isHero) {
-                    const heroItems = Array.from(
-                        section.querySelectorAll('[data-assemble], .cyber-button, h1, p, .rounded-full')
-                    );
-                    if (heroItems.length) {
-                        heroItems.forEach((el) => ownedElements.add(el));
-                        const tween = gsap.fromTo(
-                            heroItems,
-                            { y: 24, opacity: 0, scale: 0.99 },
-                            {
-                                y: 0,
-                                opacity: 1,
-                                scale: 1,
-                                stagger: 0.06,
-                                duration: 0.7,
-                                ease: 'power2.out',
-                                delay: 0.08,
-                                onComplete: () =>
-                                    gsap.set(heroItems, { clearProps: 'transform,willChange' }),
-                            }
-                        );
-                        ownedTweens.push(tween);
+                    const heroBadges = Array.from(section.querySelectorAll('[data-assemble="pop"], .border-3'));
+                    const heroHeadings = Array.from(section.querySelectorAll('[data-assemble="left"], h1'));
+                    const heroBody = Array.from(section.querySelectorAll('[data-assemble="up"], p, .cyber-button, a'));
+                    const heroFooter = Array.from(section.querySelectorAll('[data-assemble="down"]'));
+
+                    if (heroBadges.length) revealOnce(heroBadges, heroBadges[0], { y: 20, scale: 0.85 }, 0.05);
+                    if (heroHeadings.length) revealOnce(heroHeadings, heroHeadings[0], { x: -48 }, 0.1);
+                    if (heroBody.length) revealOnce(heroBody, heroBody[0], { y: 36 }, 0.08);
+                    if (heroFooter.length) revealOnce(heroFooter, heroFooter[0], { y: 20 }, 0.05);
+                    return;
+                }
+
+                // Marquee ribbons (slide in from left & right as scrolled to)
+                if (section.classList.contains('marquee-hold')) {
+                    const ribbons = Array.from(section.children);
+                    if (ribbons[0]) revealOnce([ribbons[0]], ribbons[0], { x: -60 });
+                    if (ribbons[1]) revealOnce([ribbons[1]], ribbons[1], { x: 60 });
+                    return;
+                }
+
+                // The Squad section
+                if (section.id === 'squad') {
+                    const header = section.querySelector('[data-assemble="header"]');
+                    if (header) revealOnce([header], header, { y: -36 });
+
+                    const squadGrid = section.querySelector('[data-assemble="stagger"]');
+                    if (squadGrid) {
+                        const buttons = Array.from(squadGrid.children);
+                        revealOnce(buttons, squadGrid, { y: 36, scale: 0.94 }, 0.06);
                     }
                     return;
                 }
 
-                // CardSwap owns its own 3D transforms on the cards
-                // (xPercent/yPercent/z). Touching them desynchronises the swap
-                // animation, so only the header is revealed here.
-                if (section.id === 'squad') {
-                    const header = section.querySelector('[data-assemble="header"]');
-                    if (header) revealOnce([header], section, { y: -24 });
-                    return;
-                }
+                // General section elements with explicit annotations
+                const headers = Array.from(section.querySelectorAll('[data-assemble="header"]'));
+                const leftElements = Array.from(section.querySelectorAll('[data-assemble="left"]'));
+                const rightElements = Array.from(section.querySelectorAll('[data-assemble="right"]'));
+                const cards = Array.from(section.querySelectorAll('[data-assemble="card"], [data-assemble="up"]'));
+                const downElements = Array.from(section.querySelectorAll('[data-assemble="down"]'));
+                const popElements = Array.from(section.querySelectorAll('[data-assemble="pop"], [data-assemble="badge"]'));
+                const staggerContainers = Array.from(section.querySelectorAll('[data-assemble="stagger"]'));
 
-                const explicit = {
-                    headers: Array.from(section.querySelectorAll('[data-assemble="header"]')),
-                    left: Array.from(section.querySelectorAll('[data-assemble="left"]')),
-                    right: Array.from(section.querySelectorAll('[data-assemble="right"]')),
-                    up: Array.from(section.querySelectorAll('[data-assemble="up"], [data-assemble="card"]')),
-                    down: Array.from(section.querySelectorAll('[data-assemble="down"]')),
-                    pop: Array.from(section.querySelectorAll('[data-assemble="pop"], [data-assemble="badge"]')),
-                    stagger: Array.from(section.querySelectorAll('[data-assemble="stagger"]')),
-                };
+                headers.forEach((h) => revealOnce([h], h, { y: -36 }));
+                leftElements.forEach((el) => revealOnce([el], el, { x: -50 }));
+                rightElements.forEach((el) => revealOnce([el], el, { x: 50 }));
+                cards.forEach((c) => revealOnce([c], c, { y: 48, scale: 0.96 }));
+                downElements.forEach((d) => revealOnce([d], d, { y: -40 }));
+                popElements.forEach((p) => revealOnce([p], p, { y: 20, scale: 0.85 }));
 
-                const hasExplicit = Object.values(explicit).some((list) => list.length > 0);
-
-                let { headers, left, right, up: cards, down, pop } = explicit;
-
-                // Sections that have not been annotated fall back to a
-                // structural guess.
-                if (!hasExplicit) {
-                    headers = Array.from(section.querySelectorAll('h1, h2, h3, .section-header'));
-                    cards = Array.from(section.querySelectorAll('.grid > div, form, .cyber-card'));
-                    pop = Array.from(section.querySelectorAll('.cyber-button, button, .badge'));
-                }
-
-                revealOnce(headers, section, { y: -24 });
-                revealOnce(left, section, { x: -36 });
-                revealOnce(right, section, { x: 36 });
-                revealOnce(down, section, { y: -32 });
-                revealOnce(cards, section, { y: 36, scale: 0.98 });
-                revealOnce(pop, section, { y: 16, scale: 0.94 });
-
-                explicit.stagger.forEach((parent) => {
-                    revealOnce(Array.from(parent.children), section, { y: 24 });
+                staggerContainers.forEach((container) => {
+                    const children = Array.from(container.children);
+                    revealOnce(children, container, { y: 36, scale: 0.96 }, 0.07);
                 });
             });
 
             ScrollTrigger.refresh();
 
-            // Images and the site-data fetch both change layout after this
-            // point; without a refresh the trigger positions are computed
-            // against a shorter page than the reader actually gets.
             refreshOnLoad = () => ScrollTrigger.refresh();
             window.addEventListener('load', refreshOnLoad);
         }, 100);
@@ -220,7 +187,6 @@ export default function useScrollAssembly(lenis, dependency) {
             ownedTriggers.forEach((trigger) => trigger.kill());
             ownedTweens.forEach((tween) => tween.kill());
 
-            // Never unmount leaving content stuck at opacity 0.
             clearManaged();
         };
     }, [lenis, dependency]);

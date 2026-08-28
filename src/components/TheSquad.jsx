@@ -168,11 +168,11 @@ export default function TheSquad({ onSelectSubsystem }) {
 
             {/* Quick Subsystem Direct Navigation Grid (Allows direct 1-click access to all 5 subsystems) */}
             <div className="py-16 px-4 sm:px-8 max-w-7xl mx-auto border-t-3 border-slate-900 mt-8">
-                <span className="text-xs font-mono font-black text-slate-500 uppercase tracking-widest block mb-6 text-center">
+                <span data-assemble="header" className="text-xs font-mono font-black text-slate-500 uppercase tracking-widest block mb-6 text-center">
                     // OR DIRECTLY SELECT A SUBSYSTEM TO INSPECT
                 </span>
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 font-mono">
+                <div data-assemble="stagger" className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 font-mono">
                     {subsystems.map((s, idx) => (
                         <button
                             key={s.id}

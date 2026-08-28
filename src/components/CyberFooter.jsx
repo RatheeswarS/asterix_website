@@ -86,7 +86,7 @@ export default function CyberFooter({ onOpenAdmin }) {
                 </div>
 
                 {/* Bottom Row with Social Pop Buttons and Admin Access */}
-                <div className="pt-8 flex flex-col sm:flex-row justify-between items-center gap-6">
+                <div data-assemble="up" className="pt-8 flex flex-col sm:flex-row justify-between items-center gap-6">
                     <div className="flex flex-wrap items-center gap-4 text-xs font-mono font-black text-slate-500 uppercase">
                         <span>© 2026 TEAM ASTERIX • ALL RIGHTS RESERVED</span>
                         <button

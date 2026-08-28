@@ -11,7 +11,7 @@ export default function CyberHero({ onOpenModelViewer }) {
             <div className="max-w-7xl mx-auto w-full my-auto z-10 pt-4 pb-8">
 
                 {/* Top Badges Row (Dynamic Badges) */}
-                <div className="flex flex-wrap items-center gap-3 sm:gap-4 mb-6 z-20 relative">
+                <div data-assemble="pop" className="flex flex-wrap items-center gap-3 sm:gap-4 mb-6 z-20 relative">
                     {hero.badges.map((badge, idx) => (
                         <div 
                             key={idx} 
@@ -26,7 +26,7 @@ export default function CyberHero({ onOpenModelViewer }) {
                 <div className="max-w-2xl lg:max-w-3xl text-left">
 
                     {/* Giant Stacked Typography */}
-                    <div>
+                    <div data-assemble="left">
                         <h1 className="text-6xl sm:text-8xl md:text-9xl lg:text-[10rem] font-black text-slate-900 leading-[0.88] tracking-tighter uppercase">
                             {hero.teamTitle || "TEAM"}
                         </h1>
@@ -36,12 +36,12 @@ export default function CyberHero({ onOpenModelViewer }) {
                         </h1>
                     </div>
 
-                    <p className="mt-6 text-base sm:text-xl md:text-2xl text-slate-700 font-bold leading-snug max-w-xl">
+                    <p data-assemble="up" className="mt-6 text-base sm:text-xl md:text-2xl text-slate-700 font-bold leading-snug max-w-xl">
                         {hero.tagline || "Got the passion? We got the track."}
                     </p>
 
                     {/* Cyberbites Chunky Action Button */}
-                    <div className="mt-8 flex flex-wrap items-center gap-5">
+                    <div data-assemble="up" className="mt-8 flex flex-wrap items-center gap-5">
                         <a
                             href="#squad"
                             className="press press-flat cyber-button px-9 py-4.5 text-sm sm:text-base tracking-widest uppercase cursor-pointer inline-block"
@@ -55,7 +55,7 @@ export default function CyberHero({ onOpenModelViewer }) {
             </div>
 
             {/* Bottom Floating Footer Row with Corner 3D Baja Model Option */}
-            <div className="max-w-7xl mx-auto w-full z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-slate-500 font-mono text-xs font-black uppercase">
+            <div data-assemble="down" className="max-w-7xl mx-auto w-full z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-slate-500 font-mono text-xs font-black uppercase">
                 <span>SCROLL TO BE ON OUR SHOES!!</span>
 
                 {/* Corner 3D Baja Inspector Button */}
