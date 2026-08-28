@@ -79,7 +79,7 @@ export default function CyberNavbar({ onSelectSubsystem, isDetailPage, onBackToH
                 {/* Brand Logo */}
                 <button
                     onClick={onBackToHome}
-                    className="flex items-center group cursor-pointer text-left focus:outline-none"
+                    className="press press-flat flex items-center group cursor-pointer text-left focus:outline-none"
                     aria-label="Asterix Racing Home"
                 >
                     <img
@@ -102,7 +102,7 @@ export default function CyberNavbar({ onSelectSubsystem, isDetailPage, onBackToH
                                             setShopOpen((prev) => !prev);
                                             setContactOpen(false);
                                         }}
-                                        className={`px-3.5 py-2 border-2 border-slate-900 bg-white shadow-[2px_2px_0px_#0f172a] hover:bg-sky-100 hover:shadow-[3px_3px_0px_#0f172a] flex items-center gap-1.5 ${shopOpen ? '!bg-sky-200' : ''
+                                        className={`press px-3.5 py-2 border-2 border-slate-900 bg-white shadow-[2px_2px_0px_#0f172a] hover:bg-sky-100 hover:shadow-[3px_3px_0px_#0f172a] flex items-center gap-1.5 ${shopOpen ? '!bg-sky-200' : ''
                                             }`}
                                     >
                                         <span>THE SUBSYSTEMS</span>
@@ -121,7 +121,7 @@ export default function CyberNavbar({ onSelectSubsystem, isDetailPage, onBackToH
                                                 </span>
                                                 <button
                                                     onClick={() => setShopOpen(false)}
-                                                    className="text-xs font-black text-slate-400 hover:text-slate-900 cursor-pointer"
+                                                    className="press press-flat text-xs font-black text-slate-400 hover:text-slate-900 cursor-pointer"
                                                 >
                                                     ✕
                                                 </button>
@@ -131,7 +131,7 @@ export default function CyberNavbar({ onSelectSubsystem, isDetailPage, onBackToH
                                                     <button
                                                         key={s.id}
                                                         onClick={() => handleSubsystemClick(s.id)}
-                                                        className="p-2 border-2 border-slate-900 bg-sky-50 hover:bg-sky-500 hover:text-white transition-colors flex items-center justify-between font-bold text-xs cursor-pointer text-left"
+                                                        className="press press-flat p-2 border-2 border-slate-900 bg-sky-50 hover:bg-sky-500 hover:text-white transition-colors flex items-center justify-between font-bold text-xs cursor-pointer text-left"
                                                     >
                                                         <span>{s.name}</span>
                                                         <span>→</span>
@@ -189,7 +189,7 @@ export default function CyberNavbar({ onSelectSubsystem, isDetailPage, onBackToH
                                             setContactOpen((prev) => !prev);
                                             setShopOpen(false);
                                         }}
-                                        className={`px-3.5 py-2 border-2 border-slate-900 bg-white shadow-[2px_2px_0px_#0f172a] hover:bg-sky-100 hover:shadow-[3px_3px_0px_#0f172a] flex items-center gap-1.5 ${contactOpen ? '!bg-sky-200' : ''
+                                        className={`press px-3.5 py-2 border-2 border-slate-900 bg-white shadow-[2px_2px_0px_#0f172a] hover:bg-sky-100 hover:shadow-[3px_3px_0px_#0f172a] flex items-center gap-1.5 ${contactOpen ? '!bg-sky-200' : ''
                                             }`}
                                     >
                                         <span>CONTACT US</span>
@@ -205,7 +205,7 @@ export default function CyberNavbar({ onSelectSubsystem, isDetailPage, onBackToH
                                             <div className="flex items-center justify-between mb-3 border-b-2 border-slate-200 pb-1">
                                                 <button
                                                     onClick={() => setContactOpen(false)}
-                                                    className="text-xs font-black text-slate-400 hover:text-slate-900 cursor-pointer"
+                                                    className="press press-flat text-xs font-black text-slate-400 hover:text-slate-900 cursor-pointer"
                                                 >
                                                     ✕
                                                 </button>
@@ -276,7 +276,7 @@ export default function CyberNavbar({ onSelectSubsystem, isDetailPage, onBackToH
                 {/* Mobile Hamburger Toggle */}
                 <button
                     onClick={() => setMobileOpen(!mobileOpen)}
-                    className="md:hidden p-2 border-2 border-slate-900 bg-sky-100 cursor-pointer"
+                    className="press press-flat md:hidden p-2 border-2 border-slate-900 bg-sky-100 cursor-pointer"
                     aria-label="Toggle Menu"
                 >
                     <div className="w-5 h-3.5 flex flex-col justify-between">

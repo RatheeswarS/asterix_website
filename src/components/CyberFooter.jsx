@@ -1,5 +1,6 @@
 import teamLogo from '../assets/Screenshot 2026-08-26 232320.png';
 import { useWebsiteData } from '../context/WebsiteDataContext';
+import Icon from './Icon';
 
 export default function CyberFooter({ onOpenAdmin }) {
     const { siteData } = useWebsiteData();
@@ -26,16 +27,16 @@ export default function CyberFooter({ onOpenAdmin }) {
                         </p>
 
                         <div className="flex flex-col gap-2 pt-2 text-xs font-mono font-bold text-slate-700">
-                            <a href={`mailto:${contact.email || 'asterix.psgitech@gmail.com'}`} className="flex items-center gap-2 hover:text-sky-600">
-                                <span className="p-1 bg-sky-100 border border-slate-900">✉</span>
+                            <a href={`mailto:${contact.email || 'asterix.psgitech@gmail.com'}`} className="press press-flat flex items-center gap-2 hover:text-sky-600">
+                                <span className="p-1 bg-sky-100 border border-slate-900 flex items-center"><Icon name="mail" className="w-3.5 h-3.5" /></span>
                                 <span>{contact.email || 'asterix.psgitech@gmail.com'}</span>
                             </a>
                             <div className="flex items-center gap-2">
-                                <span className="p-1 bg-sky-100 border border-slate-900">📍</span>
+                                <span className="p-1 bg-sky-100 border border-slate-900 flex items-center"><Icon name="pin" className="w-3.5 h-3.5" /></span>
                                 <span>{contact.address || 'PSG iTech, Neelambur, Coimbatore, Tamil Nadu'}</span>
                             </div>
                             <div className="flex items-center gap-2">
-                                <span className="p-1 bg-sky-100 border border-slate-900">⚡</span>
+                                <span className="p-1 bg-sky-100 border border-slate-900 flex items-center"><Icon name="bolt" className="w-3.5 h-3.5" /></span>
                                 <span>Ratheeswar • Software & Perception Lead</span>
                             </div>
                         </div>
@@ -90,7 +91,7 @@ export default function CyberFooter({ onOpenAdmin }) {
                         <span>© 2026 TEAM ASTERIX • ALL RIGHTS RESERVED</span>
                         <button
                             onClick={onOpenAdmin}
-                            className="px-2 py-0.5 bg-slate-100 hover:bg-sky-500 hover:text-white border border-slate-400 text-[10px] font-mono tracking-wider transition-colors cursor-pointer"
+                            className="press press-flat px-2 py-0.5 bg-slate-100 hover:bg-sky-500 hover:text-white border border-slate-400 text-[10px] font-mono tracking-wider cursor-pointer"
                             title="Open Admin Management Interface"
                         >
                             // ADMIN PORTAL
@@ -109,7 +110,7 @@ export default function CyberFooter({ onOpenAdmin }) {
                                 href={net.url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="px-3.5 py-1.5 bg-sky-50 border-2 border-slate-900 text-[10px] font-black uppercase text-slate-900 shadow-[2px_2px_0px_#0f172a] hover:bg-sky-500 hover:text-white hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[4px_4px_0px_#0f172a] transition-all cursor-pointer"
+                                className="press px-3.5 py-1.5 bg-sky-50 border-2 border-slate-900 text-[10px] font-black uppercase text-slate-900 shadow-[2px_2px_0px_#0f172a] hover:bg-sky-500 hover:text-white hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[4px_4px_0px_#0f172a] cursor-pointer"
                             >
                                 {net.name}
                             </a>
@@ -118,9 +119,7 @@ export default function CyberFooter({ onOpenAdmin }) {
                 </div>
                 <div className="pt-6 border-t border-slate-200 mt-6 flex justify-center items-center text-center w-full">
                     <p className="text-xs sm:text-sm font-mono font-bold text-slate-600 flex items-center justify-center gap-1.5">
-                        <span>Crafted with</span>
-                        <span className="text-sky-500 text-sm inline-block" aria-label="blue heart">💙</span>
-                        <span>by Software Subsystem</span>
+                        <span>Built by the Software Subsystem</span>
                     </p>
                 </div>
 

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useWebsiteData, AUTH_TOKEN_KEY } from '../../context/WebsiteDataContext';
+import Icon from '../Icon';
 
 export default function AdminDashboard({ onExit }) {
     const {
@@ -357,7 +358,7 @@ export default function AdminDashboard({ onExit }) {
                             <button
                                 type="submit"
                                 disabled={isLoggingIn}
-                                className="w-full py-2.5 bg-sky-500 hover:bg-sky-400 text-white font-mono font-black text-xs uppercase border-2 border-slate-900 shadow-[3px_3px_0px_#0f172a] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[5px_5px_0px_#0f172a] transition-all cursor-pointer disabled:opacity-50"
+                                className="press w-full py-2.5 bg-sky-500 hover:bg-sky-400 text-white font-mono font-black text-xs uppercase border-2 border-slate-900 shadow-[3px_3px_0px_#0f172a] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[5px_5px_0px_#0f172a] cursor-pointer disabled:opacity-50"
                             >
                                 {isLoggingIn ? 'Verifying Credentials...' : 'Login to Dashboard →'}
                             </button>
@@ -368,7 +369,7 @@ export default function AdminDashboard({ onExit }) {
                         <span>Default: admin / asterix2026</span>
                         <button
                             onClick={onExit}
-                            className="text-sky-600 hover:text-slate-900 underline cursor-pointer"
+                            className="press press-flat text-sky-600 hover:text-slate-900 underline cursor-pointer"
                         >
                             ← Back to Website
                         </button>
@@ -381,15 +382,15 @@ export default function AdminDashboard({ onExit }) {
     const currentSubsystem = siteData.subsystems.find(s => s.id === selectedSubsystemId) || siteData.subsystems[0];
 
     const tabs = [
-        { id: 'overview', label: '📊 Overview' },
-        { id: 'hero', label: '📝 Hero & Banner' },
-        { id: 'story', label: '📖 Our Story' },
-        { id: 'subsystems', label: '🏎️ Subsystems & Squad' },
-        { id: 'gallery', label: '📸 Media Gallery' },
-        { id: 'updates', label: '📢 Team Updates' },
-        { id: 'subscribers', label: '📬 Alliance Leads' },
-        { id: 'accounts', label: '👥 Team Accounts' },
-        { id: 'settings', label: '⚙️ Settings & Backup' },
+        { id: 'overview', label: 'Overview', icon: 'overview' },
+        { id: 'hero', label: 'Hero & Banner', icon: 'edit' },
+        { id: 'story', label: 'Our Story', icon: 'book' },
+        { id: 'subsystems', label: 'Subsystems & Squad', icon: 'vehicle' },
+        { id: 'gallery', label: 'Media Gallery', icon: 'camera' },
+        { id: 'updates', label: 'Team Updates', icon: 'megaphone' },
+        { id: 'subscribers', label: 'Alliance Leads', icon: 'inbox' },
+        { id: 'accounts', label: 'Team Accounts', icon: 'users' },
+        { id: 'settings', label: 'Settings & Backup', icon: 'settings' },
     ];
 
     return (
@@ -423,14 +424,14 @@ export default function AdminDashboard({ onExit }) {
 
                     <button
                         onClick={onExit}
-                        className="px-3.5 py-1.5 bg-amber-300 hover:bg-amber-400 border-2 border-slate-900 text-slate-900 font-mono font-black text-xs uppercase shadow-[2px_2px_0px_#0f172a] cursor-pointer"
+                        className="press px-3.5 py-1.5 bg-amber-300 hover:bg-amber-400 border-2 border-slate-900 text-slate-900 font-mono font-black text-xs uppercase shadow-[2px_2px_0px_#0f172a] cursor-pointer"
                     >
                         View Live Site ↗
                     </button>
 
                     <button
                         onClick={handleLogout}
-                        className="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 border-2 border-slate-900 text-slate-900 font-mono font-black text-xs uppercase shadow-[2px_2px_0px_#0f172a] cursor-pointer"
+                        className="press px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 border-2 border-slate-900 text-slate-900 font-mono font-black text-xs uppercase shadow-[2px_2px_0px_#0f172a] cursor-pointer"
                     >
                         Log Out
                     </button>
@@ -449,14 +450,18 @@ export default function AdminDashboard({ onExit }) {
                         <button
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
-                            className={`w-full text-left px-3.5 py-2.5 border-2 font-mono font-black text-xs uppercase transition-all cursor-pointer flex items-center justify-between ${
+                            className={`press press-flat w-full text-left px-3.5 py-2.5 border-2 font-mono font-black text-xs uppercase cursor-pointer flex items-center justify-between gap-2 ${
                                 activeTab === tab.id
                                     ? 'bg-sky-500 text-white border-slate-900 shadow-[2px_2px_0px_#0f172a] translate-x-1'
                                     : 'bg-white hover:bg-sky-50 text-slate-800 border-transparent hover:border-slate-300'
                             }`}
+                            aria-current={activeTab === tab.id ? 'page' : undefined}
                         >
-                            <span>{tab.label}</span>
-                            <span>→</span>
+                            <span className="flex items-center gap-2">
+                                <Icon name={tab.icon} className="w-4 h-4" />
+                                {tab.label}
+                            </span>
+                            <span aria-hidden="true">→</span>
                         </button>
                     ))}
 
@@ -517,35 +522,35 @@ export default function AdminDashboard({ onExit }) {
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <button
                                         onClick={() => setActiveTab('hero')}
-                                        className="p-3 border-2 border-slate-900 bg-slate-50 hover:bg-sky-50 text-left font-mono font-bold text-xs flex items-center justify-between cursor-pointer"
+                                        className="press press-flat p-3 border-2 border-slate-900 bg-slate-50 hover:bg-sky-50 text-left font-mono font-bold text-xs flex items-center justify-between cursor-pointer"
                                     >
                                         <span>Edit Hero Headline & Badges</span>
                                         <span>→</span>
                                     </button>
                                     <button
                                         onClick={() => setActiveTab('subsystems')}
-                                        className="p-3 border-2 border-slate-900 bg-slate-50 hover:bg-sky-50 text-left font-mono font-bold text-xs flex items-center justify-between cursor-pointer"
+                                        className="press press-flat p-3 border-2 border-slate-900 bg-slate-50 hover:bg-sky-50 text-left font-mono font-bold text-xs flex items-center justify-between cursor-pointer"
                                     >
                                         <span>Add / Edit Squad Members</span>
                                         <span>→</span>
                                     </button>
                                     <button
                                         onClick={() => setActiveTab('subscribers')}
-                                        className="p-3 border-2 border-slate-900 bg-slate-50 hover:bg-sky-50 text-left font-mono font-bold text-xs flex items-center justify-between cursor-pointer"
+                                        className="press press-flat p-3 border-2 border-slate-900 bg-slate-50 hover:bg-sky-50 text-left font-mono font-bold text-xs flex items-center justify-between cursor-pointer"
                                     >
                                         <span>View Alliance Newsletter Leads ({subscribers.length})</span>
                                         <span>→</span>
                                     </button>
                                     <button
                                         onClick={() => setActiveTab('gallery')}
-                                        className="p-3 border-2 border-slate-900 bg-slate-50 hover:bg-sky-50 text-left font-mono font-bold text-xs flex items-center justify-between cursor-pointer"
+                                        className="press press-flat p-3 border-2 border-slate-900 bg-slate-50 hover:bg-sky-50 text-left font-mono font-bold text-xs flex items-center justify-between cursor-pointer"
                                     >
                                         <span>Add New Photo to DriftWall Gallery</span>
                                         <span>→</span>
                                     </button>
                                     <button
                                         onClick={() => setActiveTab('accounts')}
-                                        className="p-3 border-2 border-slate-900 bg-slate-50 hover:bg-sky-50 text-left font-mono font-bold text-xs flex items-center justify-between cursor-pointer"
+                                        className="press press-flat p-3 border-2 border-slate-900 bg-slate-50 hover:bg-sky-50 text-left font-mono font-bold text-xs flex items-center justify-between cursor-pointer"
                                     >
                                         <span>Manage Member Login Credentials</span>
                                         <span>→</span>
@@ -718,7 +723,7 @@ export default function AdminDashboard({ onExit }) {
                                 <span>{siteData.story.length} Characters • ~{siteData.story.split(/\s+/).filter(Boolean).length} Words</span>
                                 <button
                                     onClick={() => showStatus('Story updated and saved!')}
-                                    className="px-4 py-2 bg-sky-500 text-white font-mono font-black text-xs uppercase border-2 border-slate-900 shadow-[2px_2px_0px_#0f172a] cursor-pointer"
+                                    className="press px-4 py-2 bg-sky-500 text-white font-mono font-black text-xs uppercase border-2 border-slate-900 shadow-[2px_2px_0px_#0f172a] cursor-pointer"
                                 >
                                     Save Story Changes
                                 </button>
@@ -818,7 +823,7 @@ export default function AdminDashboard({ onExit }) {
                                         <div key={idx} className="p-3.5 bg-white border-2 border-slate-900 shadow-[3px_3px_0px_#0f172a] relative flex flex-col justify-between">
                                             <button
                                                 onClick={() => deleteTeamMember(currentSubsystem.id, idx)}
-                                                className="absolute top-2 right-2 text-rose-500 hover:text-rose-700 font-black text-xs cursor-pointer p-1"
+                                                className="press press-flat absolute top-2 right-2 text-rose-500 hover:text-rose-700 font-black text-xs cursor-pointer p-1"
                                                 title="Delete Member"
                                             >
                                                 ✕
@@ -844,7 +849,7 @@ export default function AdminDashboard({ onExit }) {
                                                             className="w-full font-mono text-[10px] border border-slate-300 px-1.5 py-0.5 bg-white focus:outline-none"
                                                         />
                                                         <div className="flex items-center gap-2">
-                                                            <label className="px-2 py-0.5 bg-white hover:bg-slate-100 border border-slate-900 font-mono text-[9px] cursor-pointer font-bold uppercase">
+                                                            <label className="press press-flat px-2 py-0.5 bg-white hover:bg-slate-100 border border-slate-900 font-mono text-[9px] cursor-pointer font-bold uppercase">
                                                                 <span>Upload Photo</span>
                                                                 <input
                                                                     type="file"
@@ -857,7 +862,7 @@ export default function AdminDashboard({ onExit }) {
                                                                 <button
                                                                     type="button"
                                                                     onClick={() => updateTeamMember(currentSubsystem.id, idx, { photo: '' })}
-                                                                    className="text-[9px] font-mono text-rose-600 hover:text-rose-800 font-bold uppercase cursor-pointer"
+                                                                    className="press press-flat text-[9px] font-mono text-rose-600 hover:text-rose-800 font-bold uppercase cursor-pointer"
                                                                 >
                                                                     Remove
                                                                 </button>
@@ -940,7 +945,7 @@ export default function AdminDashboard({ onExit }) {
                                                 placeholder="Paste Photo URL or browse file below"
                                                 className="w-full font-mono text-xs border border-slate-300 p-1 bg-white focus:outline-none"
                                             />
-                                            <label className="inline-block px-2.5 py-1 bg-slate-100 hover:bg-slate-200 border border-slate-900 font-mono text-[10px] cursor-pointer font-bold uppercase">
+                                            <label className="press press-flat inline-block px-2.5 py-1 bg-slate-100 hover:bg-slate-200 border border-slate-900 font-mono text-[10px] cursor-pointer font-bold uppercase">
                                                 <span>Browse Photo File</span>
                                                 <input
                                                     type="file"
@@ -967,7 +972,7 @@ export default function AdminDashboard({ onExit }) {
                                             setNewMember({ name: '', role: '', initials: '', bio: '', badge: 'SPECIALIST', photo: '' });
                                             showStatus('New specialist added with photo!');
                                         }}
-                                        className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-mono font-black text-xs uppercase cursor-pointer"
+                                        className="press press-flat px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-mono font-black text-xs uppercase cursor-pointer"
                                     >
                                         Add Specialist →
                                     </button>
@@ -1035,8 +1040,8 @@ export default function AdminDashboard({ onExit }) {
                                         />
                                     </div>
                                     <div>
-                                        <label className="inline-flex items-center justify-center gap-2 w-full py-2.5 px-3 bg-white hover:bg-slate-100 border-2 border-slate-900 font-mono text-xs font-bold uppercase cursor-pointer shadow-[2px_2px_0px_#0f172a] hover:translate-x-[-1px] hover:translate-y-[-1px] transition-all">
-                                            <span>📁 Choose Photo from Device</span>
+                                        <label className="press inline-flex items-center justify-center gap-2 w-full py-2.5 px-3 bg-white hover:bg-slate-100 border-2 border-slate-900 font-mono text-xs font-bold uppercase cursor-pointer shadow-[2px_2px_0px_#0f172a] hover:translate-x-[-1px] hover:translate-y-[-1px]">
+                                            <span className="inline-flex items-center gap-1.5"><Icon name="folder" className="w-4 h-4" />Choose Photo from Device</span>
                                             <input
                                                 type="file"
                                                 accept="image/*"
@@ -1062,7 +1067,7 @@ export default function AdminDashboard({ onExit }) {
                                         setNewGallery({ title: '', category: 'PIT LANE', year: '2026', src: '', desc: '' });
                                         showStatus('New photo added to gallery!');
                                     }}
-                                    className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-mono font-black text-xs uppercase cursor-pointer"
+                                    className="press press-flat px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-mono font-black text-xs uppercase cursor-pointer"
                                 >
                                     Publish Photo to Gallery →
                                 </button>
@@ -1092,7 +1097,7 @@ export default function AdminDashboard({ onExit }) {
                                         <div className="pt-2 mt-2 border-t border-slate-200 flex justify-end">
                                             <button
                                                 onClick={() => deleteGalleryItem(item.id)}
-                                                className="text-rose-600 hover:text-rose-800 font-mono text-xs font-black cursor-pointer"
+                                                className="press press-flat text-rose-600 hover:text-rose-800 font-mono text-xs font-black cursor-pointer"
                                             >
                                                 Delete Photo ✕
                                             </button>
@@ -1154,8 +1159,8 @@ export default function AdminDashboard({ onExit }) {
                                         />
                                     </div>
                                     <div>
-                                        <label className="inline-flex items-center justify-center gap-2 w-full py-2.5 px-3 bg-white hover:bg-slate-100 border-2 border-slate-900 font-mono text-xs font-bold uppercase cursor-pointer shadow-[2px_2px_0px_#0f172a] hover:translate-x-[-1px] hover:translate-y-[-1px] transition-all">
-                                            <span>📁 Choose Photo from Device</span>
+                                        <label className="press inline-flex items-center justify-center gap-2 w-full py-2.5 px-3 bg-white hover:bg-slate-100 border-2 border-slate-900 font-mono text-xs font-bold uppercase cursor-pointer shadow-[2px_2px_0px_#0f172a] hover:translate-x-[-1px] hover:translate-y-[-1px]">
+                                            <span className="inline-flex items-center gap-1.5"><Icon name="folder" className="w-4 h-4" />Choose Photo from Device</span>
                                             <input
                                                 type="file"
                                                 accept="image/*"
@@ -1172,7 +1177,7 @@ export default function AdminDashboard({ onExit }) {
                                         setNewUpdateItem({ label: '', tag: 'PROVING GROUNDS', image: '', link: '#' });
                                         showStatus('Team update published!');
                                     }}
-                                    className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-mono font-black text-xs uppercase cursor-pointer"
+                                    className="press press-flat px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-mono font-black text-xs uppercase cursor-pointer"
                                 >
                                     Publish Update →
                                 </button>
@@ -1200,7 +1205,7 @@ export default function AdminDashboard({ onExit }) {
                                         </div>
                                         <button
                                             onClick={() => deleteUpdate(upd.id)}
-                                            className="text-rose-600 hover:text-rose-800 font-mono text-xs font-black cursor-pointer"
+                                            className="press press-flat text-rose-600 hover:text-rose-800 font-mono text-xs font-black cursor-pointer"
                                         >
                                             Delete ✕
                                         </button>
@@ -1223,14 +1228,14 @@ export default function AdminDashboard({ onExit }) {
                                 <div className="flex items-center gap-2">
                                     <button
                                         onClick={fetchSubscribers}
-                                        className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 border-2 border-slate-900 text-xs font-mono font-bold cursor-pointer"
+                                        className="press press-flat px-3 py-1.5 bg-slate-100 hover:bg-slate-200 border-2 border-slate-900 text-xs font-mono font-bold cursor-pointer"
                                     >
                                         ↻ Refresh
                                     </button>
                                     <button
                                         onClick={handleExportSubscribersCSV}
                                         disabled={subscribers.length === 0}
-                                        className="px-3 py-1.5 bg-sky-500 hover:bg-sky-400 text-white border-2 border-slate-900 text-xs font-mono font-black uppercase shadow-[2px_2px_0px_#0f172a] cursor-pointer disabled:opacity-50"
+                                        className="press px-3 py-1.5 bg-sky-500 hover:bg-sky-400 text-white border-2 border-slate-900 text-xs font-mono font-black uppercase shadow-[2px_2px_0px_#0f172a] cursor-pointer disabled:opacity-50"
                                     >
                                         Export CSV ↓
                                     </button>
@@ -1267,7 +1272,7 @@ export default function AdminDashboard({ onExit }) {
                                                     <td className="p-2.5 text-right">
                                                         <button
                                                             onClick={() => handleDeleteSubscriber(sub.id)}
-                                                            className="text-rose-600 hover:text-rose-900 font-black cursor-pointer"
+                                                            className="press press-flat text-rose-600 hover:text-rose-900 font-black cursor-pointer"
                                                         >
                                                             Delete ✕
                                                         </button>
@@ -1360,7 +1365,7 @@ export default function AdminDashboard({ onExit }) {
                                         setNewAccount({ username: '', password: '', name: '', role: 'Team Member', accessLevel: 'Lead' });
                                         showStatus('New member account created!');
                                     }}
-                                    className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-mono font-black text-xs uppercase cursor-pointer"
+                                    className="press press-flat px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-mono font-black text-xs uppercase cursor-pointer"
                                 >
                                     Create Member Login →
                                 </button>
@@ -1414,7 +1419,7 @@ export default function AdminDashboard({ onExit }) {
                                                                 deleteAccount(acc.id);
                                                                 showStatus('Account removed.');
                                                             }}
-                                                            className="text-rose-600 hover:text-rose-900 font-black cursor-pointer"
+                                                            className="press press-flat text-rose-600 hover:text-rose-900 font-black cursor-pointer"
                                                         >
                                                             Delete ✕
                                                         </button>
@@ -1448,7 +1453,7 @@ export default function AdminDashboard({ onExit }) {
                                     </p>
                                     <button
                                         onClick={handleDownloadBackup}
-                                        className="px-4 py-2 bg-sky-500 text-white font-mono font-black text-xs uppercase border-2 border-slate-900 shadow-[2px_2px_0px_#0f172a] cursor-pointer"
+                                        className="press px-4 py-2 bg-sky-500 text-white font-mono font-black text-xs uppercase border-2 border-slate-900 shadow-[2px_2px_0px_#0f172a] cursor-pointer"
                                     >
                                         Download Backup JSON ↓
                                     </button>
@@ -1486,7 +1491,7 @@ export default function AdminDashboard({ onExit }) {
                                                 showStatus('Reset completed successfully!');
                                             }
                                         }}
-                                        className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-mono font-black text-xs uppercase border-2 border-slate-900 shadow-[2px_2px_0px_#0f172a] cursor-pointer"
+                                        className="press px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-mono font-black text-xs uppercase border-2 border-slate-900 shadow-[2px_2px_0px_#0f172a] cursor-pointer"
                                     >
                                         Reset All Content
                                     </button>

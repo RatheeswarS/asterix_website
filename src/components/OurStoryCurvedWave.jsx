@@ -77,7 +77,7 @@ export default function OurStoryCurvedWave() {
                             href={siteData.hero.joinFormUrl || "https://forms.gle/6hHG6aXqrunnfj7V6"}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="cyber-button px-7 py-3.5 text-xs font-black tracking-wider uppercase inline-block self-start md:self-auto cursor-pointer whitespace-nowrap shadow-[4px_4px_0px_#0f172a]"
+                            className="press cyber-button px-7 py-3.5 text-xs font-black tracking-wider uppercase inline-block self-start md:self-auto cursor-pointer whitespace-nowrap shadow-[4px_4px_0px_#0f172a]"
                         >
                             JOIN OUR CREW →
                         </a>

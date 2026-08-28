@@ -129,7 +129,7 @@ export default function TheSquad({ onSelectSubsystem }) {
                             <button
                                 key={s.id}
                                 onClick={() => onSelectSubsystem(s.id)}
-                                className="p-3 bg-white border-2 border-slate-900 shadow-[3px_3px_0px_#0f172a] hover:bg-sky-500 hover:text-white hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[5px_5px_0px_#0f172a] transition-all text-left flex flex-col justify-between cursor-pointer"
+                                className="press p-3 bg-white border-2 border-slate-900 shadow-[3px_3px_0px_#0f172a] hover:bg-sky-500 hover:text-white hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[5px_5px_0px_#0f172a] text-left flex flex-col justify-between cursor-pointer"
                             >
                                 <span className="text-[10px] font-black opacity-60">0{idx + 1}</span>
                                 <span className="text-xs font-black uppercase mt-2 leading-tight">

@@ -53,7 +53,7 @@ export function DockTextItem({
     >
       <div
         onClick={onClick}
-        className={`relative inline-flex items-center justify-center font-black text-xs uppercase tracking-wider transition-colors cursor-pointer select-none ${className}`}
+        className={`press relative inline-flex items-center justify-center font-black text-xs uppercase tracking-wider cursor-pointer select-none ${className}`}
       >
         {children}
       </div>

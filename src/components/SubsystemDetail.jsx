@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useWebsiteData } from '../context/WebsiteDataContext';
+import Icon from './Icon';
 
 export default function SubsystemDetail({ subsystemId, onBack, onSelectSubsystem }) {
     const { siteData } = useWebsiteData();
@@ -21,7 +22,7 @@ export default function SubsystemDetail({ subsystemId, onBack, onSelectSubsystem
                 <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
                     <button
                         onClick={onBack}
-                        className="cyber-button-white px-6 py-3 text-xs tracking-wider uppercase flex items-center gap-2 cursor-pointer"
+                        className="press press-flat cyber-button-white px-6 py-3 text-xs tracking-wider uppercase flex items-center gap-2 cursor-pointer"
                     >
                         <span>← Back to Overview</span>
                     </button>
@@ -29,7 +30,7 @@ export default function SubsystemDetail({ subsystemId, onBack, onSelectSubsystem
                     <div className="flex items-center gap-3">
                         <button
                             onClick={() => onSelectSubsystem(prevSystem.id)}
-                            className="px-4 py-2 border-2 border-slate-900 bg-white font-bold text-xs shadow-[2px_2px_0px_#0f172a] hover:bg-sky-100 transition-colors cursor-pointer"
+                            className="press px-4 py-2 border-2 border-slate-900 bg-white font-bold text-xs shadow-[2px_2px_0px_#0f172a] hover:bg-sky-100 transition-colors cursor-pointer"
                         >
                             ← Prev Spec
                         </button>
@@ -38,7 +39,7 @@ export default function SubsystemDetail({ subsystemId, onBack, onSelectSubsystem
                         </span>
                         <button
                             onClick={() => onSelectSubsystem(nextSystem.id)}
-                            className="px-4 py-2 border-2 border-slate-900 bg-white font-bold text-xs shadow-[2px_2px_0px_#0f172a] hover:bg-sky-100 transition-colors cursor-pointer"
+                            className="press px-4 py-2 border-2 border-slate-900 bg-white font-bold text-xs shadow-[2px_2px_0px_#0f172a] hover:bg-sky-100 transition-colors cursor-pointer"
                         >
                             Next Spec →
                         </button>
@@ -125,7 +126,7 @@ export default function SubsystemDetail({ subsystemId, onBack, onSelectSubsystem
                         </div>
                         <a
                             href="mailto:contact@teamasterix.org"
-                            className="cyber-button px-6 py-3 text-xs tracking-wider uppercase whitespace-nowrap inline-block self-start sm:self-auto cursor-pointer"
+                            className="press press-flat cyber-button px-6 py-3 text-xs tracking-wider uppercase whitespace-nowrap inline-block self-start sm:self-auto cursor-pointer"
                         >
                             Contact Subsystem Engineers →
                         </a>
@@ -200,7 +201,7 @@ export default function SubsystemDetail({ subsystemId, onBack, onSelectSubsystem
                 {/* Bottom Subsystem Switcher Footer */}
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-6 bg-slate-900 text-white border-4 border-slate-900 shadow-[8px_8px_0px_#0284c7]">
                     <div className="flex items-center gap-3">
-                        <span className="text-2xl">⚡</span>
+                        <Icon name="bolt" className="w-6 h-6 text-sky-400" />
                         <div>
                             <span className="text-[10px] font-mono text-sky-400 uppercase block">Next System in Line:</span>
                             <span className="text-base font-black uppercase">{nextSystem.name}</span>
@@ -209,7 +210,7 @@ export default function SubsystemDetail({ subsystemId, onBack, onSelectSubsystem
 
                     <button
                         onClick={() => onSelectSubsystem(nextSystem.id)}
-                        className="cyber-button px-8 py-3.5 text-xs font-black uppercase cursor-pointer"
+                        className="press press-flat cyber-button px-8 py-3.5 text-xs font-black uppercase cursor-pointer"
                     >
                         EXPLORE {nextSystem.name} →
                     </button>

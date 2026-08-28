@@ -44,7 +44,7 @@ export default function CyberHero({ onOpenModelViewer }) {
                     <div className="mt-8 flex flex-wrap items-center gap-5">
                         <a
                             href="#squad"
-                            className="cyber-button px-9 py-4.5 text-sm sm:text-base tracking-widest uppercase cursor-pointer inline-block"
+                            className="press press-flat cyber-button px-9 py-4.5 text-sm sm:text-base tracking-widest uppercase cursor-pointer inline-block"
                         >
                             EXPLORE THE SQUAD →
                         </a>
@@ -61,7 +61,7 @@ export default function CyberHero({ onOpenModelViewer }) {
                 {/* Corner 3D Baja Inspector Button */}
                 <button
                     onClick={onOpenModelViewer}
-                    className="group px-4 py-2.5 bg-white hover:bg-sky-500 text-slate-900 hover:text-white border-2 border-slate-900 shadow-[3px_3px_0px_#0f172a] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[5px_5px_0px_#0f172a] transition-all flex items-center gap-2.5 font-mono font-black text-xs uppercase cursor-pointer"
+                    className="press group px-4 py-2.5 bg-white hover:bg-sky-500 text-slate-900 hover:text-white border-2 border-slate-900 shadow-[3px_3px_0px_#0f172a] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[5px_5px_0px_#0f172a] flex items-center gap-2.5 font-mono font-black text-xs uppercase cursor-pointer"
                 >
                     <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 border border-slate-900 animate-pulse" />
                     <span>3D BAJA MODEL</span>

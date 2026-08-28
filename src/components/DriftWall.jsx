@@ -348,6 +348,10 @@ const DriftWall = ({
       role="group"
       aria-label="Drifting wall of tiles"
     >
+      {/* No press utility on this plane: its transform is rewritten every
+          frame by applyPlaneTransform, and an !important :active transform
+          would flatten the whole wall on mousedown. The tiles carry their own
+          press state instead. */}
       <div
         ref={planeRef}
         className="absolute left-1/2 top-1/2 flex cursor-pointer flex-row [transform-style:preserve-3d] [transform-origin:50%_50%] will-change-transform"

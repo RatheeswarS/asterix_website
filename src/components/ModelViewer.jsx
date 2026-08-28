@@ -6,6 +6,7 @@ import { OrbitControls, useGLTF, useFBX, useProgress, Html, Environment, Contact
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
 import * as THREE from 'three';
 import { buildBajaCarGroup } from './bajaCarModel';
+import Icon from './Icon';
 
 const isTouch = typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
 const deg2rad = d => (d * Math.PI) / 180;
@@ -425,10 +426,10 @@ const ModelViewer = ({
       {showScreenshotButton && (
         <button
           onClick={capture}
-          className="absolute top-4 right-4 z-10 cursor-pointer px-3.5 py-2 border-2 border-slate-900 bg-white font-mono font-black text-xs uppercase text-slate-900 shadow-[3px_3px_0px_#0f172a] hover:bg-sky-500 hover:text-white hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[4px_4px_0px_#0f172a] transition-all flex items-center gap-1.5"
+          className="press absolute top-4 right-4 z-10 cursor-pointer px-3.5 py-2 border-2 border-slate-900 bg-white font-mono font-black text-xs uppercase text-slate-900 shadow-[3px_3px_0px_#0f172a] hover:bg-sky-500 hover:text-white hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[4px_4px_0px_#0f172a] flex items-center gap-1.5"
           title="Download snapshot of 3D Model"
         >
-          <span>📸</span>
+          <Icon name="camera" className="w-4 h-4" />
           <span>Take Screenshot</span>
         </button>
       )}

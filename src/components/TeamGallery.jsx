@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import DriftWall from './DriftWall';
 import { useWebsiteData } from '../context/WebsiteDataContext';
+import Icon from './Icon';
 
 export default function TeamGallery() {
     const { siteData } = useWebsiteData();
@@ -195,7 +196,7 @@ export default function TeamGallery() {
                                 </div>
 
                                 <div className="text-xs font-mono font-bold text-slate-500">
-                                    <span>📍 {activeItem.location}</span> • <span>{activeItem.date}</span>
+                                    <span className="inline-flex items-center gap-1"><Icon name="pin" className="w-3 h-3" />{activeItem.location}</span> • <span>{activeItem.date}</span>
                                 </div>
                             </div>
 

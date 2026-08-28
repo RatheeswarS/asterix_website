@@ -87,7 +87,7 @@ export default function CyberNewsletterCTA() {
                                 data-assemble="right"
                                 type="submit"
                                 disabled={isSubmitting}
-                                className="cyber-button px-8 py-4 text-xs font-black uppercase tracking-wider whitespace-nowrap cursor-pointer disabled:opacity-50"
+                                className="press press-flat cyber-button px-8 py-4 text-xs font-black uppercase tracking-wider whitespace-nowrap cursor-pointer disabled:opacity-50"
                             >
                                 {isSubmitting ? 'JOINING...' : 'SPONSOR TEAM →'}
                             </button>

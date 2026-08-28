@@ -29,9 +29,9 @@ export default function BajaModelPage({ onBack }) {
                 <div className="flex items-center gap-4">
                     <button
                         onClick={onBack}
-                        className="px-4 py-2 border-2 border-slate-900 bg-amber-300 font-mono font-black text-xs uppercase shadow-[2px_2px_0px_#0f172a] hover:bg-amber-400 hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[4px_4px_0px_#0f172a] transition-all flex items-center gap-1.5 cursor-pointer"
+                        className="press px-4 py-2 border-2 border-slate-900 bg-amber-300 font-mono font-black text-xs uppercase shadow-[2px_2px_0px_#0f172a] hover:bg-amber-400 hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[4px_4px_0px_#0f172a] flex items-center gap-1.5 cursor-pointer"
                     >
-                        <span>←</span>
+                        <span aria-hidden="true">←</span>
                         <span>Back to Website</span>
                     </button>
                     <div>
@@ -79,7 +79,7 @@ export default function BajaModelPage({ onBack }) {
                         {/* Auto-Rotation Toggle */}
                         <button
                             onClick={() => setAutoRotate(prev => !prev)}
-                            className={`px-3 py-1.5 border-2 border-slate-900 font-mono font-black text-[11px] uppercase shadow-[2px_2px_0px_#0f172a] transition-all cursor-pointer ${autoRotate ? 'bg-sky-500 text-white' : 'bg-white text-slate-900 hover:bg-sky-100'
+                            className={`press px-3 py-1.5 border-2 border-slate-900 font-mono font-black text-[11px] uppercase shadow-[2px_2px_0px_#0f172a] cursor-pointer ${autoRotate ? 'bg-sky-500 text-white' : 'bg-white text-slate-900 hover:bg-sky-100'
                                 }`}
                         >
                             <span>Auto-Rotate: {autoRotate ? 'ON' : 'OFF'}</span>
@@ -92,7 +92,7 @@ export default function BajaModelPage({ onBack }) {
                                 <button
                                     key={p.id}
                                     onClick={() => setEnvironmentPreset(p.id)}
-                                    className={`px-2 py-1 text-[10px] font-mono font-bold uppercase transition-colors cursor-pointer ${environmentPreset === p.id
+                                    className={`press press-flat px-2 py-1 text-[10px] font-mono font-bold uppercase cursor-pointer ${environmentPreset === p.id
                                             ? 'bg-slate-900 text-white'
                                             : 'text-slate-700 hover:bg-sky-100'
                                         }`}

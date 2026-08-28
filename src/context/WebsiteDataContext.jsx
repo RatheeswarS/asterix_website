@@ -53,7 +53,7 @@ const initialHeroData = {
     teamName: "ASTERIX",
     tagline: "Got the passion? We got the track.",
     badges: [
-        { label: "⚡ AIR 13", class: "rotate-[-3deg] bg-amber-300 text-slate-900" },
+        { label: "AIR 13", class: "rotate-[-3deg] bg-amber-300 text-slate-900" },
         { label: "SAEINDIA a-BAJA 2026", class: "bg-white text-slate-900" },
         { label: "★ TN RANK 1", class: "rotate-[3deg] bg-sky-400 text-white" }
     ],
