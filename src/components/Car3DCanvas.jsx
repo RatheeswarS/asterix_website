@@ -21,13 +21,20 @@ export default function Car3DCanvas() {
         );
         camera.position.set(0, 1.6, 7.8);
 
+        // Phones pay for every extra device pixel across a full-screen canvas,
+        // and this one sits behind the entire site. Cap them lower.
+        const pixelRatio = () => {
+            const cap = window.innerWidth < 768 ? 1.5 : 2;
+            return Math.min(window.devicePixelRatio || 1, cap);
+        };
+
         const renderer = new THREE.WebGLRenderer({
             alpha: true,
             antialias: true,
             powerPreference: 'high-performance'
         });
+        renderer.setPixelRatio(pixelRatio());
         renderer.setSize(container.clientWidth, container.clientHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
         renderer.toneMappingExposure = 1.15;
         renderer.shadowMap.enabled = true;
@@ -51,8 +58,11 @@ export default function Car3DCanvas() {
         const keyLight = new THREE.DirectionalLight(0xffffff, 3.2);
         keyLight.position.set(6, 12, 8);
         keyLight.castShadow = true;
-        keyLight.shadow.mapSize.width = 2048;
-        keyLight.shadow.mapSize.height = 2048;
+        // A 2048 shadow map is more than this background element needs on a
+        // phone, where it is the single largest per-frame cost here.
+        const shadowMapSize = window.innerWidth < 768 ? 1024 : 2048;
+        keyLight.shadow.mapSize.width = shadowMapSize;
+        keyLight.shadow.mapSize.height = shadowMapSize;
         keyLight.shadow.bias = -0.0001;
         keyLight.shadow.normalBias = 0.02;
         scene.add(keyLight);
@@ -524,6 +534,11 @@ export default function Car3DCanvas() {
             if (!isLeft) {
                 wheelObj.group.rotation.y = Math.PI;
             }
+            // Right-hand wheels are yawed 180 degrees so their tread faces
+            // outward, which also reverses their local X axis. Spinning every
+            // wheel by the same local delta therefore rotated the two sides in
+            // opposite world directions. Record the sign and apply it.
+            wheelObj.spinSign = isLeft ? 1 : -1;
             carRoot.add(wheelObj.group);
             wheels.push(wheelObj);
         });
@@ -555,152 +570,284 @@ export default function Car3DCanvas() {
         );
         shadowPlane.rotation.x = -Math.PI / 2;
         shadowPlane.position.y = -0.52;
-        carRoot.add(shadowPlane);
 
-        // --- PROMINENT PARALLAX INTERACTION STATE ---
+        // The contact shadow used to be a child of carRoot, so it inherited the
+        // car's yaw, pitch and scale. Once the car turned to its side profile
+        // the "ground" shadow stood up on edge with it. It now lives in a
+        // separate group that only ever follows the car's horizontal position.
+        const shadowRoot = new THREE.Group();
+        shadowRoot.add(shadowPlane);
+        scene.add(shadowRoot);
+
+        // --- PARALLAX INTERACTION STATE ---
         let mouseX = 0;
         let mouseY = 0;
         let targetMouseX = 0;
         let targetMouseY = 0;
         let scrollRatio = 0;
+        let scrollVelocity = 0;
+        let lastScrollY = window.scrollY || 0;
+
+        // Cursor influence, dialled back from the original. The old values were
+        // applied twice over -- once to position and again to rotation -- which
+        // made small mouse movements swing the whole vehicle.
+        const MOUSE_X_RANGE = 0.51;
+        const MOUSE_Y_RANGE = 0.39;
 
         const handleMouseMove = (e) => {
             const x = (e.clientX / window.innerWidth) * 2 - 1;
             const y = -(e.clientY / window.innerHeight) * 2 + 1;
-            targetMouseX = x * 0.85; // Prominent mouse parallax
-            targetMouseY = y * 0.65;
+            targetMouseX = x * MOUSE_X_RANGE;
+            targetMouseY = y * MOUSE_Y_RANGE;
         };
 
         const handleScroll = () => {
             const currentY = window.scrollY || window.pageYOffset;
             const maxScroll = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
             scrollRatio = Math.min(1, Math.max(0, currentY / maxScroll));
+
+            scrollVelocity += currentY - lastScrollY;
+            lastScrollY = currentY;
         };
 
         window.addEventListener('mousemove', handleMouseMove, { passive: true });
         window.addEventListener('scroll', handleScroll, { passive: true });
+        handleScroll();
 
-        let animationFrameId;
+        // --- SCROLL STAGING ---
+        // Previously five if/else bands each computed their own absolute pose.
+        // Neighbouring bands did not agree at their shared boundary, so scale,
+        // depth and yaw all jumped every time the reader crossed one.
+        //
+        // The pose is now a single keyframe track sampled by scroll position.
+        // Adjacent keyframes share their endpoint by construction, so there is
+        // no boundary left to pop at. Yaw increases monotonically across the
+        // page: the buggy turns through one full revolution as you read, and
+        // dwells on the side profile where the suspension is worth looking at.
+        const buildKeyframes = (isMobile, aspect) => {
+            const heroX = isMobile ? 0.32 : Math.min(2.1, Math.max(1.55, aspect * 0.96));
+            const px = (desktop) => (isMobile ? 0 : desktop);
+            const sc = (desktop, mobile) => (isMobile ? mobile : desktop);
+
+            return [
+                { at: 0.00, x: heroX, y: sc(0.02, -0.16), z: 0.28, rotY: -0.48, rotX: 0.12, rotZ: -0.02, scale: sc(1.48, 1.00) },
+                { at: 0.12, x: heroX - 0.25, y: sc(0.02, -0.16), z: 0.22, rotY: -0.26, rotX: 0.12, rotZ: -0.02, scale: sc(1.44, 1.00) },
+                { at: 0.32, x: px(0.85), y: sc(0.02, -0.10), z: -0.10, rotY: 0.85, rotX: 0.10, rotZ: 0.03, scale: sc(1.36, 0.98) },
+                { at: 0.45, x: px(1.50), y: sc(0.06, -0.06), z: 0.15, rotY: Math.PI * 0.5, rotX: 0.08, rotZ: -0.03, scale: sc(1.38, 0.96) },
+                { at: 0.58, x: px(1.35), y: sc(0.06, -0.06), z: 0.15, rotY: 1.95, rotX: 0.08, rotZ: -0.03, scale: sc(1.38, 0.96) },
+                { at: 0.70, x: px(0.75), y: sc(-0.06, -0.04), z: 0.10, rotY: 3.05, rotX: 0.16, rotZ: 0.02, scale: sc(1.32, 0.95) },
+                { at: 0.82, x: px(1.15), y: sc(-0.06, -0.04), z: 0.10, rotY: 4.20, rotX: 0.16, rotZ: 0.02, scale: sc(1.32, 0.95) },
+                { at: 1.00, x: px(0.00), y: sc(0.05, 0.00), z: 0.25, rotY: 5.80, rotX: 0.12, rotZ: 0.00, scale: sc(1.42, 1.00) },
+            ];
+        };
+
+        // Smoothstep between keyframes so the track has no velocity
+        // discontinuity where two segments meet.
+        const smoothstep = (t) => t * t * (3 - 2 * t);
+
+        const POSE_KEYS = ['x', 'y', 'z', 'rotY', 'rotX', 'rotZ', 'scale'];
+
+        const samplePose = (frames, ratio, out) => {
+            let i = 0;
+            while (i < frames.length - 2 && ratio > frames[i + 1].at) i++;
+
+            const a = frames[i];
+            const b = frames[i + 1];
+            const span = b.at - a.at;
+            const t = span <= 0 ? 0 : smoothstep(Math.min(1, Math.max(0, (ratio - a.at) / span)));
+
+            for (const key of POSE_KEYS) {
+                out[key] = a[key] + (b[key] - a[key]) * t;
+            }
+            return out;
+        };
+
+        const targetPose = { x: 0, y: 0, z: 0, rotY: 0, rotX: 0, rotZ: 0, scale: 1 };
+        // Populated from the first sampled pose so the buggy does not fly in
+        // from the origin on load.
+        let currentPose = null;
+
+        let animationFrameId = null;
         const clock = new THREE.Clock();
 
-        const animate = () => {
-            animationFrameId = requestAnimationFrame(animate);
+        const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
-            const elapsedTime = clock.getElapsedTime();
+        // Keyframes depend on viewport shape, so they are rebuilt only when
+        // that actually changes rather than once per frame.
+        let isMobile = window.innerWidth < 768;
+        let keyframes = buildKeyframes(isMobile, container.clientWidth / (container.clientHeight || 1));
 
-            // Smooth high-inertia lerping for mouse parallax
-            mouseX += (targetMouseX - mouseX) * 0.055;
-            mouseY += (targetMouseY - mouseY) * 0.055;
+        // Frame-rate independent damping: the same visual settling time
+        // whether the display runs at 60Hz or 144Hz.
+        const damp = (dt, tau) => 1 - Math.exp(-dt / tau);
 
-            const isMobile = window.innerWidth < 768;
-            const aspect = container.clientWidth / (container.clientHeight || 1);
-            
-            // Dramatic section staging with prominent 3D parallax shifts
-            let targetX, targetY, targetZ, targetRotY, targetRotX, targetRotZ, targetScale;
+        const renderFrame = (dt, elapsedTime, animated) => {
+            const mouseK = damp(dt, 0.20);
+            mouseX += (targetMouseX - mouseX) * mouseK;
+            mouseY += (targetMouseY - mouseY) * mouseK;
 
-            if (scrollRatio < 0.12) {
-                // Section 0: Hero Stage (Positioned to the right with subtle overlap with left team name)
-                const t = scrollRatio / 0.12;
-                const heroRightX = isMobile ? 0.32 : Math.min(2.1, Math.max(1.55, aspect * 0.96));
-                targetX = heroRightX - t * 0.25;
-                targetY = isMobile ? -0.16 : 0.02;
-                targetZ = 0.28;
-                targetRotY = -0.48 + t * 0.22;
-                targetRotX = 0.12;
-                targetRotZ = -0.02;
-                targetScale = isMobile ? 1.0 : 1.48; // Large prominent presence
-            } else if (scrollRatio < 0.32) {
-                // Section 1: Mission Statement (Sweeps dynamically across viewport)
-                const t = (scrollRatio - 0.12) / 0.20;
-                targetX = isMobile ? 0 : (1.45 - t * 0.6);
-                targetY = 0.12 - t * 0.1;
-                targetZ = -0.1;
-                targetRotY = -0.17 + t * 0.95;
-                targetRotX = 0.12 - t * 0.04;
-                targetRotZ = 0.03;
-                targetScale = isMobile ? 0.98 : 1.36;
-            } else if (scrollRatio < 0.58) {
-                // Section 2: Tuning & Gauges (Full dramatic 90-degree Side Profile for suspension)
-                const t = (scrollRatio - 0.32) / 0.26;
-                targetX = isMobile ? 0 : (1.35 + Math.sin(t * Math.PI) * 0.3);
-                targetY = 0.06;
-                targetZ = 0.15;
-                targetRotY = Math.PI * 0.48 + t * 0.35;
-                targetRotX = 0.08;
-                targetRotZ = -0.03;
-                targetScale = isMobile ? 0.96 : 1.38;
-            } else if (scrollRatio < 0.82) {
-                // Section 3: Materials & Terrains (Aggressive 3/4 Front Zoom)
-                const t = (scrollRatio - 0.58) / 0.24;
-                targetX = isMobile ? 0 : (1.15 - Math.sin(t * Math.PI) * 0.4);
-                targetY = -0.06;
-                targetZ = 0.1;
-                targetRotY = -0.62 + t * 0.85;
-                targetRotX = 0.16;
-                targetRotZ = 0.02;
-                targetScale = isMobile ? 0.95 : 1.32;
+            samplePose(keyframes, scrollRatio, targetPose);
+
+            if (!currentPose) {
+                currentPose = { ...targetPose };
             } else {
-                // Section 4: Sponsors & Footer (Grand Centered Finale)
-                const t = (scrollRatio - 0.82) / 0.18;
-                targetX = isMobile ? 0 : 0.5 * (1 - t);
-                targetY = -0.05 + t * 0.1;
-                targetZ = 0.25;
-                targetRotY = -0.32 + t * 0.15;
-                targetRotX = 0.12;
-                targetRotZ = 0;
-                targetScale = isMobile ? 1.0 : 1.42;
+                // Easing the sampled pose on top of the smoothstep track
+                // absorbs the abrupt scroll deltas a mouse wheel produces.
+                const poseK = damp(dt, 0.16);
+                for (const key of POSE_KEYS) {
+                    currentPose[key] += (targetPose[key] - currentPose[key]) * poseK;
+                }
             }
 
             // Natural micro-hover floating
-            const floatY = Math.sin(elapsedTime * 1.3) * 0.045 + Math.cos(elapsedTime * 0.8) * 0.02;
-            const floatRotZ = Math.sin(elapsedTime * 1.0) * 0.012;
+            const floatY = animated
+                ? Math.sin(elapsedTime * 1.3) * 0.045 + Math.cos(elapsedTime * 0.8) * 0.02
+                : 0;
+            const floatRotZ = animated ? Math.sin(elapsedTime * 1.0) * 0.012 : 0;
 
-            // Apply Prominent Parallax (Position + Rotation)
-            carRoot.scale.set(targetScale, targetScale, targetScale);
-            carRoot.position.x = targetX + mouseX * 0.65; // Prominent horizontal cursor tracking
-            carRoot.position.y = targetY + floatY + mouseY * 0.45; // Prominent vertical cursor tracking
-            carRoot.position.z = targetZ;
+            carRoot.scale.setScalar(currentPose.scale);
+            carRoot.position.x = currentPose.x + mouseX * 0.40;
+            carRoot.position.y = currentPose.y + floatY + mouseY * 0.28;
+            carRoot.position.z = currentPose.z;
 
-            carRoot.rotation.y = targetRotY + mouseX * 0.55; // Prominent 3D yaw tilt on mouse
-            carRoot.rotation.x = targetRotX - mouseY * 0.35; // Prominent 3D pitch tilt on mouse
-            carRoot.rotation.z = targetRotZ + floatRotZ + (mouseX * -0.15);
+            carRoot.rotation.y = currentPose.rotY + mouseX * 0.32;
+            carRoot.rotation.x = currentPose.rotX - mouseY * 0.20;
+            carRoot.rotation.z = currentPose.rotZ + floatRotZ + mouseX * -0.09;
 
-            // Wheel rotation
-            wheels.forEach(({ group }) => {
-                group.rotation.x += 0.008;
-            });
+            // The contact shadow tracks the buggy along the floor but never
+            // inherits its yaw, pitch or scale.
+            shadowRoot.position.x = carRoot.position.x;
+            shadowRoot.position.z = currentPose.z;
+            shadowRoot.scale.setScalar(currentPose.scale);
 
-            camera.lookAt(carRoot.position.x * 0.18, carRoot.position.y * 0.25, 0);
+            // Wheels are driven by how fast the page is actually moving, with a
+            // slow idle underneath, instead of a fixed rate that ran whether or
+            // not the vehicle appeared to be travelling.
+            if (animated) {
+                const spin = 0.0025 + Math.abs(scrollVelocity) * 0.0016;
+                for (const wheel of wheels) {
+                    wheel.group.rotation.x += spin * wheel.spinSign;
+                    // Keep the accumulated angle bounded; left to run for hours
+                    // it loses float precision and the wheels visibly stutter.
+                    if (wheel.group.rotation.x > Math.PI * 2) wheel.group.rotation.x -= Math.PI * 2;
+                    else if (wheel.group.rotation.x < -Math.PI * 2) wheel.group.rotation.x += Math.PI * 2;
+                }
+            }
+
+            scrollVelocity *= 1 - damp(dt, 0.18);
+            if (Math.abs(scrollVelocity) < 0.01) scrollVelocity = 0;
+
+            // Gentler camera aim. The old factors made the camera swing with
+            // the cursor on top of the vehicle already swinging.
+            camera.lookAt(carRoot.position.x * 0.10, carRoot.position.y * 0.14, 0);
 
             renderer.render(scene, camera);
         };
 
-        animate();
+        const animate = () => {
+            animationFrameId = requestAnimationFrame(animate);
+            const dt = Math.min(0.05, clock.getDelta());
+            renderFrame(dt, clock.getElapsedTime(), true);
+        };
+
+        const stopLoop = () => {
+            if (animationFrameId !== null) cancelAnimationFrame(animationFrameId);
+            animationFrameId = null;
+        };
+
+        const startLoop = () => {
+            if (animationFrameId !== null) return;
+            clock.getDelta(); // discard the gap accumulated while stopped
+            animate();
+        };
+
+        // Reduced motion keeps the buggy, drops the idle float and the wheel
+        // spin, and repaints only when the reader scrolls.
+        let staticRepaintQueued = false;
+        const requestStaticRepaint = () => {
+            if (staticRepaintQueued) return;
+            staticRepaintQueued = true;
+            requestAnimationFrame(() => {
+                staticRepaintQueued = false;
+                renderFrame(1 / 60, 0, false);
+            });
+        };
+
+        const applyMotionPreference = () => {
+            if (reduceMotion.matches) {
+                stopLoop();
+                window.addEventListener('scroll', requestStaticRepaint, { passive: true });
+                requestStaticRepaint();
+            } else {
+                window.removeEventListener('scroll', requestStaticRepaint);
+                startLoop();
+            }
+        };
+
+        applyMotionPreference();
+        reduceMotion.addEventListener('change', applyMotionPreference);
+
+        // A hidden tab should not be running a WebGL loop.
+        const handleVisibility = () => {
+            if (document.hidden) stopLoop();
+            else if (!reduceMotion.matches) startLoop();
+        };
+        document.addEventListener('visibilitychange', handleVisibility);
 
         const handleResize = () => {
-            if (!container) return;
             const width = container.clientWidth;
             const height = container.clientHeight;
+            if (!width || !height) return;
 
             camera.aspect = width / height;
             camera.updateProjectionMatrix();
 
+            renderer.setPixelRatio(pixelRatio());
             renderer.setSize(width, height);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+            isMobile = window.innerWidth < 768;
+            keyframes = buildKeyframes(isMobile, width / height);
+
+            if (reduceMotion.matches) requestStaticRepaint();
         };
 
         window.addEventListener('resize', handleResize);
 
         return () => {
-            cancelAnimationFrame(animationFrameId);
+            stopLoop();
             window.removeEventListener('mousemove', handleMouseMove);
             window.removeEventListener('scroll', handleScroll);
+            window.removeEventListener('scroll', requestStaticRepaint);
             window.removeEventListener('resize', handleResize);
+            document.removeEventListener('visibilitychange', handleVisibility);
+            reduceMotion.removeEventListener('change', applyMotionPreference);
 
-            if (container && renderer.domElement) {
+            // Everything allocated above has to be released explicitly. The
+            // previous teardown called renderer.dispose() only, leaking every
+            // geometry, material and render target -- twice per mount under
+            // StrictMode, which is enough to exhaust WebGL contexts in dev.
+            scene.traverse((object) => {
+                if (!object.isMesh) return;
+                object.geometry?.dispose();
+                const materials = Array.isArray(object.material) ? object.material : [object.material];
+                for (const material of materials) {
+                    if (!material) continue;
+                    for (const value of Object.values(material)) {
+                        if (value && value.isTexture) value.dispose();
+                    }
+                    material.dispose();
+                }
+            });
+
+            shadowTex.dispose();
+            envTexture.dispose();
+            pmremGenerator.dispose();
+
+            if (renderer.domElement.parentNode === container) {
                 container.removeChild(renderer.domElement);
             }
             renderer.dispose();
+            renderer.forceContextLoss();
         };
     }, []);
 
