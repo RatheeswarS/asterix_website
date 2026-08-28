@@ -120,7 +120,7 @@ export default function CyberFooter({ onOpenAdmin }) {
                     <p className="text-xs sm:text-sm font-mono font-bold text-slate-600 flex items-center justify-center gap-1.5">
                         <span>Crafted with</span>
                         <span className="text-sky-500 text-sm inline-block" aria-label="blue heart">💙</span>
-                        <span>by Ratheeswar(Software Lead)</span>
+                        <span>by Software Subsystem</span>
                     </p>
                 </div>
 
