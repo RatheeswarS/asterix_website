@@ -5,190 +5,218 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 gsap.registerPlugin(ScrollTrigger);
 
 /**
- * useScrollAssembly Hook
- * Orchestrates a clean, modern mechanical assembly effect as the user scrolls into each section
- * on the main landing page.
- * Safely bypassed on standalone detail pages (e.g. SubsystemDetail) to ensure 100% crisp readability.
+ * useScrollAssembly
+ * Reveals each section once, as it enters the viewport, and leaves it alone
+ * afterwards.
+ *
+ * The earlier version scrubbed the reveal to scroll position, which meant
+ * content sat at 30% opacity until the reader had scrolled far enough, and
+ * un-revealed itself again on the way back up. Reveals are now one-shot: an
+ * element animates from 0 to 1 and stays there.
+ *
+ * Bypassed entirely on standalone detail pages so their copy is crisp
+ * immediately.
  */
+
+const ENTER_START = 'top 88%';
+
+// Every element the hook is willing to touch. Anything matching this is
+// hidden up front and is guaranteed to be un-hidden by a trigger below.
+const MANAGED = '[data-assemble], [data-assemble-section]';
+
+const prefersReducedMotion = () =>
+    typeof window !== 'undefined' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
 export default function useScrollAssembly(lenis, dependency) {
     useEffect(() => {
-        // If a specific subpage/modal is open, do not apply scroll assembly animations.
-        // Immediately reset and clear all transforms and opacity.
+        // Track only the triggers this hook created. The previous version
+        // called ScrollTrigger.getAll().kill() on cleanup, which would also
+        // destroy triggers belonging to any other component.
+        const ownedTriggers = [];
+        const ownedTweens = [];
+        // Every element this hook hid, including ones matched by the
+        // structural fallback rather than by a data-assemble attribute. All of
+        // them must be restored on cleanup or they stay at opacity 0.
+        const ownedElements = new Set();
+
+        const clearManaged = () => {
+            document.querySelectorAll(MANAGED).forEach((el) => {
+                el.classList.remove('reveal-init');
+            });
+            gsap.set(MANAGED, { clearProps: 'transform,opacity,willChange' });
+
+            if (ownedElements.size) {
+                const list = [...ownedElements];
+                list.forEach((el) => el.classList.remove('reveal-init'));
+                gsap.set(list, { clearProps: 'transform,opacity,willChange' });
+                ownedElements.clear();
+            }
+        };
+
+        // A subpage or modal is open: no reveals, nothing hidden.
         if (dependency) {
-            ScrollTrigger.getAll().forEach((trigger) => trigger.kill());
-            gsap.set('[data-assemble], [data-assemble-section]', { clearProps: 'transform,opacity,willChange' });
+            clearManaged();
             return;
         }
 
-        // Connect Lenis smooth scroll to GSAP ScrollTrigger
+        // Reduced motion: show everything immediately.
+        if (prefersReducedMotion()) {
+            clearManaged();
+            return;
+        }
+
+        // Keep ScrollTrigger in step with Lenis' virtual scroll position.
         let scrollHandler;
         if (lenis) {
             scrollHandler = () => ScrollTrigger.update();
             lenis.on('scroll', scrollHandler);
         }
 
-        // Small timeout to allow DOM to settle after mounting
+        // GSAP's lag smoothing fights a smooth-scroll library; without this,
+        // a single long frame makes the page and the reveals disagree.
+        gsap.ticker.lagSmoothing(0);
+
+        let refreshOnLoad;
+
         const timer = setTimeout(() => {
-            // Find all major sections on the home page
             const sections = document.querySelectorAll('section, footer');
-            const triggers = [];
+
+            // Reveal helper: hide now, animate to visible once, then drop the
+            // inline styles so nothing is left with a stale transform or a
+            // lingering will-change layer.
+            const revealOnce = (targets, section, fromVars) => {
+                const list = Array.isArray(targets) ? targets : Array.from(targets);
+                if (!list.length) return null;
+
+                list.forEach((el) => {
+                    el.classList.add('reveal-init');
+                    ownedElements.add(el);
+                });
+
+                const tween = gsap.fromTo(
+                    list,
+                    { ...fromVars, opacity: 0 },
+                    {
+                        x: 0,
+                        y: 0,
+                        scale: 1,
+                        opacity: 1,
+                        duration: 0.55,
+                        ease: 'power2.out',
+                        stagger: 0.06,
+                        paused: true,
+                        onStart: () => list.forEach((el) => el.classList.remove('reveal-init')),
+                        onComplete: () => gsap.set(list, { clearProps: 'transform,willChange' }),
+                    }
+                );
+
+                ownedTweens.push(tween);
+
+                const st = ScrollTrigger.create({
+                    trigger: section,
+                    start: ENTER_START,
+                    once: true,
+                    invalidateOnRefresh: true,
+                    onEnter: () => tween.play(),
+                });
+                ownedTriggers.push(st);
+                return tween;
+            };
 
             sections.forEach((section) => {
                 const isHero = section.id === 'hero' || section.classList.contains('hero-section');
 
-                if (section.id === 'squad') {
-                    // CardSwap manages its own GSAP 3D transforms (xPercent: -50, yPercent: -50).
-                    // Only animate the header cleanly and NEVER touch the cards!
-                    const header = section.querySelector('[data-assemble="header"]');
-                    if (header) {
-                        const tlSquad = gsap.timeline();
-                        tlSquad.fromTo(header, { y: -30, opacity: 0.3 }, { y: 0, opacity: 1, ease: 'power2.out' });
-                        const st = ScrollTrigger.create({
-                            trigger: section,
-                            start: 'top 92%',
-                            end: 'top 50%',
-                            scrub: 0.6,
-                            animation: tlSquad,
-                            invalidateOnRefresh: true,
-                        });
-                        triggers.push(st);
-                    }
-                    return;
-                }
-
-                // Collect explicit elements with data-assemble
-                const explicitHeaders = Array.from(section.querySelectorAll('[data-assemble="header"]'));
-                const explicitLeft = Array.from(section.querySelectorAll('[data-assemble="left"]'));
-                const explicitRight = Array.from(section.querySelectorAll('[data-assemble="right"]'));
-                const explicitUp = Array.from(section.querySelectorAll('[data-assemble="up"], [data-assemble="card"]'));
-                const explicitDown = Array.from(section.querySelectorAll('[data-assemble="down"]'));
-                const explicitPop = Array.from(section.querySelectorAll('[data-assemble="pop"], [data-assemble="badge"]'));
-                const explicitStagger = Array.from(section.querySelectorAll('[data-assemble="stagger"]'));
-
-                const hasExplicit = explicitHeaders.length || explicitLeft.length || explicitRight.length || 
-                                    explicitUp.length || explicitDown.length || explicitPop.length || explicitStagger.length;
-
-                let headers = explicitHeaders;
-                let cards = explicitUp;
-                let popElements = explicitPop;
-                let leftElements = explicitLeft;
-                let rightElements = explicitRight;
-
-                if (!hasExplicit && !isHero) {
-                    headers = Array.from(section.querySelectorAll('h1, h2, h3, .section-header'));
-                    cards = Array.from(section.querySelectorAll('.grid > div, form, .cyber-card'));
-                    popElements = Array.from(section.querySelectorAll('.cyber-button, button, .badge'));
-                }
-
+                // The hero is above the fold on load; it plays on mount rather
+                // than waiting for a scroll that may never come.
                 if (isHero) {
-                    const heroItems = Array.from(section.querySelectorAll('[data-assemble], .cyber-button, h1, p, .rounded-full'));
+                    const heroItems = Array.from(
+                        section.querySelectorAll('[data-assemble], .cyber-button, h1, p, .rounded-full')
+                    );
                     if (heroItems.length) {
-                        gsap.fromTo(
+                        heroItems.forEach((el) => ownedElements.add(el));
+                        const tween = gsap.fromTo(
                             heroItems,
-                            { y: 30, opacity: 0.3, scale: 0.98 },
+                            { y: 24, opacity: 0, scale: 0.99 },
                             {
                                 y: 0,
                                 opacity: 1,
                                 scale: 1,
-                                stagger: 0.08,
-                                duration: 0.8,
+                                stagger: 0.06,
+                                duration: 0.7,
                                 ease: 'power2.out',
-                                delay: 0.1,
+                                delay: 0.08,
+                                onComplete: () =>
+                                    gsap.set(heroItems, { clearProps: 'transform,willChange' }),
                             }
                         );
+                        ownedTweens.push(tween);
                     }
                     return;
                 }
 
-                // Create a scroll-scrubbed assembly timeline for this section
-                const tl = gsap.timeline();
-
-                // 1. Headers move smoothly into place from above (no tilt)
-                if (headers.length) {
-                    tl.fromTo(
-                        headers,
-                        { y: -35, opacity: 0.3 },
-                        { y: 0, opacity: 1, ease: 'power2.out', stagger: 0.06 },
-                        0
-                    );
+                // CardSwap owns its own 3D transforms on the cards
+                // (xPercent/yPercent/z). Touching them desynchronises the swap
+                // animation, so only the header is revealed here.
+                if (section.id === 'squad') {
+                    const header = section.querySelector('[data-assemble="header"]');
+                    if (header) revealOnce([header], section, { y: -24 });
+                    return;
                 }
 
-                // 2. Left elements glide in from the left (straight, no rotation tilt)
-                if (leftElements.length) {
-                    tl.fromTo(
-                        leftElements,
-                        { x: -45, opacity: 0.3 },
-                        { x: 0, opacity: 1, ease: 'power2.out', stagger: 0.06 },
-                        0.04
-                    );
+                const explicit = {
+                    headers: Array.from(section.querySelectorAll('[data-assemble="header"]')),
+                    left: Array.from(section.querySelectorAll('[data-assemble="left"]')),
+                    right: Array.from(section.querySelectorAll('[data-assemble="right"]')),
+                    up: Array.from(section.querySelectorAll('[data-assemble="up"], [data-assemble="card"]')),
+                    down: Array.from(section.querySelectorAll('[data-assemble="down"]')),
+                    pop: Array.from(section.querySelectorAll('[data-assemble="pop"], [data-assemble="badge"]')),
+                    stagger: Array.from(section.querySelectorAll('[data-assemble="stagger"]')),
+                };
+
+                const hasExplicit = Object.values(explicit).some((list) => list.length > 0);
+
+                let { headers, left, right, up: cards, down, pop } = explicit;
+
+                // Sections that have not been annotated fall back to a
+                // structural guess.
+                if (!hasExplicit) {
+                    headers = Array.from(section.querySelectorAll('h1, h2, h3, .section-header'));
+                    cards = Array.from(section.querySelectorAll('.grid > div, form, .cyber-card'));
+                    pop = Array.from(section.querySelectorAll('.cyber-button, button, .badge'));
                 }
 
-                // 3. Right elements glide in from the right (straight, no rotation tilt)
-                if (rightElements.length) {
-                    tl.fromTo(
-                        rightElements,
-                        { x: 45, opacity: 0.3 },
-                        { x: 0, opacity: 1, ease: 'power2.out', stagger: 0.06 },
-                        0.04
-                    );
-                }
+                revealOnce(headers, section, { y: -24 });
+                revealOnce(left, section, { x: -36 });
+                revealOnce(right, section, { x: 36 });
+                revealOnce(down, section, { y: -32 });
+                revealOnce(cards, section, { y: 36, scale: 0.98 });
+                revealOnce(pop, section, { y: 16, scale: 0.94 });
 
-                // 4. Cards and central interactive components rise up cleanly
-                if (cards.length) {
-                    tl.fromTo(
-                        cards,
-                        { y: 45, scale: 0.96, opacity: 0.3 },
-                        { y: 0, scale: 1, opacity: 1, ease: 'power2.out', stagger: 0.08 },
-                        0.06
-                    );
-                }
-
-                // 5. Staggered child containers
-                explicitStagger.forEach((parent) => {
-                    const children = Array.from(parent.children);
-                    if (children.length) {
-                        tl.fromTo(
-                            children,
-                            { y: 30, opacity: 0.3 },
-                            { y: 0, opacity: 1, stagger: 0.06, ease: 'power2.out' },
-                            0.08
-                        );
-                    }
+                explicit.stagger.forEach((parent) => {
+                    revealOnce(Array.from(parent.children), section, { y: 24 });
                 });
-
-                // 6. Badges and CTA buttons
-                if (popElements.length) {
-                    tl.fromTo(
-                        popElements,
-                        { y: 20, scale: 0.92, opacity: 0.3 },
-                        { y: 0, scale: 1, opacity: 1, ease: 'power2.out', stagger: 0.05 },
-                        0.1
-                    );
-                }
-
-                // Attach ScrollTrigger: starts as section approaches, fully assembled by top 50%
-                const st = ScrollTrigger.create({
-                    trigger: section,
-                    start: 'top 92%',
-                    end: 'top 50%',
-                    scrub: 0.6,
-                    animation: tl,
-                    invalidateOnRefresh: true,
-                });
-
-                triggers.push(st);
             });
 
             ScrollTrigger.refresh();
+
+            // Images and the site-data fetch both change layout after this
+            // point; without a refresh the trigger positions are computed
+            // against a shorter page than the reader actually gets.
+            refreshOnLoad = () => ScrollTrigger.refresh();
+            window.addEventListener('load', refreshOnLoad);
         }, 100);
 
         return () => {
             clearTimeout(timer);
-            if (lenis && scrollHandler) {
-                lenis.off('scroll', scrollHandler);
-            }
-            ScrollTrigger.getAll().forEach((trigger) => trigger.kill());
-            gsap.set('[data-assemble], [data-assemble-section]', { clearProps: 'transform,opacity,willChange' });
+            if (refreshOnLoad) window.removeEventListener('load', refreshOnLoad);
+            if (lenis && scrollHandler) lenis.off('scroll', scrollHandler);
+
+            ownedTriggers.forEach((trigger) => trigger.kill());
+            ownedTweens.forEach((tween) => tween.kill());
+
+            // Never unmount leaving content stuck at opacity 0.
+            clearManaged();
         };
     }, [lenis, dependency]);
 }

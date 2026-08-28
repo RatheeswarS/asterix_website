@@ -1,13 +1,29 @@
 @import "tailwindcss";
 
+/* =========================================================
+   MOTION TOKENS
+   One easing curve and three durations, used everywhere.
+========================================================= */
+@theme {
+  --ease-brutal: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-fast: 120ms;
+  --dur-base: 220ms;
+  --dur-slow: 400ms;
+}
+
 @layer base {
   body {
     background-color: #ffffff;
     color: #0f172a;
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
     overflow-x: hidden;
-    selection-background-color: #0284c7;
-    selection-color: #ffffff;
+  }
+
+  /* Was `selection-background-color` / `selection-color`, which are not CSS
+     properties and did nothing. */
+  ::selection {
+    background-color: #0284c7;
+    color: #ffffff;
   }
 }
 
@@ -15,19 +31,24 @@
    CYBERBITES RETRO-BRUTALIST & MARQUEE ANIMATIONS
 ========================================================= */
 
-/* Infinite Marquee Animations */
+/* Infinite Marquee Animations.
+   The track must translate by exactly one duplicated copy, so the inter-item
+   gap lives on each item (padding-right) rather than on the flex track. A gap
+   on the track itself makes 50% of the total width land half a gap short and
+   produces a visible jump every loop. */
 @keyframes marquee-track-left {
-  0% { transform: translateX(0%); }
-  100% { transform: translateX(-50%); }
+  0% { transform: translate3d(0, 0, 0); }
+  100% { transform: translate3d(-50%, 0, 0); }
 }
 
 @keyframes marquee-track-right {
-  0% { transform: translateX(-50%); }
-  100% { transform: translateX(0%); }
+  0% { transform: translate3d(-50%, 0, 0); }
+  100% { transform: translate3d(0, 0, 0); }
 }
 
 .animate-marquee-left {
   display: flex;
+  align-items: center;
   width: max-content;
   will-change: transform;
   animation: marquee-track-left 22s linear infinite;
@@ -35,6 +56,7 @@
 
 .animate-marquee-right {
   display: flex;
+  align-items: center;
   width: max-content;
   will-change: transform;
   animation: marquee-track-right 22s linear infinite;
@@ -42,6 +64,12 @@
 
 .animate-marquee-fast {
   animation-duration: 12s !important;
+}
+
+/* Pause the ribbons while the pointer rests on them. */
+.marquee-hold:hover .animate-marquee-left,
+.marquee-hold:hover .animate-marquee-right {
+  animation-play-state: paused;
 }
 
 /* Cyberbites Stroke Text Typography */
@@ -77,7 +105,8 @@
   background: #ffffff;
   border: 3px solid #0f172a;
   box-shadow: 6px 6px 0px #0f172a;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform var(--dur-base) var(--ease-brutal),
+              box-shadow var(--dur-base) var(--ease-brutal);
 }
 
 .cyber-card:hover {
@@ -89,7 +118,8 @@
   background: #f0f9ff;
   border: 3px solid #0284c7;
   box-shadow: 6px 6px 0px #0284c7;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform var(--dur-base) var(--ease-brutal),
+              box-shadow var(--dur-base) var(--ease-brutal);
 }
 
 .cyber-card-sky:hover {
@@ -103,7 +133,9 @@
   border: 2px solid #0f172a;
   box-shadow: 4px 4px 0px #0f172a;
   font-weight: 800;
-  transition: all 0.15s ease;
+  transition: transform var(--dur-fast) var(--ease-brutal),
+              box-shadow var(--dur-fast) var(--ease-brutal),
+              background-color var(--dur-fast) var(--ease-brutal);
 }
 
 .cyber-button:hover {
@@ -112,24 +144,105 @@
   background: #0369a1;
 }
 
-.cyber-button:active {
-  transform: translate(2px, 2px);
-  box-shadow: 1px 1px 0px #0f172a;
-}
-
 .cyber-button-white {
   background: #ffffff;
   color: #0f172a;
   border: 2px solid #0f172a;
   box-shadow: 4px 4px 0px #0f172a;
   font-weight: 800;
-  transition: all 0.15s ease;
+  transition: transform var(--dur-fast) var(--ease-brutal),
+              box-shadow var(--dur-fast) var(--ease-brutal),
+              background-color var(--dur-fast) var(--ease-brutal);
 }
 
 .cyber-button-white:hover {
   transform: translate(-2px, -2px);
   box-shadow: 6px 6px 0px #0284c7;
   background: #f8fafc;
+}
+
+/* =========================================================
+   PRESS FEEDBACK
+   Every interactive brutalist surface presses down into its own offset
+   shadow. Add `press` (dark shadow) or `press press-sky` (sky shadow)
+   alongside the existing hover utilities. The !important beats the
+   arbitrary Tailwind shadow and translate utilities the buttons carry.
+========================================================= */
+.press {
+  transition: transform var(--dur-fast) var(--ease-brutal),
+              box-shadow var(--dur-fast) var(--ease-brutal),
+              background-color var(--dur-fast) var(--ease-brutal),
+              color var(--dur-fast) var(--ease-brutal);
+}
+
+.press:active {
+  transform: translate(2px, 2px) !important;
+  box-shadow: 1px 1px 0px #0f172a !important;
+}
+
+.press-sky:active {
+  box-shadow: 1px 1px 0px #0284c7 !important;
+}
+
+/* Flat surfaces with no offset shadow just sink slightly. */
+.press-flat:active {
+  transform: translate(1px, 1px) !important;
+  box-shadow: none !important;
+}
+
+/* For controls that are already centred by `-translate-y-1/2`. A plain
+   `.press` would clobber that transform and snap them to the top edge. */
+.press-y:active {
+  transform: translate(2px, calc(-50% + 2px)) !important;
+  box-shadow: 1px 1px 0px #0f172a !important;
+}
+
+/* Same, for controls centred on both axes. */
+.press-xy:active {
+  transform: translate(calc(-50% + 2px), calc(-50% + 2px)) !important;
+  box-shadow: 1px 1px 0px #0f172a !important;
+}
+
+.cyber-button:active,
+.cyber-button-white:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0px #0f172a;
+}
+
+/* Consistent keyboard focus ring across every interactive element. */
+:where(a, button, [role="button"], input, textarea, select, [tabindex]):focus-visible {
+  outline: 3px solid #0284c7;
+  outline-offset: 2px;
+}
+
+/* =========================================================
+   ENTRANCE ANIMATIONS
+   Replaces `animate-fadeIn` and the `animate-in fade-in zoom-in-95`
+   utilities, neither of which existed in this project.
+========================================================= */
+@keyframes anim-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes anim-pop-in {
+  from { opacity: 0; transform: scale(0.96) translateY(-4px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.anim-fade {
+  animation: anim-fade-in var(--dur-base) var(--ease-brutal) both;
+}
+
+/* Dropdown panels: fade plus a short scale-up from the top edge. */
+.anim-pop {
+  transform-origin: top center;
+  animation: anim-pop-in var(--dur-base) var(--ease-brutal) both;
+}
+
+.anim-pop-center {
+  transform-origin: center center;
+  animation: anim-pop-in var(--dur-slow) var(--ease-brutal) both;
 }
 
 /* Starburst Badge Spin */
@@ -140,6 +253,39 @@
 
 .animate-spin-slow {
   animation: spin-slow 18s linear infinite;
+}
+
+/* Pulsing status dot. Tailwind's `animate-ping` scales and fades the element
+   it is applied to, so putting it on a visible dot makes the dot vanish.
+   This emits a ring from a ::after pseudo-element and leaves the dot alone. */
+@keyframes status-ring {
+  0% { transform: scale(1); opacity: 0.7; }
+  75%, 100% { transform: scale(2.4); opacity: 0; }
+}
+
+.status-dot {
+  position: relative;
+}
+
+.status-dot::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: currentColor;
+  animation: status-ring 1.6s var(--ease-brutal) infinite;
+  pointer-events: none;
+}
+
+/* =========================================================
+   SCROLL REVEAL
+   Elements are hidden by the `reveal-init` class only once the reveal
+   controller confirms it is running, so a JS failure or a reduced-motion
+   preference can never leave content permanently invisible.
+========================================================= */
+[data-assemble].reveal-init,
+[data-assemble-section].reveal-init {
+  opacity: 0;
 }
 
 /* Rip / Jagged Border CSS Pattern */
@@ -166,4 +312,37 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: #0284c7;
+}
+
+/* =========================================================
+   REDUCED MOTION
+   Ambient loops stop outright. Interaction feedback (press, hover)
+   collapses to an instant state change rather than disappearing, so the
+   interface still confirms input.
+========================================================= */
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee-left,
+  .animate-marquee-right,
+  .animate-spin-slow,
+  .status-dot::after {
+    animation: none !important;
+  }
+
+  .anim-fade,
+  .anim-pop,
+  .anim-pop-center {
+    animation-duration: 1ms !important;
+  }
+
+  [data-assemble].reveal-init,
+  [data-assemble-section].reveal-init {
+    opacity: 1 !important;
+  }
+
+  *,
+  *::before,
+  *::after {
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
 }

@@ -1,10 +1,30 @@
-import { useState } from 'react';
+import { useState, useRef, useLayoutEffect } from 'react';
 import { useWebsiteData } from '../context/WebsiteDataContext';
+
+const COLLAPSED_HEIGHT = 118;
 
 export default function OurStoryCurvedWave() {
     const { siteData } = useWebsiteData();
     const [isExpanded, setIsExpanded] = useState(false);
     const storyParagraphs = (siteData.story || "").split(/\n\n+/).filter(Boolean);
+
+    // `max-height` cannot transition to or from `none`, so the previous
+    // max-h-[118px] -> max-h-none swap snapped open with no animation. Measure
+    // the real content height and animate between two concrete pixel values.
+    const contentRef = useRef(null);
+    const [contentHeight, setContentHeight] = useState(0);
+
+    useLayoutEffect(() => {
+        const el = contentRef.current;
+        if (!el) return;
+
+        const measure = () => setContentHeight(el.scrollHeight);
+        measure();
+
+        const ro = new ResizeObserver(measure);
+        ro.observe(el);
+        return () => ro.disconnect();
+    }, [storyParagraphs.length]);
 
     return (
         <section id="story" className="py-28 px-4 sm:px-8 bg-slate-900 text-white border-t-4 border-slate-900 relative overflow-hidden z-10 select-none">
@@ -20,11 +40,16 @@ export default function OurStoryCurvedWave() {
                     <text className="font-black text-2xl sm:text-3xl tracking-widest fill-sky-400 uppercase font-mono">
                         <textPath href="#storyCurve" startOffset="0%">
                             OUR STORY ✦ FROM TRAINING PROGRAM TO CHENNAI ✦ SAEINDIA a-BAJA 2026 ✦ THE FIRST DRAFT ✦ OUR STORY ✦ FROM TRAINING PROGRAM TO CHENNAI ✦
+                            {/* A one-way 0% -> -100% sweep teleports back to
+                                the start on every repeat. Sweeping out and
+                                back with eased turnarounds never snaps. */}
                             <animate
                                 attributeName="startOffset"
-                                from="0%"
-                                to="-100%"
-                                dur="28s"
+                                values="0%;-34%;0%"
+                                keyTimes="0;0.5;1"
+                                calcMode="spline"
+                                keySplines="0.42 0 0.58 1;0.42 0 0.58 1"
+                                dur="44s"
                                 repeatCount="indefinite"
                             />
                         </textPath>
@@ -61,15 +86,21 @@ export default function OurStoryCurvedWave() {
                     {/* Essay Container (Cut after 4 lines when collapsed, full story when expanded) */}
                     <div className="relative">
                         <div
-                            className={`transition-all duration-500 ease-in-out ${isExpanded
-                                ? "max-h-none opacity-100"
-                                : "max-h-[118px] overflow-hidden select-none"
-                                }`}
+                            id="story-essay"
+                            className="overflow-hidden transition-[max-height] duration-[var(--dur-slow)] ease-[var(--ease-brutal)]"
+                            style={{
+                                maxHeight: isExpanded
+                                    ? `${Math.max(contentHeight, COLLAPSED_HEIGHT)}px`
+                                    : `${COLLAPSED_HEIGHT}px`
+                            }}
                         >
-                            <div className="text-base sm:text-lg text-slate-700 font-medium leading-relaxed space-y-5">
+                            <div
+                                ref={contentRef}
+                                className="text-base sm:text-lg text-slate-700 font-medium leading-relaxed space-y-5"
+                            >
                                 {storyParagraphs.map((para, idx) => (
-                                    <p 
-                                        key={idx} 
+                                    <p
+                                        key={idx}
                                         className={idx === 0 ? "font-bold text-slate-900 text-lg sm:text-xl" : ""}
                                     >
                                         {para}
@@ -78,19 +109,30 @@ export default function OurStoryCurvedWave() {
                             </div>
                         </div>
 
-                        {/* Fade overlay when collapsed */}
-                        {!isExpanded && (
-                            <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white via-white/85 to-transparent pointer-events-none" />
-                        )}
+                        {/* Fade overlay when collapsed. Kept mounted and faded
+                            by opacity so it does not pop out of existence the
+                            instant the essay starts expanding. */}
+                        <div
+                            className={`absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white via-white/85 to-transparent pointer-events-none transition-opacity duration-[var(--dur-slow)] ease-[var(--ease-brutal)] ${isExpanded ? 'opacity-0' : 'opacity-100'
+                                }`}
+                        />
                     </div>
 
                     {/* Show More / Show Less Button */}
                     <div className="mt-5 pt-4 border-t-2 border-slate-100 flex items-center justify-between">
+                        {/* This used to apply the pressed-in look on hover,
+                            which left nothing for the actual click to do.
+                            Hover lifts, :active presses. */}
                         <button
                             onClick={() => setIsExpanded(!isExpanded)}
-                            className="inline-flex items-center gap-2 px-6 py-3 bg-white border-2 border-slate-900 font-black text-xs uppercase tracking-wider text-slate-900 shadow-[3px_3px_0px_#0f172a] hover:bg-sky-100 hover:shadow-[1px_1px_0px_#0f172a] hover:translate-x-[2px] hover:translate-y-[2px] transition-all cursor-pointer"
+                            aria-expanded={isExpanded}
+                            aria-controls="story-essay"
+                            className="press inline-flex items-center gap-2 px-6 py-3 bg-white border-2 border-slate-900 font-black text-xs uppercase tracking-wider text-slate-900 shadow-[3px_3px_0px_#0f172a] hover:bg-sky-100 hover:shadow-[5px_5px_0px_#0f172a] hover:-translate-x-[1px] hover:-translate-y-[1px] cursor-pointer"
                         >
-                            <span>{isExpanded ? "SHOW LESS ↑" : "READ FULL STORY (SHOW MORE) ↓"}</span>
+                            <span>
+                                {isExpanded ? "SHOW LESS" : "READ FULL STORY (SHOW MORE)"}
+                                <span aria-hidden="true">{isExpanded ? " ↑" : " ↓"}</span>
+                            </span>
                         </button>
 
 

@@ -1,49 +1,107 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import Car3DCanvas from './Car3DCanvas';
-import SwimmingGoldfish from './SwimmingGoldfish';
+import DriftParticles from './DriftParticles';
 
+/**
+ * FloatingBackground
+ * The fixed ambient layer behind the whole site: parallax light blooms, a
+ * technical dot grid, the 3D buggy canvas, and a drifting grit field.
+ *
+ * The parallax offsets are written straight to the DOM from a rAF loop rather
+ * than held in React state. Holding them in state re-rendered this entire
+ * subtree, the WebGL canvas included, on every scroll event.
+ */
 export default function FloatingBackground() {
-    const [scrollY, setScrollY] = useState(0);
+    const orb1Ref = useRef(null);
+    const orb2Ref = useRef(null);
+    const orb3Ref = useRef(null);
+    const gridRef = useRef(null);
 
     useEffect(() => {
-        const handleScroll = () => {
-            setScrollY(window.scrollY || window.pageYOffset);
-        };
-        window.addEventListener('scroll', handleScroll, { passive: true });
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, []);
+        const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
-    const orb1Y = scrollY * 0.35;
-    const orb2Y = -scrollY * 0.25;
-    const orb3Y = scrollY * 0.18;
+        let rafId = null;
+        let targetY = window.scrollY || 0;
+        let currentY = targetY;
+
+        const layers = [
+            { ref: orb1Ref, factor: 0.35 },
+            { ref: orb2Ref, factor: -0.25 },
+            { ref: orb3Ref, factor: 0.18 },
+            { ref: gridRef, factor: 0.08 },
+        ];
+
+        const paint = (y) => {
+            for (const { ref, factor } of layers) {
+                const el = ref.current;
+                if (el) el.style.transform = `translate3d(0, ${(y * factor).toFixed(2)}px, 0)`;
+            }
+        };
+
+        const tick = () => {
+            // Ease toward the real scroll position so the blooms trail the
+            // content slightly instead of locking rigidly to it.
+            currentY += (targetY - currentY) * 0.12;
+
+            if (Math.abs(targetY - currentY) < 0.1) {
+                currentY = targetY;
+                paint(currentY);
+                rafId = null; // settled; wait for the next scroll to restart
+                return;
+            }
+
+            paint(currentY);
+            rafId = requestAnimationFrame(tick);
+        };
+
+        const handleScroll = () => {
+            targetY = window.scrollY || 0;
+
+            if (reduceMotion.matches) {
+                currentY = targetY;
+                paint(currentY);
+                return;
+            }
+
+            if (rafId === null) rafId = requestAnimationFrame(tick);
+        };
+
+        paint(currentY);
+        window.addEventListener('scroll', handleScroll, { passive: true });
+
+        return () => {
+            window.removeEventListener('scroll', handleScroll);
+            if (rafId !== null) cancelAnimationFrame(rafId);
+        };
+    }, []);
 
     return (
         <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden select-none bg-gradient-to-b from-white via-sky-50/40 to-white">
             {/* Parallax Floating Sky Blue Ambient Light Blooms */}
-            <div 
+            <div
+                ref={orb1Ref}
                 className="absolute top-[-5%] right-[-5%] w-[48rem] h-[48rem] bg-sky-400/12 rounded-full blur-3xl pointer-events-none will-change-transform"
-                style={{ transform: `translate3d(0, ${orb1Y}px, 0)` }}
             />
-            <div 
+            <div
+                ref={orb2Ref}
                 className="absolute top-[40%] left-[-10%] w-[44rem] h-[44rem] bg-sky-300/10 rounded-full blur-3xl pointer-events-none will-change-transform"
-                style={{ transform: `translate3d(0, ${orb2Y}px, 0)` }}
             />
-            <div 
+            <div
+                ref={orb3Ref}
                 className="absolute top-[75%] right-[5%] w-[50rem] h-[50rem] bg-sky-400/12 rounded-full blur-3xl pointer-events-none will-change-transform"
-                style={{ transform: `translate3d(0, ${orb3Y}px, 0)` }}
             />
-            
+
             {/* Subtle Sky Blue Technical Grid with Parallax */}
-            <div 
+            <div
+                ref={gridRef}
                 className="absolute inset-0 bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:36px_36px] opacity-[0.22] pointer-events-none will-change-transform"
-                style={{ transform: `translate3d(0, ${scrollY * 0.08}px, 0)` }}
             />
 
             {/* PHOTOREALISTIC 3D BAJA BUGGY WEBGL CANVAS */}
             <Car3DCanvas />
 
-            {/* Interactive Swimming Golden Fish in Background Layer */}
-            <SwimmingGoldfish />
+            {/* Airborne grit drifting through the background layer */}
+            <DriftParticles />
         </div>
     );
 }

@@ -33,6 +33,12 @@ function MainApp() {
     }, []);
 
     useEffect(() => {
+        // Readers who ask for reduced motion get the browser's native scroll.
+        // Momentum smoothing is exactly the kind of motion that setting is for.
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            return;
+        }
+
         // Initialize Lenis smooth momentum scrolling
         const lenis = new Lenis({
             duration: 1.6,
@@ -46,15 +52,22 @@ function MainApp() {
 
         setLenisInstance(lenis);
 
-        function raf(time) {
+        // The frame id has to be tracked across every frame. Capturing only
+        // the first one meant cleanup cancelled a frame that had already run,
+        // and the loop kept rescheduling itself forever against a destroyed
+        // Lenis instance -- twice over, under StrictMode's double mount.
+        let rafId = null;
+
+        const raf = (time) => {
             lenis.raf(time);
-            requestAnimationFrame(raf);
-        }
-        const rafId = requestAnimationFrame(raf);
+            rafId = requestAnimationFrame(raf);
+        };
+        rafId = requestAnimationFrame(raf);
 
         return () => {
-            cancelAnimationFrame(rafId);
+            if (rafId !== null) cancelAnimationFrame(rafId);
             lenis.destroy();
+            setLenisInstance(null);
         };
     }, []);
 

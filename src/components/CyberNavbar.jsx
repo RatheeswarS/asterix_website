@@ -112,7 +112,7 @@ export default function CyberNavbar({ onSelectSubsystem, isDetailPage, onBackToH
                                     {/* Mega Dropdown Menu */}
                                     {shopOpen && (
                                         <div
-                                            className="absolute top-full left-0 mt-3 w-80 bg-white border-4 border-slate-900 shadow-[8px_8px_0px_#0f172a] p-5 z-50 animate-in fade-in zoom-in-95 duration-150"
+                                            className="absolute top-full left-0 mt-3 w-80 bg-white border-4 border-slate-900 shadow-[8px_8px_0px_#0f172a] p-5 z-50 anim-pop"
                                             onMouseLeave={() => setShopOpen(false)}
                                         >
                                             <div className="flex items-center justify-between mb-3 border-b-2 border-slate-200 pb-1">
@@ -199,7 +199,7 @@ export default function CyberNavbar({ onSelectSubsystem, isDetailPage, onBackToH
                                     {/* Contact Us Dropdown Pop-up Card */}
                                     {contactOpen && (
                                         <div
-                                            className="absolute top-full left-0 sm:left-auto sm:right-0 mt-3 w-72 bg-white border-4 border-slate-900 shadow-[8px_8px_0px_#0f172a] p-4 z-50 animate-in fade-in zoom-in-95 duration-150"
+                                            className="absolute top-full left-0 sm:left-auto sm:right-0 mt-3 w-72 bg-white border-4 border-slate-900 shadow-[8px_8px_0px_#0f172a] p-4 z-50 anim-pop"
                                             onMouseLeave={() => setContactOpen(false)}
                                         >
                                             <div className="flex items-center justify-between mb-3 border-b-2 border-slate-200 pb-1">

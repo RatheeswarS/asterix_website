@@ -6,6 +6,21 @@ export default function TeamGallery() {
     const { siteData } = useWebsiteData();
     const [lightboxIndex, setLightboxIndex] = useState(null);
 
+    // Read once per resize rather than once per render, so the wall actually
+    // re-lays-out when the viewport changes instead of keeping whatever
+    // breakpoint happened to be true on first paint.
+    const [isNarrow, setIsNarrow] = useState(
+        () => typeof window !== 'undefined' && window.innerWidth < 640
+    );
+
+    useEffect(() => {
+        const mq = window.matchMedia('(max-width: 639px)');
+        const onChange = (e) => setIsNarrow(e.matches);
+        setIsNarrow(mq.matches);
+        mq.addEventListener('change', onChange);
+        return () => mq.removeEventListener('change', onChange);
+    }, []);
+
     const galleryItems = useMemo(() => {
         return siteData.gallery.map((g, idx) => ({
             id: g.id || idx,
@@ -47,6 +62,8 @@ export default function TeamGallery() {
 
     const activeItem = lightboxIndex !== null ? galleryItems[lightboxIndex] : null;
 
+    const pad = (n) => String(n).padStart(2, '0');
+
     const handleTileClick = (item) => {
         const foundIdx = galleryItems.findIndex(g => g.id === item.id);
         setLightboxIndex(foundIdx !== -1 ? foundIdx : 0);
@@ -81,9 +98,9 @@ export default function TeamGallery() {
                     {/* The 3D DriftWall */}
                     <DriftWall
                         items={driftItems}
-                        columns={typeof window !== 'undefined' && window.innerWidth < 640 ? 3 : 5}
-                        tileWidth={typeof window !== 'undefined' && window.innerWidth < 640 ? 165 : 220}
-                        tileHeight={typeof window !== 'undefined' && window.innerWidth < 640 ? 115 : 150}
+                        columns={isNarrow ? 3 : 5}
+                        tileWidth={isNarrow ? 165 : 220}
+                        tileHeight={isNarrow ? 115 : 150}
                         gap={18}
                         radius={12}
                         tilt={16}
@@ -109,26 +126,26 @@ export default function TeamGallery() {
             {/* Lightbox Modal (Detailed High-Res Photo View with Keyboard & Click Navigation) */}
             {activeItem && (
                 <div
-                    className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4 sm:p-8 animate-fadeIn"
+                    className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4 sm:p-8 anim-fade"
                     onClick={() => setLightboxIndex(null)}
                 >
                     <div
-                        className="relative max-w-5xl w-full bg-white border-4 border-slate-900 shadow-[12px_12px_0px_#0284c7] overflow-hidden flex flex-col"
+                        className="anim-pop-center relative max-w-5xl w-full bg-white border-4 border-slate-900 shadow-[12px_12px_0px_#0284c7] overflow-hidden flex flex-col"
                         onClick={(e) => e.stopPropagation()}
                     >
                         {/* Modal Header Bar */}
                         <div className="bg-slate-900 text-white px-5 py-3 flex items-center justify-between border-b-3 border-slate-900 font-mono text-xs font-black">
                             <div className="flex items-center gap-3">
-                                <span className="w-2.5 h-2.5 rounded-full bg-sky-400 animate-ping" />
-                                <span className="uppercase tracking-wider">TEAM ASTERIX ARCHIVE // 0{lightboxIndex + 1} OF 0{galleryItems.length}</span>
+                                <span className="status-dot w-2.5 h-2.5 rounded-full bg-sky-400 text-sky-400" />
+                                <span className="uppercase tracking-wider">TEAM ASTERIX ARCHIVE // {pad(lightboxIndex + 1)} OF {pad(galleryItems.length)}</span>
                             </div>
 
                             <button
                                 onClick={() => setLightboxIndex(null)}
-                                className="w-8 h-8 bg-rose-500 hover:bg-rose-600 text-white flex items-center justify-center border-2 border-white cursor-pointer transition-colors font-sans text-base font-bold"
+                                className="press press-flat w-8 h-8 bg-rose-500 hover:bg-rose-600 text-white flex items-center justify-center border-2 border-white cursor-pointer font-sans text-base font-bold"
                                 aria-label="Close Lightbox"
                             >
-                                ✕
+                                <span aria-hidden="true">✕</span>
                             </button>
                         </div>
 
@@ -146,10 +163,10 @@ export default function TeamGallery() {
                                     e.stopPropagation();
                                     setLightboxIndex(prev => (prev > 0 ? prev - 1 : galleryItems.length - 1));
                                 }}
-                                className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/90 hover:bg-sky-500 hover:text-white text-slate-900 border-2 border-slate-900 shadow-[3px_3px_0px_#0f172a] flex items-center justify-center text-xl font-black transition-all cursor-pointer"
+                                className="absolute left-4 top-1/2 -translate-y-1/2 press-y w-12 h-12 bg-white/90 hover:bg-sky-500 hover:text-white text-slate-900 border-2 border-slate-900 shadow-[3px_3px_0px_#0f172a] flex items-center justify-center text-xl font-black cursor-pointer"
                                 aria-label="Previous Photo"
                             >
-                                ←
+                                <span aria-hidden="true">←</span>
                             </button>
 
                             {/* Next Navigation Button */}
@@ -158,10 +175,10 @@ export default function TeamGallery() {
                                     e.stopPropagation();
                                     setLightboxIndex(prev => (prev < galleryItems.length - 1 ? prev + 1 : 0));
                                 }}
-                                className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/90 hover:bg-sky-500 hover:text-white text-slate-900 border-2 border-slate-900 shadow-[3px_3px_0px_#0f172a] flex items-center justify-center text-xl font-black transition-all cursor-pointer"
+                                className="absolute right-4 top-1/2 -translate-y-1/2 press-y w-12 h-12 bg-white/90 hover:bg-sky-500 hover:text-white text-slate-900 border-2 border-slate-900 shadow-[3px_3px_0px_#0f172a] flex items-center justify-center text-xl font-black cursor-pointer"
                                 aria-label="Next Photo"
                             >
-                                →
+                                <span aria-hidden="true">→</span>
                             </button>
                         </div>
 
@@ -194,7 +211,7 @@ export default function TeamGallery() {
                                 <span>USE ARROW KEYS (← / →) TO NAVIGATE • [ESC] TO CLOSE</span>
                                 <button
                                     onClick={() => setLightboxIndex(null)}
-                                    className="text-slate-900 font-black hover:text-sky-600 cursor-pointer"
+                                    className="press press-flat text-slate-900 font-black hover:text-sky-600 cursor-pointer"
                                 >
                                     CLOSE VIEWER ✕
                                 </button>
