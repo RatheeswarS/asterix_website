@@ -9,13 +9,22 @@
   --dur-fast: 120ms;
   --dur-base: 220ms;
   --dur-slow: 400ms;
+
+  /* Both faces are loaded in index.html but neither was reachable.
+     `font-sans` and `font-mono` are Tailwind theme tokens: without these
+     overrides they resolve to Tailwind's own stacks, and the `font-sans` on
+     the app root then beat the `body` rule below -- so the entire site
+     rendered in system-ui, and every `font-mono` label in whatever monospace
+     the browser happened to default to. Space Grotesk was never used at all. */
+  --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: 'Space Grotesk', ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 @layer base {
   body {
     background-color: #ffffff;
     color: #0f172a;
-    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    font-family: var(--font-sans);
     overflow-x: hidden;
   }
 

@@ -30,7 +30,16 @@ export default function OurStoryCurvedWave() {
         <section id="story" className="py-28 px-4 sm:px-8 bg-slate-900 text-white border-t-4 border-slate-900 relative overflow-hidden z-10 select-none">
 
             {/* Animated SVG Sinusoidal Wave Text Path (Cyberbites Exact Signature Effect) */}
-            <div data-assemble="down" className="w-full overflow-hidden opacity-90 mb-14">
+            {/* The text runs along a path far wider than the viewBox, so it is
+                always cut at the frame edge -- mid-word, which reads as broken
+                rather than continuous on a narrow screen. Fading both edges
+                turns the cut into a ribbon running off into the margin. */}
+            <div
+                data-assemble="down"
+                className="w-full overflow-hidden opacity-90 mb-14
+                           [mask-image:linear-gradient(to_right,transparent_0%,#000_12%,#000_88%,transparent_100%)]
+                           [-webkit-mask-image:linear-gradient(to_right,transparent_0%,#000_12%,#000_88%,transparent_100%)]"
+            >
                 <svg className="w-full h-28 sm:h-40 md:h-48" viewBox="0 0 1200 200" fill="none">
                     <path
                         id="storyCurve"

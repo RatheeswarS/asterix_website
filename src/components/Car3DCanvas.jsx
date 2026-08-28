@@ -13,13 +13,39 @@ export default function Car3DCanvas() {
         const scene = new THREE.Scene();
         scene.fog = new THREE.FogExp2(0xf8fafc, 0.012);
 
+        const BASE_FOV = 34;
+        // The framing was authored for a landscape viewport.
+        const BASE_ASPECT = 16 / 9;
+        // Beyond this the compensation starts pushing the vehicle too far away
+        // to read, so the widening is capped.
+        const MAX_FOV = 66;
+
         const camera = new THREE.PerspectiveCamera(
-            34,
+            BASE_FOV,
             container.clientWidth / container.clientHeight,
             0.1,
             100
         );
         camera.position.set(0, 1.6, 7.8);
+
+        // A PerspectiveCamera's fov is *vertical*, so a tall phone viewport
+        // narrows the horizontal field and the buggy blows up until it swamps
+        // the hero copy. Widening the fov as the viewport gets narrower keeps
+        // roughly the horizontal framing the scene was composed for.
+        const applyFraming = () => {
+            const aspect = camera.aspect;
+            if (aspect < BASE_ASPECT) {
+                const halfBase = Math.tan((BASE_FOV * Math.PI) / 360);
+                const widened =
+                    (2 * Math.atan(halfBase * (BASE_ASPECT / aspect)) * 180) / Math.PI;
+                camera.fov = Math.min(MAX_FOV, widened);
+            } else {
+                camera.fov = BASE_FOV;
+            }
+            camera.updateProjectionMatrix();
+        };
+
+        applyFraming();
 
         // Phones pay for every extra device pixel across a full-screen canvas,
         // and this one sits behind the entire site. Cap them lower.
@@ -643,9 +669,12 @@ export default function Car3DCanvas() {
             const sc = (desktop, mobile) => (isMobile ? mobile : desktop);
 
             return [
-                { at: 0.00, x: heroX, y: sc(0.02, -0.16), z: 0.28, rotY: -0.48, rotX: 0.12, rotZ: -0.02, scale: sc(1.48, 1.00) },
-                { at: 0.12, x: heroX - 0.25, y: sc(0.02, -0.16), z: 0.22, rotY: -0.26, rotX: 0.12, rotZ: -0.02, scale: sc(1.44, 1.00) },
-                { at: 0.32, x: px(0.85), y: sc(0.02, -0.10), z: -0.10, rotY: 0.85, rotX: 0.10, rotZ: 0.03, scale: sc(1.36, 0.98) },
+                // Portrait drops the vehicle toward the lower half of the
+                // screen. Landscape can sit it beside the copy; a phone cannot,
+                // and centred it sat straight on top of the hero wordmark.
+                { at: 0.00, x: heroX, y: sc(0.02, -2.60), z: 0.28, rotY: -0.48, rotX: 0.12, rotZ: -0.02, scale: sc(1.48, 0.88) },
+                { at: 0.12, x: heroX - 0.25, y: sc(0.02, -2.30), z: 0.22, rotY: -0.26, rotX: 0.12, rotZ: -0.02, scale: sc(1.44, 0.90) },
+                { at: 0.32, x: px(0.85), y: sc(0.02, -0.80), z: -0.10, rotY: 0.85, rotX: 0.10, rotZ: 0.03, scale: sc(1.36, 0.95) },
                 { at: 0.45, x: px(1.50), y: sc(0.06, -0.06), z: 0.15, rotY: Math.PI * 0.5, rotX: 0.08, rotZ: -0.03, scale: sc(1.38, 0.96) },
                 { at: 0.58, x: px(1.35), y: sc(0.06, -0.06), z: 0.15, rotY: 1.95, rotX: 0.08, rotZ: -0.03, scale: sc(1.38, 0.96) },
                 { at: 0.70, x: px(0.75), y: sc(-0.06, -0.04), z: 0.10, rotY: 3.05, rotX: 0.16, rotZ: 0.02, scale: sc(1.32, 0.95) },
@@ -813,7 +842,7 @@ export default function Car3DCanvas() {
             if (!width || !height) return;
 
             camera.aspect = width / height;
-            camera.updateProjectionMatrix();
+            applyFraming();
 
             renderer.setPixelRatio(pixelRatio());
             renderer.setSize(width, height);

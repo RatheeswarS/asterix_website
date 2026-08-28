@@ -1,5 +1,8 @@
 <!doctype html>
-<html lang="en" class="scroll-smooth">
+<!-- No `scroll-smooth` here: Lenis drives smooth scrolling in JS, and a CSS
+     scroll-behavior on the root fights it (and ScrollTrigger) on every
+     anchor jump. -->
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/Screenshot%202026-08-26%20232320.png?v=3" />
@@ -11,7 +14,11 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
   </head>
-  <body class="bg-[#030b17] text-white antialiased">
+  <!-- Utilities outrank the `@layer base` body rule, so this dark pairing was
+       winning: the page flashed near-black with white text before React
+       mounted, and any text outside an explicitly coloured container inherited
+       white on white. The site is a light theme. -->
+  <body class="bg-white text-slate-900 antialiased">
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
