@@ -88,12 +88,17 @@ const AccordionGallery = ({
               x: vertical ? 0 : isActive ? 0 : shift,
               y: vertical ? (isActive ? 0 : shift) : 0,
               '--ag-gray': gray,
-              '--ag-dim': isActive ? 0 : 0.25,
               duration: dur,
               ease
             },
             0
           );
+
+          // --ag-dim is read by the overlay span, which is a *sibling* of the
+          // media span. Setting it on the media element meant the lookup never
+          // resolved and every panel stayed at the 0.25 fallback. It belongs on
+          // the panel, which is an ancestor of both.
+          tl.to(panel, { '--ag-dim': isActive ? 0 : 0.25, duration: dur, ease }, 0);
         }
 
         if (showLabels && bar && text) {
@@ -192,7 +197,7 @@ const AccordionGallery = ({
         return (
           <Tag
             key={i}
-            ref={el => (panelRefs.current[i] = el)}
+            ref={el => { panelRefs.current[i] = el; }}
             className="group relative block min-w-0 min-h-0 flex-[1_1_0] cursor-pointer overflow-hidden border-3 border-slate-900 shadow-[6px_6px_0px_#0f172a] hover:shadow-[8px_8px_0px_#0284c7] no-underline outline-none [transform-style:preserve-3d] [transform-origin:center] focus-visible:[box-shadow:0_0_0_2px_var(--ag-accent),0_10px_30px_-18px_rgba(0,0,0,0.8)] max-[640px]:min-h-[110px] max-[640px]:!transform-none transition-shadow"
             style={{ borderRadius: `${radius}px`, '--ag-accent': accentColor, willChange: 'flex-grow, transform' }}
             href={item.link && item.link !== '#' ? item.link : undefined}
@@ -207,7 +212,7 @@ const AccordionGallery = ({
           >
             <span className="absolute inset-0 overflow-hidden [border-radius:inherit]">
               <span
-                ref={el => (mediaRefs.current[i] = el)}
+                ref={el => { mediaRefs.current[i] = el; }}
                 className="absolute top-1/2 left-1/2 [filter:grayscale(var(--ag-gray,0))]"
                 style={{
                   width: vertical ? '100%' : 'var(--ag-media-size, 320px)',
@@ -234,7 +239,7 @@ const AccordionGallery = ({
                 aria-hidden="true"
               >
                 <span
-                  ref={el => (barRefs.current[i] = el)}
+                  ref={el => { barRefs.current[i] = el; }}
                   className="h-[28px] w-[4px] flex-none rounded-[2px] opacity-0"
                   style={{
                     background: accentColor,
@@ -248,7 +253,7 @@ const AccordionGallery = ({
                     </span>
                   )}
                   <span
-                    ref={el => (textRefs.current[i] = el)}
+                    ref={el => { textRefs.current[i] = el; }}
                     className="overflow-hidden text-ellipsis whitespace-nowrap text-lg sm:text-xl font-black uppercase text-white tracking-tight opacity-0 [text-shadow:0_2px_10px_rgba(0,0,0,0.8)]"
                     style={{ color: textColor }}
                   >

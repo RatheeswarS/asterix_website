@@ -76,7 +76,10 @@ export default function TextDock({
   return (
     <motion.div
       onMouseMove={(e) => {
-        mouseX.set(e.pageX);
+        // getBoundingClientRect(), which DockTextItem measures against, is in
+        // viewport coordinates. pageX is document coordinates, so the two
+        // disagreed by the horizontal scroll offset.
+        mouseX.set(e.clientX);
         onMouseMove?.(e);
       }}
       onMouseLeave={(e) => {

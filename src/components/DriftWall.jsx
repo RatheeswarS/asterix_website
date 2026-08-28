@@ -59,9 +59,16 @@ const DriftWall = ({
   const lastTsRef = useRef(null);
 
   const [containerHeight, setContainerHeight] = useState(600);
-  const [activeId, setActiveId] = useState(null);
-  const activeIdRef = useRef(null);
   const [reduced, setReduced] = useState(false);
+
+  // Hover state is deliberately kept out of React. A wall of five columns
+  // renders on the order of a hundred tiles; putting the hovered tile in state
+  // re-rendered all of them on every pointer move. The active tile is tracked
+  // by reference and its class is toggled directly.
+  const activeIdRef = useRef(null);
+  const activeElRef = useRef(null);
+  const pendingHitRef = useRef(null);
+  const hitFrameRef = useRef(null);
 
   useEffect(() => {
     setReduced(prefersReducedMotion());
@@ -170,15 +177,20 @@ const DriftWall = ({
     };
   }, [baseVelocities, columnMeta, pauseOnHover, parallax, reduced, applyPlaneTransform]);
 
-  const activate = useCallback((id, index) => {
+  const activate = useCallback((id, index, el) => {
+    if (activeIdRef.current === id) return;
+    if (activeElRef.current) activeElRef.current.classList.remove('is-active');
     activeIdRef.current = id;
+    activeElRef.current = el ?? null;
     hoveredColRef.current = index;
-    setActiveId(id);
+    if (el) el.classList.add('is-active');
   }, []);
+
   const release = useCallback(() => {
+    if (activeElRef.current) activeElRef.current.classList.remove('is-active');
     activeIdRef.current = null;
+    activeElRef.current = null;
     hoveredColRef.current = -1;
-    setActiveId(null);
   }, []);
 
   const handlePointerMove = useCallback(
@@ -191,16 +203,30 @@ const DriftWall = ({
           y: (e.clientY - rect.top) / rect.height - 0.5
         };
       }
-      const hit = document.elementFromPoint(e.clientX, e.clientY);
-      const tile = hit && hit.closest ? hit.closest('[data-tile-id]') : null;
-      if (!tile) return;
-      const id = tile.dataset.tileId;
-      if (id === activeIdRef.current) return;
-      activeIdRef.current = id;
-      hoveredColRef.current = Number(tile.dataset.col);
-      setActiveId(id);
+
+      // elementFromPoint forces a hit test, so it runs at most once per frame
+      // rather than once per pointermove event.
+      pendingHitRef.current = { x: e.clientX, y: e.clientY };
+      if (hitFrameRef.current !== null) return;
+
+      hitFrameRef.current = requestAnimationFrame(() => {
+        hitFrameRef.current = null;
+        const point = pendingHitRef.current;
+        if (!point) return;
+
+        const hit = document.elementFromPoint(point.x, point.y);
+        const tile = hit && hit.closest ? hit.closest('[data-tile-id]') : null;
+
+        // Moving into a gap between tiles used to leave the previous tile
+        // stuck in its lifted state.
+        if (!tile) {
+          release();
+          return;
+        }
+        activate(tile.dataset.tileId, Number(tile.dataset.col), tile);
+      });
     },
-    [parallax, reduced]
+    [parallax, reduced, activate, release]
   );
 
   const handlePointerLeaveWall = useCallback(() => {
@@ -208,6 +234,13 @@ const DriftWall = ({
     pointerRef.current = { x: 0, y: 0 };
     release();
   }, [release]);
+
+  useEffect(
+    () => () => {
+      if (hitFrameRef.current !== null) cancelAnimationFrame(hitFrameRef.current);
+    },
+    []
+  );
 
   const maskStyle =
     'radial-gradient(ellipse 78% 82% at 50% 46%, #000 var(--dw-edge), transparent 100%), ' +
@@ -245,6 +278,10 @@ const DriftWall = ({
     'transition-[transform,opacity,box-shadow,border-color] duration-[350ms] ease-[cubic-bezier(0.22,1,0.36,1)]',
     'group-[.is-active]/tile:opacity-100 group-[.is-active]/tile:[transform:translateZ(var(--dw-lift))]',
     'group-[.is-active]/tile:border-slate-900 group-[.is-active]/tile:shadow-[8px_8px_0px_#0284c7]',
+    // Clicking a tile pushes it back down toward the wall, so a click on an
+    // already-lifted tile still reads as a press.
+    'group-active/tile:[transform:translateZ(calc(var(--dw-lift)*0.4))] group-active/tile:shadow-[2px_2px_0px_#0284c7]',
+    'group-active/tile:duration-[120ms]',
     'group-focus-visible/tile:opacity-100 group-focus-visible/tile:[transform:translateZ(var(--dw-lift))]',
     'group-focus-visible/tile:border-slate-900 group-focus-visible/tile:shadow-[8px_8px_0px_#0284c7]'
   );
@@ -275,10 +312,10 @@ const DriftWall = ({
       </span>
     );
     const commonProps = {
-      className: cx(tileClass, activeId === id && 'is-active'),
+      className: tileClass,
       'data-tile-id': id,
       'data-col': colIndex,
-      onFocus: () => activate(id, colIndex),
+      onFocus: e => activate(id, colIndex, e.currentTarget),
       onBlur: release,
       onClick: () => {
         onItemClick?.(item);
@@ -325,7 +362,7 @@ const DriftWall = ({
             >
               <div
                 className="flex flex-col [transform-style:preserve-3d] will-change-transform"
-                ref={el => (trackRefs.current[c] = el)}
+                ref={el => { trackRefs.current[c] = el; }}
               >
                 {copies.map((_, copyIndex) =>
                   col.map((item, itemIndex) => renderTile(item, `${c}-${copyIndex}-${itemIndex}`, c))

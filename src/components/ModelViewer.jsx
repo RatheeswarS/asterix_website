@@ -160,7 +160,6 @@ const ModelInner = ({
       drag = true;
       lx = e.clientX;
       ly = e.clientY;
-      window.addEventListener('pointerup', up);
     };
     const move = e => {
       if (!drag) return;
@@ -176,10 +175,15 @@ const ModelInner = ({
     const up = () => (drag = false);
     el.addEventListener('pointerdown', down);
     el.addEventListener('pointermove', move);
+    // Registered once here rather than on every pointerdown, which previously
+    // added a fresh window listener per drag and never removed any of them.
+    window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', up);
     return () => {
       el.removeEventListener('pointerdown', down);
       el.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', up);
     };
   }, [gl, enableManualRotation]);
 
@@ -375,8 +379,12 @@ const ModelViewer = ({
   const sceneRef = useRef(null);
   const cameraRef = useRef(null);
 
-  const initYaw = deg2rad(defaultRotationX);
-  const initPitch = deg2rad(defaultRotationY);
+  // Yaw is rotation about Y and pitch is rotation about X. These two were
+  // named the wrong way round, and ModelInner then applied them as
+  // `rotation.set(initPitch, initYaw, 0)` -- so the X prop drove Y and vice
+  // versa, and the viewer opened at an orientation nobody asked for.
+  const initPitch = deg2rad(defaultRotationX);
+  const initYaw = deg2rad(defaultRotationY);
   const camZ = Math.min(Math.max(defaultZoom, minZoomDistance), maxZoomDistance);
 
   const capture = () => {
@@ -439,7 +447,15 @@ const ModelViewer = ({
         camera={{ fov: 45, position: [0, 0, camZ], near: 0.01, far: 100 }}
         style={{ touchAction: 'pan-y pinch-zoom' }}
       >
-        {environmentPreset !== 'none' && <Environment preset={environmentPreset} background={false} />}
+        {/* Environment presets are fetched from a CDN, so this component
+            suspends. Without its own boundary it suspended the whole canvas,
+            model included, and a blocked or offline fetch took the scene down
+            with it. */}
+        {environmentPreset !== 'none' && (
+          <Suspense fallback={null}>
+            <Environment preset={environmentPreset} background={false} />
+          </Suspense>
+        )}
 
         <ambientLight intensity={ambientIntensity} />
         <directionalLight position={[5, 8, 6]} intensity={keyLightIntensity} castShadow />

@@ -79,8 +79,13 @@ const CardSwap = ({
   const intervalRef = useRef();
   const container = useRef(null);
 
+  const total = refs.length;
+
   useEffect(() => {
-    const total = refs.length;
+    // Re-seed the rotation order whenever the deck size changes, otherwise it
+    // still references indices from the previous deck.
+    order.current = Array.from({ length: total }, (_, i) => i);
+
     refs.forEach((r, i) => {
       if (r.current) {
         placeNow(r.current, makeSlot(i, cardDistance, verticalDistance, total), skewAmount);
@@ -97,8 +102,12 @@ const CardSwap = ({
       const tl = gsap.timeline();
       tlRef.current = tl;
 
+      // Drop far enough to clear the deck but not so far that the card leaves
+      // its (overflow-hidden) section and gets clipped mid-animation.
+      const dropDistance = Math.min(320, (container.current?.offsetHeight ?? 400) * 0.8);
+
       tl.to(elFront, {
-        y: '+=500',
+        y: `+=${dropDistance}`,
         duration: config.durDrop,
         ease: config.ease
       });
@@ -152,6 +161,11 @@ const CardSwap = ({
       });
     };
 
+    // An unprompted card rotation every few seconds is exactly the kind of
+    // motion prefers-reduced-motion is asking us to stop.
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduceMotion) return undefined;
+
     intervalRef.current = window.setInterval(swap, delay);
 
     if (pauseOnHover && container.current) {
@@ -170,11 +184,19 @@ const CardSwap = ({
         node.removeEventListener('mouseenter', pause);
         node.removeEventListener('mouseleave', resume);
         clearInterval(intervalRef.current);
+        // The pauseOnHover branch used to return without killing the running
+        // timeline, so GSAP kept animating detached nodes after unmount.
+        tlRef.current?.kill();
+        tlRef.current = null;
       };
     }
-    return () => clearInterval(intervalRef.current);
+    return () => {
+      clearInterval(intervalRef.current);
+      tlRef.current?.kill();
+      tlRef.current = null;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cardDistance, verticalDistance, delay, pauseOnHover, skewAmount, easing]);
+  }, [cardDistance, verticalDistance, delay, pauseOnHover, skewAmount, easing, total, refs]);
 
   const rendered = childArr.map((child, i) =>
     isValidElement(child)
