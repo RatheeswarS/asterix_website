@@ -1,8 +1,17 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "oxc"],
+  "plugins": ["react", "oxc", "unicorn"],
+  "categories": {
+    "correctness": "error"
+  },
   "rules": {
     "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
+    "react/exhaustive-deps": "warn",
+    "react/only-export-components": ["warn", { "allowConstantExport": true }],
+    "no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
+
+    "react/set-state-in-effect": "warn",
+    "unicorn/no-useless-fallback-in-spread": "warn"
+  },
+  "ignorePatterns": ["dist", "server/uploads", "server/data"]
 }

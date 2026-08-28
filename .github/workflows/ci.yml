@@ -1,0 +1,89 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+
+# A newer push to the same branch supersedes an in-flight run.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  frontend:
+    name: Lint & build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Node 24: the backend imports node:sqlite, which is only available from
+      # 22.5 and is still flagged experimental before 24. Pinning the major
+      # here keeps CI on the same runtime the app is developed against.
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # oxlint exits non-zero on anything in the `correctness` category, so
+      # this step genuinely gates. Remaining advisory findings are configured
+      # as warnings in .oxlintrc.json and are reported without failing the run;
+      # add --deny-warnings once that backlog is cleared.
+      - name: Lint
+        run: npx oxlint
+
+      - name: Build
+        run: npm run build
+
+      - name: Upload build output
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ github.sha }}
+          path: dist
+          retention-days: 7
+          if-no-files-found: error
+
+  backend:
+    name: Backend smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+
+      - name: Install dependencies
+        working-directory: server
+        run: npm ci
+
+      # There is no test suite yet, so this checks the two things that
+      # actually break silently: that every module parses, and that the
+      # node:sqlite schema bootstrap runs to completion on a clean checkout.
+      - name: Check modules parse
+        working-directory: server
+        run: |
+          for f in $(find src -name '*.js'); do
+            node --check "$f"
+          done
+
+      - name: Boot database schema
+        working-directory: server
+        env:
+          JWT_SECRET: ci-smoke-test-secret
+        run: node -e "import('./src/db/database.js').then(() => console.log('schema ok'))"
