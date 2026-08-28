@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { subsystems as initialSubsystems } from '../data/subsystemsData';
 
 import imgPaddock from '../assets/gallery/01_team_paddock.jpg';
@@ -9,7 +9,8 @@ import imgMechanics from '../assets/gallery/05_pitlane_mechanics.jpg';
 import imgCelebration from '../assets/gallery/06_team_celebration.jpg';
 
 const LOCAL_STORAGE_KEY = 'asterix_website_data_v1';
-const AUTH_SESSION_KEY = 'asterix_admin_session_v1';
+export const AUTH_SESSION_KEY = 'asterix_admin_session_v1';
+export const AUTH_TOKEN_KEY = 'asterix_admin_token_v1';
 
 // Initial default story narrative
 const initialStoryText = `It started as a training program.
@@ -193,7 +194,10 @@ const initialAccounts = [
 const WebsiteDataContext = createContext(null);
 
 export function WebsiteDataProvider({ children }) {
-    // Load state from localStorage or initialize defaults
+    const [isServerConnected, setIsServerConnected] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+
+    // Initial state from localStorage or defaults
     const [siteData, setSiteData] = useState(() => {
         try {
             const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
@@ -225,14 +229,97 @@ export function WebsiteDataProvider({ children }) {
         };
     });
 
-    // Save changes to localStorage
+    const isInitialMount = useRef(true);
+
+    // Fetch live website data from database API on load
+    const fetchFromDatabase = useCallback(async () => {
+        try {
+            const res = await fetch('/api/site-data');
+            if (res.ok) {
+                const data = await res.json();
+                setSiteData(prev => {
+                    const merged = {
+                        ...prev,
+                        hero: data.hero || prev.hero,
+                        story: data.story || prev.story,
+                        subsystems: (data.subsystems && data.subsystems.length > 0) ? data.subsystems : prev.subsystems,
+                        gallery: (data.gallery && data.gallery.length > 0) ? data.gallery : prev.gallery,
+                        updates: (data.updates && data.updates.length > 0) ? data.updates : prev.updates,
+                        contact: data.contact || prev.contact,
+                        lastModified: data.lastModified || prev.lastModified
+                    };
+                    try {
+                        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(merged));
+                    } catch { /* ignore */ }
+                    return merged;
+                });
+                setIsServerConnected(true);
+            } else {
+                setIsServerConnected(false);
+            }
+        } catch (err) {
+            console.warn("Backend database API not reachable, running on local cache:", err.message);
+            setIsServerConnected(false);
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
     useEffect(() => {
+        fetchFromDatabase();
+    }, [fetchFromDatabase]);
+
+    // Save to server database
+    const syncToServer = useCallback(async (dataToSync) => {
+        const token = sessionStorage.getItem(AUTH_TOKEN_KEY);
+        if (!token) return;
+
+        try {
+            const res = await fetch('/api/site-data', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    hero: dataToSync.hero,
+                    story: dataToSync.story,
+                    subsystems: dataToSync.subsystems,
+                    gallery: dataToSync.gallery,
+                    updates: dataToSync.updates,
+                    contact: dataToSync.contact
+                })
+            });
+
+            if (res.ok) {
+                setIsServerConnected(true);
+            }
+        } catch (err) {
+            console.warn('Failed to sync changes to database server:', err);
+            setIsServerConnected(false);
+        }
+    }, []);
+
+    // Save changes to localStorage and automatically sync to backend database if admin is authenticated
+    useEffect(() => {
+        if (isInitialMount.current) {
+            isInitialMount.current = false;
+            return;
+        }
+
         try {
             localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(siteData));
         } catch (e) {
             console.error("Failed to save website data to localStorage:", e);
         }
-    }, [siteData]);
+
+        // Sync to server database if authenticated
+        const timer = setTimeout(() => {
+            syncToServer(siteData);
+        }, 500);
+
+        return () => clearTimeout(timer);
+    }, [siteData, syncToServer]);
 
     // Update helpers
     const updateHero = (newHero) => {
@@ -399,18 +486,26 @@ export function WebsiteDataProvider({ children }) {
         };
         setSiteData(defaults);
         localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(defaults));
+        syncToServer(defaults);
     };
 
     const loadFromBackup = (data) => {
-        setSiteData({
+        const updated = {
             ...data,
             lastModified: new Date().toISOString()
-        });
+        };
+        setSiteData(updated);
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
+        syncToServer(updated);
     };
 
     return (
         <WebsiteDataContext.Provider value={{
             siteData,
+            isServerConnected,
+            isLoading,
+            fetchFromDatabase,
+            syncToServer,
             updateHero,
             updateStory,
             updateContact,
@@ -429,7 +524,8 @@ export function WebsiteDataProvider({ children }) {
             deleteAccount,
             resetToDefaults,
             loadFromBackup,
-            AUTH_SESSION_KEY
+            AUTH_SESSION_KEY,
+            AUTH_TOKEN_KEY
         }}>
             {children}
         </WebsiteDataContext.Provider>

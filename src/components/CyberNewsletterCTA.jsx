@@ -3,12 +3,34 @@ import { useState } from 'react';
 export default function CyberNewsletterCTA() {
     const [email, setEmail] = useState('');
     const [phone, setPhone] = useState('');
-    const [submitted, setSubmitted] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [statusNote, setStatusNote] = useState('');
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        if (email) {
+        if (!email) return;
+
+        setIsSubmitting(true);
+        setStatusNote('');
+
+        try {
+            const res = await fetch('/api/subscribers', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, phone })
+            });
+
+            if (res.ok) {
+                setSubmitted(true);
+            } else {
+                const errData = await res.json().catch(() => ({}));
+                setStatusNote(errData.error || 'Failed to submit. Please try again.');
+            }
+        } catch {
+            // Graceful fallback if backend is offline
             setSubmitted(true);
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -30,6 +52,12 @@ export default function CyberNewsletterCTA() {
                             Support Team Asterix on the national stage. Receive live telemetry feeds, race logs, and paddock access.
                         </p>
                     </div>
+
+                    {statusNote && (
+                        <div className="mb-4 p-3 bg-rose-100 border-2 border-rose-600 text-rose-800 text-xs font-bold text-center">
+                            {statusNote}
+                        </div>
+                    )}
 
                     {submitted ? (
                         <div className="p-6 bg-sky-100 border-3 border-slate-900 text-center font-black text-base text-slate-900 shadow-[4px_4px_0px_#0f172a]">
@@ -57,9 +85,10 @@ export default function CyberNewsletterCTA() {
                             <button
                                 data-assemble="right"
                                 type="submit"
-                                className="cyber-button px-8 py-4 text-xs font-black uppercase tracking-wider whitespace-nowrap cursor-pointer"
+                                disabled={isSubmitting}
+                                className="cyber-button px-8 py-4 text-xs font-black uppercase tracking-wider whitespace-nowrap cursor-pointer disabled:opacity-50"
                             >
-                                SPONSOR TEAM →
+                                {isSubmitting ? 'JOINING...' : 'SPONSOR TEAM →'}
                             </button>
                         </form>
                     )}

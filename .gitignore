@@ -12,6 +12,24 @@ dist
 dist-ssr
 *.local
 
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Database and SQLite runtime files
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+server/data/*.db*
+!server/data/.gitkeep
+
+# User uploaded dynamic media (keep default gallery)
+server/uploads/*
+!server/uploads/gallery/
+!server/uploads/.gitkeep
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

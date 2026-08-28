@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useWebsiteData } from '../../context/WebsiteDataContext';
+import { useState, useEffect, useCallback } from 'react';
+import { useWebsiteData, AUTH_TOKEN_KEY } from '../../context/WebsiteDataContext';
 
 export default function AdminDashboard({ onExit }) {
     const {
@@ -18,11 +18,12 @@ export default function AdminDashboard({ onExit }) {
         updateUpdate,
         deleteUpdate,
         addAccount,
-        updateAccount,
         deleteAccount,
         resetToDefaults,
         loadFromBackup,
-        AUTH_SESSION_KEY
+        AUTH_SESSION_KEY,
+        isServerConnected,
+        fetchFromDatabase
     } = useWebsiteData();
 
     // Authentication state
@@ -36,6 +37,7 @@ export default function AdminDashboard({ onExit }) {
 
     const [loginForm, setLoginForm] = useState({ username: '', password: '' });
     const [loginError, setLoginError] = useState('');
+    const [isLoggingIn, setIsLoggingIn] = useState(false);
     const [activeTab, setActiveTab] = useState('overview');
     const [statusMessage, setStatusMessage] = useState('');
 
@@ -48,75 +50,152 @@ export default function AdminDashboard({ onExit }) {
     const [newUpdateItem, setNewUpdateItem] = useState({ label: '', tag: 'PROVING GROUNDS', image: '', link: '#' });
     const [newAccount, setNewAccount] = useState({ username: '', password: '', name: '', role: 'Team Member', accessLevel: 'Lead' });
 
+    // Alliance Leads & Database Accounts State
+    const [subscribers, setSubscribers] = useState([]);
+    const [isLoadingSubscribers, setIsLoadingSubscribers] = useState(false);
+    const [dbAccounts, setDbAccounts] = useState([]);
+
     const showStatus = (msg) => {
         setStatusMessage(msg);
         setTimeout(() => setStatusMessage(''), 3500);
     };
 
-    const handleLogin = (e) => {
+    const handleLogin = async (e) => {
         e.preventDefault();
         setLoginError('');
-        const found = siteData.accounts.find(
-            a => a.username.toLowerCase() === loginForm.username.toLowerCase() && a.password === loginForm.password
-        );
-        if (found) {
-            setCurrentUser(found);
-            sessionStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(found));
-            showStatus(`Welcome back, ${found.name}!`);
-        } else {
-            setLoginError('Invalid username or password. Default is: admin / asterix2026');
+        setIsLoggingIn(true);
+
+        try {
+            const res = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    username: loginForm.username,
+                    password: loginForm.password
+                })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                setCurrentUser(data.user);
+                sessionStorage.setItem(AUTH_TOKEN_KEY, data.token);
+                sessionStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(data.user));
+                showStatus(`Welcome back, ${data.user.name}! (Connected to SQLite DB)`);
+                fetchFromDatabase?.();
+                return;
+            } else {
+                const errData = await res.json().catch(() => ({}));
+                setLoginError(errData.error || 'Invalid username or password.');
+                return;
+            }
+        } catch {
+            // Fallback to local accounts check if server offline
+            const found = siteData.accounts.find(
+                a => a.username.toLowerCase() === loginForm.username.toLowerCase() && a.password === loginForm.password
+            );
+            if (found) {
+                setCurrentUser(found);
+                sessionStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(found));
+                showStatus(`Welcome back, ${found.name}! (Offline mode)`);
+            } else {
+                setLoginError('Invalid username or password. Default is: admin / asterix2026');
+            }
+        } finally {
+            setIsLoggingIn(false);
         }
     };
 
     const handleLogout = () => {
         setCurrentUser(null);
         sessionStorage.removeItem(AUTH_SESSION_KEY);
+        sessionStorage.removeItem(AUTH_TOKEN_KEY);
         setLoginForm({ username: '', password: '' });
     };
 
-    // Export & Backup
-    const handleDownloadBackup = () => {
-        const jsonStr = JSON.stringify(siteData, null, 2);
-        const blob = new Blob([jsonStr], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `team_asterix_website_backup_${new Date().toISOString().slice(0, 10)}.json`;
-        a.click();
-        URL.revokeObjectURL(url);
-        showStatus('Backup JSON downloaded successfully!');
-    };
+    // Fetch Alliance Subscribers from database
+    const fetchSubscribers = useCallback(async () => {
+        const token = sessionStorage.getItem(AUTH_TOKEN_KEY);
+        if (!token) return;
 
-    const handleRestoreBackup = (e) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            try {
-                const parsed = JSON.parse(event.target.result);
-                if (parsed.subsystems && parsed.hero) {
-                    loadFromBackup(parsed);
-                    showStatus('Website data successfully restored from backup!');
-                } else {
-                    alert('Invalid backup file format.');
-                }
-            } catch {
-                alert('Could not parse JSON file.');
+        setIsLoadingSubscribers(true);
+        try {
+            const res = await fetch('/api/subscribers', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const list = await res.json();
+                setSubscribers(list);
             }
-        };
-        reader.readAsText(file);
+        } catch (err) {
+            console.warn('Failed to fetch subscribers:', err);
+        } finally {
+            setIsLoadingSubscribers(false);
+        }
+    }, []);
+
+    // Delete single subscriber
+    const handleDeleteSubscriber = async (id) => {
+        const token = sessionStorage.getItem(AUTH_TOKEN_KEY);
+        if (!token) return;
+
+        try {
+            const res = await fetch(`/api/subscribers/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                setSubscribers(prev => prev.filter(s => s.id !== id));
+                showStatus('Subscriber removed.');
+            }
+        } catch (err) {
+            console.error('Failed to delete subscriber:', err);
+        }
     };
 
-    const handleImageUpload = (e, callback) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            callback(event.target.result);
-        };
-        reader.readAsDataURL(file);
+    // Export subscribers as CSV
+    const handleExportSubscribersCSV = () => {
+        if (!subscribers.length) return;
+        const header = ['Email', 'Phone', 'Joined Date'].join(',');
+        const rows = subscribers.map(s => `"${s.email}","${s.phone || ''}","${s.created_at || ''}"`);
+        const csvContent = 'data:text/csv;charset=utf-8,' + [header, ...rows].join('\n');
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement('a');
+        link.setAttribute('href', encodedUri);
+        link.setAttribute('download', `asterix_subscribers_${new Date().toISOString().slice(0, 10)}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        showStatus('Subscribers CSV exported successfully!');
     };
 
+    // Fetch accounts from database
+    const fetchAccounts = useCallback(async () => {
+        const token = sessionStorage.getItem(AUTH_TOKEN_KEY);
+        if (!token) return;
+
+        try {
+            const res = await fetch('/api/auth/accounts', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const list = await res.json();
+                setDbAccounts(list);
+            }
+        } catch (err) {
+            console.warn('Failed to fetch DB accounts:', err);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (currentUser) {
+            if (activeTab === 'subscribers') {
+                fetchSubscribers();
+            }
+            if (activeTab === 'accounts') {
+                fetchAccounts();
+            }
+        }
+    }, [currentUser, activeTab, fetchSubscribers, fetchAccounts]);
     // If not authenticated, render Login Screen
     if (!currentUser) {
         return (
@@ -172,9 +251,10 @@ export default function AdminDashboard({ onExit }) {
                         <div className="pt-2">
                             <button
                                 type="submit"
-                                className="w-full py-2.5 bg-sky-500 hover:bg-sky-400 text-white font-mono font-black text-xs uppercase border-2 border-slate-900 shadow-[3px_3px_0px_#0f172a] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[5px_5px_0px_#0f172a] transition-all cursor-pointer"
+                                disabled={isLoggingIn}
+                                className="w-full py-2.5 bg-sky-500 hover:bg-sky-400 text-white font-mono font-black text-xs uppercase border-2 border-slate-900 shadow-[3px_3px_0px_#0f172a] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[5px_5px_0px_#0f172a] transition-all cursor-pointer disabled:opacity-50"
                             >
-                                Login to Dashboard →
+                                {isLoggingIn ? 'Verifying Credentials...' : 'Login to Dashboard →'}
                             </button>
                         </div>
                     </form>
@@ -202,6 +282,7 @@ export default function AdminDashboard({ onExit }) {
         { id: 'subsystems', label: '🏎️ Subsystems & Squad' },
         { id: 'gallery', label: '📸 Media Gallery' },
         { id: 'updates', label: '📢 Team Updates' },
+        { id: 'subscribers', label: '📬 Alliance Leads' },
         { id: 'accounts', label: '👥 Team Accounts' },
         { id: 'settings', label: '⚙️ Settings & Backup' },
     ];
@@ -214,9 +295,14 @@ export default function AdminDashboard({ onExit }) {
                 <div className="flex items-center gap-3">
                     <div className="w-4 h-4 bg-sky-500 border-2 border-slate-900" />
                     <div>
-                        <h1 className="text-base sm:text-lg font-black uppercase text-slate-900 leading-none">
-                            ASTERIX MANAGEMENT CONSOLE
-                        </h1>
+                        <div className="flex items-center gap-2">
+                            <h1 className="text-base sm:text-lg font-black uppercase text-slate-900 leading-none">
+                                ASTERIX MANAGEMENT CONSOLE
+                            </h1>
+                            <span className={`px-2 py-0.5 text-[9px] font-mono font-black border border-slate-900 uppercase ${isServerConnected ? 'bg-emerald-300 text-slate-900' : 'bg-amber-300 text-slate-900'}`}>
+                                {isServerConnected ? '● SQLite Online' : '○ Local Cache'}
+                            </span>
+                        </div>
                         <span className="text-[10px] font-mono font-bold text-slate-500">
                             Logged in as: <strong className="text-slate-900">{currentUser.name}</strong> ({currentUser.accessLevel})
                         </span>
@@ -271,9 +357,10 @@ export default function AdminDashboard({ onExit }) {
 
                     <div className="mt-6 pt-4 border-t-2 border-slate-200">
                         <div className="text-[10px] font-mono text-slate-500 space-y-1">
-                            <div>• Auto-saved to local browser storage</div>
+                            <div>• {isServerConnected ? '✓ SQLite database persistent storage' : '• Local browser storage cache'}</div>
                             <div>• {siteData.subsystems.length} Subsystems active</div>
                             <div>• {siteData.gallery.length} Gallery items</div>
+                            <div>• {subscribers.length} Alliance leads captured</div>
                         </div>
                     </div>
                 </aside>
@@ -292,24 +379,28 @@ export default function AdminDashboard({ onExit }) {
                             </div>
 
                             {/* Key Stats Cards */}
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                                 <div className="p-4 bg-sky-50 border-2 border-slate-900 shadow-[3px_3px_0px_#0f172a]">
                                     <span className="text-[10px] font-mono font-black text-sky-600 uppercase block">Subsystems</span>
                                     <span className="text-3xl font-black text-slate-900">{siteData.subsystems.length}</span>
                                 </div>
                                 <div className="p-4 bg-amber-50 border-2 border-slate-900 shadow-[3px_3px_0px_#0f172a]">
-                                    <span className="text-[10px] font-mono font-black text-amber-600 uppercase block">Total Specialists</span>
+                                    <span className="text-[10px] font-mono font-black text-amber-600 uppercase block">Specialists</span>
                                     <span className="text-3xl font-black text-slate-900">
                                         {siteData.subsystems.reduce((sum, s) => sum + (s.teamMembers?.length || 0), 0)}
                                     </span>
                                 </div>
                                 <div className="p-4 bg-emerald-50 border-2 border-slate-900 shadow-[3px_3px_0px_#0f172a]">
-                                    <span className="text-[10px] font-mono font-black text-emerald-600 uppercase block">Gallery Photos</span>
+                                    <span className="text-[10px] font-mono font-black text-emerald-600 uppercase block">Gallery</span>
                                     <span className="text-3xl font-black text-slate-900">{siteData.gallery.length}</span>
                                 </div>
                                 <div className="p-4 bg-rose-50 border-2 border-slate-900 shadow-[3px_3px_0px_#0f172a]">
-                                    <span className="text-[10px] font-mono font-black text-rose-600 uppercase block">Team Updates</span>
+                                    <span className="text-[10px] font-mono font-black text-rose-600 uppercase block">Updates</span>
                                     <span className="text-3xl font-black text-slate-900">{siteData.updates.length}</span>
+                                </div>
+                                <div className="p-4 bg-indigo-50 border-2 border-slate-900 shadow-[3px_3px_0px_#0f172a]">
+                                    <span className="text-[10px] font-mono font-black text-indigo-600 uppercase block">Leads</span>
+                                    <span className="text-3xl font-black text-slate-900">{subscribers.length}</span>
                                 </div>
                             </div>
 
@@ -331,6 +422,13 @@ export default function AdminDashboard({ onExit }) {
                                         className="p-3 border-2 border-slate-900 bg-slate-50 hover:bg-sky-50 text-left font-mono font-bold text-xs flex items-center justify-between cursor-pointer"
                                     >
                                         <span>Add / Edit Squad Members</span>
+                                        <span>→</span>
+                                    </button>
+                                    <button
+                                        onClick={() => setActiveTab('subscribers')}
+                                        className="p-3 border-2 border-slate-900 bg-slate-50 hover:bg-sky-50 text-left font-mono font-bold text-xs flex items-center justify-between cursor-pointer"
+                                    >
+                                        <span>View Alliance Newsletter Leads ({subscribers.length})</span>
                                         <span>→</span>
                                     </button>
                                     <button
@@ -977,7 +1075,78 @@ export default function AdminDashboard({ onExit }) {
                         </div>
                     )}
 
-                    {/* TAB 7: TEAM MEMBER ACCOUNTS */}
+                    {/* TAB: ALLIANCE LEADS / SUBSCRIBERS */}
+                    {activeTab === 'subscribers' && (
+                        <div className="space-y-6">
+                            <div className="border-b-2 border-slate-200 pb-4 flex flex-wrap items-center justify-between gap-4">
+                                <div>
+                                    <h2 className="text-2xl font-black uppercase text-slate-900">Alliance Leads & Subscribers</h2>
+                                    <p className="text-xs font-bold text-slate-500 font-mono mt-1">
+                                        Submissions from the "Join the Alliance" newsletter form, stored securely in SQLite.
+                                    </p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={fetchSubscribers}
+                                        className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 border-2 border-slate-900 text-xs font-mono font-bold cursor-pointer"
+                                    >
+                                        ↻ Refresh
+                                    </button>
+                                    <button
+                                        onClick={handleExportSubscribersCSV}
+                                        disabled={subscribers.length === 0}
+                                        className="px-3 py-1.5 bg-sky-500 hover:bg-sky-400 text-white border-2 border-slate-900 text-xs font-mono font-black uppercase shadow-[2px_2px_0px_#0f172a] cursor-pointer disabled:opacity-50"
+                                    >
+                                        Export CSV ↓
+                                    </button>
+                                </div>
+                            </div>
+
+                            {isLoadingSubscribers ? (
+                                <div className="p-8 text-center font-mono text-sm text-slate-500">
+                                    Loading subscribers from database...
+                                </div>
+                            ) : subscribers.length === 0 ? (
+                                <div className="p-8 text-center border-2 border-dashed border-slate-300 font-mono text-xs text-slate-500">
+                                    No alliance leads recorded yet. Submissions from the website newsletter section will appear here automatically.
+                                </div>
+                            ) : (
+                                <div className="overflow-x-auto border-2 border-slate-900">
+                                    <table className="w-full text-left font-mono text-xs">
+                                        <thead className="bg-slate-900 text-white font-black uppercase text-[10px]">
+                                            <tr>
+                                                <th className="p-2.5">Email</th>
+                                                <th className="p-2.5">Phone</th>
+                                                <th className="p-2.5">Joined Date</th>
+                                                <th className="p-2.5 text-right">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-200">
+                                            {subscribers.map(sub => (
+                                                <tr key={sub.id} className="hover:bg-slate-50">
+                                                    <td className="p-2.5 font-bold text-slate-900">{sub.email}</td>
+                                                    <td className="p-2.5 text-slate-600">{sub.phone || '—'}</td>
+                                                    <td className="p-2.5 text-slate-500 text-[11px]">
+                                                        {sub.created_at ? new Date(sub.created_at).toLocaleString() : 'Recent'}
+                                                    </td>
+                                                    <td className="p-2.5 text-right">
+                                                        <button
+                                                            onClick={() => handleDeleteSubscriber(sub.id)}
+                                                            className="text-rose-600 hover:text-rose-900 font-black cursor-pointer"
+                                                        >
+                                                            Delete ✕
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* TAB: TEAM MEMBER ACCOUNTS */}
                     {activeTab === 'accounts' && (
                         <div className="space-y-6">
                             <div className="border-b-2 border-slate-200 pb-4">
@@ -1023,8 +1192,35 @@ export default function AdminDashboard({ onExit }) {
                                     />
                                 </div>
                                 <button
-                                    onClick={() => {
+                                    onClick={async () => {
                                         if (!newAccount.username || !newAccount.password) return alert('Username and password are required');
+                                        const token = sessionStorage.getItem(AUTH_TOKEN_KEY);
+                                        if (token) {
+                                            try {
+                                                const res = await fetch('/api/auth/accounts', {
+                                                    method: 'POST',
+                                                    headers: {
+                                                        'Content-Type': 'application/json',
+                                                        'Authorization': `Bearer ${token}`
+                                                    },
+                                                    body: JSON.stringify(newAccount)
+                                                });
+                                                if (res.ok) {
+                                                    const data = await res.json();
+                                                    setDbAccounts(prev => [...prev, data.account]);
+                                                    addAccount(data.account);
+                                                    setNewAccount({ username: '', password: '', name: '', role: 'Team Member', accessLevel: 'Lead' });
+                                                    showStatus('New member account saved to SQLite database!');
+                                                    return;
+                                                } else {
+                                                    const errData = await res.json().catch(() => ({}));
+                                                    alert(errData.error || 'Failed to create account.');
+                                                    return;
+                                                }
+                                            } catch (err) {
+                                                console.warn('Server error, fallback to local state:', err);
+                                            }
+                                        }
                                         addAccount({ ...newAccount, id: `acc-${Date.now()}` });
                                         setNewAccount({ username: '', password: '', name: '', role: 'Team Member', accessLevel: 'Lead' });
                                         showStatus('New member account created!');
@@ -1048,7 +1244,7 @@ export default function AdminDashboard({ onExit }) {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-200">
-                                        {siteData.accounts.map(acc => (
+                                        {(dbAccounts.length > 0 ? dbAccounts : siteData.accounts).map(acc => (
                                             <tr key={acc.id} className="hover:bg-slate-50">
                                                 <td className="p-2.5 font-bold">{acc.name}</td>
                                                 <td className="p-2.5 text-sky-600 font-bold">{acc.username}</td>
@@ -1061,7 +1257,28 @@ export default function AdminDashboard({ onExit }) {
                                                 <td className="p-2.5 text-right">
                                                     {acc.username !== 'admin' && (
                                                         <button
-                                                            onClick={() => deleteAccount(acc.id)}
+                                                            onClick={async () => {
+                                                                if (!confirm(`Delete account for ${acc.name}?`)) return;
+                                                                const token = sessionStorage.getItem(AUTH_TOKEN_KEY);
+                                                                if (token) {
+                                                                    try {
+                                                                        const res = await fetch(`/api/auth/accounts/${acc.id}`, {
+                                                                            method: 'DELETE',
+                                                                            headers: { 'Authorization': `Bearer ${token}` }
+                                                                        });
+                                                                        if (res.ok) {
+                                                                            setDbAccounts(prev => prev.filter(a => a.id !== acc.id));
+                                                                            deleteAccount(acc.id);
+                                                                            showStatus('Account removed from database!');
+                                                                            return;
+                                                                        }
+                                                                    } catch (err) {
+                                                                        console.warn('Backend delete failed:', err);
+                                                                    }
+                                                                }
+                                                                deleteAccount(acc.id);
+                                                                showStatus('Account removed.');
+                                                            }}
                                                             className="text-rose-600 hover:text-rose-900 font-black cursor-pointer"
                                                         >
                                                             Delete ✕
