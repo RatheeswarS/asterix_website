@@ -127,6 +127,96 @@ export default function AdminDashboard({ onExit }) {
         setLoginForm({ username: '', password: '' });
     };
 
+    // Handle image file upload to server /uploads endpoint with Base64 fallback
+    const handleImageUpload = async (e, callback) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (!file.type.startsWith('image/')) {
+            alert('Please select a valid image file (JPEG, PNG, WEBP, etc.)');
+            return;
+        }
+
+        showStatus('Uploading image to server...');
+        const token = sessionStorage.getItem(AUTH_TOKEN_KEY);
+
+        if (token) {
+            try {
+                const formData = new FormData();
+                formData.append('image', file);
+
+                const res = await fetch('/api/upload', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: formData
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.url) {
+                        callback(data.url);
+                        showStatus('Image uploaded to server successfully! ✓');
+                        e.target.value = '';
+                        return;
+                    }
+                } else {
+                    const err = await res.json().catch(() => ({}));
+                    console.warn('Server upload rejected:', err);
+                }
+            } catch (err) {
+                console.warn('Server upload error, falling back to local data URL:', err);
+            }
+        }
+
+        // Fallback: read file as Base64 data URL
+        const reader = new FileReader();
+        reader.onload = () => {
+            callback(reader.result);
+            showStatus('Image loaded as local data URL! ✓');
+            e.target.value = '';
+        };
+        reader.onerror = () => {
+            alert('Failed to read image file.');
+        };
+        reader.readAsDataURL(file);
+    };
+
+    // Export complete data snapshot as JSON
+    const handleDownloadBackup = () => {
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(siteData, null, 2));
+        const downloadAnchor = document.createElement('a');
+        downloadAnchor.setAttribute("href", dataStr);
+        downloadAnchor.setAttribute("download", `asterix_backup_${new Date().toISOString().slice(0, 10)}.json`);
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        downloadAnchor.remove();
+        showStatus('Backup snapshot downloaded successfully! ✓');
+    };
+
+    // Restore data from JSON backup file
+    const handleRestoreBackup = (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const parsed = JSON.parse(event.target.result);
+                if (parsed && typeof parsed === 'object') {
+                    loadFromBackup(parsed);
+                    showStatus('Backup restored successfully! ✓');
+                } else {
+                    alert('Invalid backup JSON file.');
+                }
+            } catch {
+                alert('Could not parse backup file.');
+            }
+        };
+        reader.readAsText(file);
+    };
+
     // Fetch Alliance Subscribers from database
     const fetchSubscribers = useCallback(async () => {
         const token = sessionStorage.getItem(AUTH_TOKEN_KEY);
@@ -925,21 +1015,35 @@ export default function AdminDashboard({ onExit }) {
                                     />
                                 </div>
 
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    <input
-                                        type="text"
-                                        value={newGallery.src}
-                                        onChange={e => setNewGallery({ ...newGallery, src: e.target.value })}
-                                        placeholder="Image URL or upload below"
-                                        className="px-3 py-1.5 border-2 border-slate-900 bg-white text-xs font-mono"
-                                    />
-                                    <div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
+                                    <div className="flex gap-2 items-center">
+                                        {newGallery.src ? (
+                                            <div className="w-14 h-14 border-2 border-slate-900 overflow-hidden bg-slate-100 flex-shrink-0">
+                                                <img src={newGallery.src} alt="Preview" className="w-full h-full object-cover" />
+                                            </div>
+                                        ) : (
+                                            <div className="w-14 h-14 border-2 border-dashed border-slate-400 bg-slate-100 flex items-center justify-center text-[9px] font-mono text-slate-500 font-bold text-center flex-shrink-0">
+                                                PHOTO<br />PREVIEW
+                                            </div>
+                                        )}
                                         <input
-                                            type="file"
-                                            accept="image/*"
-                                            onChange={e => handleImageUpload(e, (dataUrl) => setNewGallery(prev => ({ ...prev, src: dataUrl })))}
-                                            className="text-xs font-mono"
+                                            type="text"
+                                            value={newGallery.src}
+                                            onChange={e => setNewGallery({ ...newGallery, src: e.target.value })}
+                                            placeholder="Image URL or choose file →"
+                                            className="flex-1 px-3 py-2 border-2 border-slate-900 bg-white text-xs font-mono"
                                         />
+                                    </div>
+                                    <div>
+                                        <label className="inline-flex items-center justify-center gap-2 w-full py-2.5 px-3 bg-white hover:bg-slate-100 border-2 border-slate-900 font-mono text-xs font-bold uppercase cursor-pointer shadow-[2px_2px_0px_#0f172a] hover:translate-x-[-1px] hover:translate-y-[-1px] transition-all">
+                                            <span>📁 Choose Photo from Device</span>
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                className="hidden"
+                                                onChange={e => handleImageUpload(e, (url) => setNewGallery(prev => ({ ...prev, src: url })))}
+                                            />
+                                        </label>
                                     </div>
                                 </div>
 
@@ -1030,20 +1134,36 @@ export default function AdminDashboard({ onExit }) {
                                         className="px-3 py-1.5 border-2 border-slate-900 bg-white text-xs font-mono"
                                     />
                                 </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    <input
-                                        type="text"
-                                        value={newUpdateItem.image}
-                                        onChange={e => setNewUpdateItem({ ...newUpdateItem, image: e.target.value })}
-                                        placeholder="Image URL or upload"
-                                        className="px-3 py-1.5 border-2 border-slate-900 bg-white text-xs font-mono"
-                                    />
-                                    <input
-                                        type="file"
-                                        accept="image/*"
-                                        onChange={e => handleImageUpload(e, (dataUrl) => setNewUpdateItem(prev => ({ ...prev, image: dataUrl })))}
-                                        className="text-xs font-mono"
-                                    />
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
+                                    <div className="flex gap-2 items-center">
+                                        {newUpdateItem.image ? (
+                                            <div className="w-14 h-14 border-2 border-slate-900 overflow-hidden bg-slate-100 flex-shrink-0">
+                                                <img src={newUpdateItem.image} alt="Preview" className="w-full h-full object-cover" />
+                                            </div>
+                                        ) : (
+                                            <div className="w-14 h-14 border-2 border-dashed border-slate-400 bg-slate-100 flex items-center justify-center text-[9px] font-mono text-slate-500 font-bold text-center flex-shrink-0">
+                                                PHOTO<br />PREVIEW
+                                            </div>
+                                        )}
+                                        <input
+                                            type="text"
+                                            value={newUpdateItem.image}
+                                            onChange={e => setNewUpdateItem({ ...newUpdateItem, image: e.target.value })}
+                                            placeholder="Image URL or choose file →"
+                                            className="flex-1 px-3 py-2 border-2 border-slate-900 bg-white text-xs font-mono"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="inline-flex items-center justify-center gap-2 w-full py-2.5 px-3 bg-white hover:bg-slate-100 border-2 border-slate-900 font-mono text-xs font-bold uppercase cursor-pointer shadow-[2px_2px_0px_#0f172a] hover:translate-x-[-1px] hover:translate-y-[-1px] transition-all">
+                                            <span>📁 Choose Photo from Device</span>
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                className="hidden"
+                                                onChange={e => handleImageUpload(e, (url) => setNewUpdateItem(prev => ({ ...prev, image: url })))}
+                                            />
+                                        </label>
+                                    </div>
                                 </div>
                                 <button
                                     onClick={() => {
