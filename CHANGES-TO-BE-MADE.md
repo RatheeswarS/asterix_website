@@ -4,22 +4,25 @@ Outstanding work on the Team Asterix site, ordered by how much it costs to leave
 alone. Everything here is known and deliberate — none of it is blocking the
 current deploy.
 
-Last updated: 2026-08-28
+Last updated: 2026-08-29
 
 ---
 
-## 1. Blocking a real deployment
+## 1. Deployment
 
-### 1.1 No deploy target is configured
-CI lints, builds and uploads `dist/` as an artifact. Nothing publishes it.
+### 1.1 Front end — done
+The site is live at https://asterix-website.vercel.app. Vercel is connected
+through its own Git integration and deploys automatically on every push to
+`main`. There is no `vercel.json`; build settings live in the Vercel dashboard.
 
-Pick one and wire a deploy job into `.github/workflows/ci.yml`:
+GitHub Actions still runs lint and build in parallel with that, which is worth
+keeping — it gates pull requests, and Vercel does not run oxlint.
 
-| Option | Fits because | Needs |
-|---|---|---|
-| Cloudflare Pages | free, fast for a static SPA | `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` |
-| Vercel | zero-config for Vite | `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` |
-| GitHub Pages | no third party | `actions/deploy-pages`, and `base` set in `vite.config.js` |
+Two things are worth adding when there is time:
+- A `vercel.json` so build settings are in version control rather than only in
+  the dashboard.
+- SPA rewrites, if deep links are ever added. The app is currently a single
+  route with hash-based admin, so nothing is broken today.
 
 ### 1.2 The backend has nowhere to live
 `server/` is Express + `node:sqlite` + local disk uploads. It runs only on a
@@ -107,8 +110,10 @@ quality from 74 to ~66.
   the decorative layers.
 - **Colour contrast is unverified.** `text-slate-500` on white is roughly 4.0:1,
   under the 4.5:1 minimum for body text. Audit the muted greys.
-- **The navbar sits over the intro's dark footage** as a light bar. It works,
-  but a transparent-over-dark treatment during the intro would look deliberate.
+- **The navbar now hides on scroll**, so it no longer sits as a light bar over
+  the intro's dark footage. That also means it is unreachable without scrolling
+  back up — worth confirming it reappears on upward scroll for keyboard and
+  screen-reader users, not only on a scroll-to-top.
 
 ---
 
@@ -150,6 +155,19 @@ Recorded so nobody undoes them:
   `body` both set `overflow-x: hidden`, which per spec makes the other axis
   compute to `auto` — that turns the ancestor into a scroll container and
   silently breaks `sticky`.
+- **The `#intro` section has no background colour.** The dark backdrop is
+  painted by the frame canvas, so fading that canvas out at the end reveals the
+  live 3D scene behind it. Putting `bg-slate-900` back turns the cross-dissolve
+  into a hard cut again.
+- **`introHandoff` is a plain mutable object, not React state or context.** It
+  changes on every scroll frame; routing it through React would re-render the
+  whole background tree at scroll rate.
+- **The 3D buggy's orientation ignores the cursor.** Mouse-driven yaw and pitch
+  let the reader rotate it into angles the scroll choreography was never posed
+  for. Only a small positional drift remains.
+- **The contact shadow tracks the vehicle's staged `y`.** Without it the shadow
+  hangs in the air above the car on portrait viewports, where the keyframes drop
+  the vehicle well below world zero.
 - **The `DriftWall` plane has no `press` utility.** Its transform is rewritten
   every frame; an `!important` `:active` transform would flatten the wall on
   mousedown.

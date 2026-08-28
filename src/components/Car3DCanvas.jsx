@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+import { introHandoff } from '../lib/introHandoff';
 
 export default function Car3DCanvas() {
     const containerRef = useRef(null);
@@ -614,11 +615,16 @@ export default function Car3DCanvas() {
         let scrollVelocity = 0;
         let lastScrollY = window.scrollY || 0;
 
-        // Cursor influence, dialled back from the original. The old values were
-        // applied twice over -- once to position and again to rotation -- which
-        // made small mouse movements swing the whole vehicle.
-        const MOUSE_X_RANGE = 0.51;
-        const MOUSE_Y_RANGE = 0.39;
+        // Cursor influence is now a slow drift, not a control.
+        //
+        // Letting the mouse drive yaw and pitch meant the reader could rotate
+        // the vehicle into orientations the scroll choreography was never posed
+        // for -- looking up at its underside, or catching it edge-on -- which is
+        // what made it read as broken at certain angles. Rotation no longer
+        // responds to the cursor at all. A small positional drift remains so the
+        // scene is not completely inert.
+        const MOUSE_X_RANGE = 0.22;
+        const MOUSE_Y_RANGE = 0.16;
 
         const handleMouseMove = (e) => {
             const x = (e.clientX / window.innerWidth) * 2 - 1;
@@ -683,6 +689,18 @@ export default function Car3DCanvas() {
             ];
         };
 
+        // Where the buggy sits at the instant the intro footage starts fading:
+        // centred and large, framed like the closing turntable frame rather
+        // than parked on its hero mark off to one side. Yaw matches the hero
+        // keyframe so the handoff is pure translation and scale.
+        // Portrait cover-crops the footage into a close-up, so the model has to
+        // be scaled up to match it. The handoff then reads as the camera
+        // pulling back off the vehicle rather than the vehicle shrinking.
+        const matchPose = (isMobileNow) =>
+            isMobileNow
+                ? { x: 0, y: -0.20, z: 0.30, rotY: -0.48, rotX: 0.04, rotZ: -0.02, scale: 2.10 }
+                : { x: 0, y: -0.34, z: 0.30, rotY: -0.48, rotX: 0.04, rotZ: -0.02, scale: 0.96 };
+
         // Smoothstep between keyframes so the track has no velocity
         // discontinuity where two segments meet.
         const smoothstep = (t) => t * t * (3 - 2 * t);
@@ -730,6 +748,19 @@ export default function Car3DCanvas() {
 
             samplePose(keyframes, scrollRatio, targetPose);
 
+            // While the intro is dissolving, blend from the pose that matches
+            // its closing frame to the normal scroll-driven track. Yaw is held
+            // identical across the blend on purpose: the vehicle translates and
+            // scales into its hero mark but never spins, so the cross-dissolve
+            // has no rotation for the eye to catch mid-fade.
+            if (introHandoff.active && introHandoff.progress < 1) {
+                const h = introHandoff.progress;
+                const match = matchPose(isMobile);
+                for (const key of POSE_KEYS) {
+                    targetPose[key] = match[key] + (targetPose[key] - match[key]) * h;
+                }
+            }
+
             if (!currentPose) {
                 currentPose = { ...targetPose };
             } else {
@@ -747,18 +778,28 @@ export default function Car3DCanvas() {
                 : 0;
             const floatRotZ = animated ? Math.sin(elapsedTime * 1.0) * 0.012 : 0;
 
+            // Cursor drift is suppressed while the dissolve runs, so where the
+            // pointer happens to be resting cannot pull the vehicle off the
+            // mark the footage is fading into.
+            const mouseGain = introHandoff.active ? introHandoff.progress : 1;
+
             carRoot.scale.setScalar(currentPose.scale);
-            carRoot.position.x = currentPose.x + mouseX * 0.40;
-            carRoot.position.y = currentPose.y + floatY + mouseY * 0.28;
+            carRoot.position.x = currentPose.x + mouseX * 0.18 * mouseGain;
+            carRoot.position.y = currentPose.y + floatY + mouseY * 0.10 * mouseGain;
             carRoot.position.z = currentPose.z;
 
-            carRoot.rotation.y = currentPose.rotY + mouseX * 0.32;
-            carRoot.rotation.x = currentPose.rotX - mouseY * 0.20;
-            carRoot.rotation.z = currentPose.rotZ + floatRotZ + mouseX * -0.09;
+            // Orientation comes from the scroll track and the idle float only.
+            carRoot.rotation.y = currentPose.rotY;
+            carRoot.rotation.x = currentPose.rotX;
+            carRoot.rotation.z = currentPose.rotZ + floatRotZ;
 
-            // The contact shadow tracks the buggy along the floor but never
-            // inherits its yaw, pitch or scale.
+            // The contact shadow tracks the buggy's staged position but never
+            // inherits its yaw or pitch. Vertical tracking was missing: the
+            // shadow stayed at world y while the portrait keyframes drop the
+            // vehicle well below it, which left the ellipse hanging in the air
+            // above the car on phones.
             shadowRoot.position.x = carRoot.position.x;
+            shadowRoot.position.y = currentPose.y;
             shadowRoot.position.z = currentPose.z;
             shadowRoot.scale.setScalar(currentPose.scale);
 
@@ -779,9 +820,10 @@ export default function Car3DCanvas() {
             scrollVelocity *= 1 - damp(dt, 0.18);
             if (Math.abs(scrollVelocity) < 0.01) scrollVelocity = 0;
 
-            // Gentler camera aim. The old factors made the camera swing with
-            // the cursor on top of the vehicle already swinging.
-            camera.lookAt(carRoot.position.x * 0.10, carRoot.position.y * 0.14, 0);
+            // The camera tracks the vehicle's staged position only. Aiming it
+            // at the cursor-drifted position meant the frame itself swayed
+            // under the pointer on top of the vehicle already drifting.
+            camera.lookAt(currentPose.x * 0.10, currentPose.y * 0.10, 0);
 
             renderer.render(scene, camera);
         };

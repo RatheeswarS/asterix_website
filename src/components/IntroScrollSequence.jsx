@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import teamLogo from '../assets/Screenshot 2026-08-26 232320.png';
+import { introHandoff, resetIntroHandoff } from '../lib/introHandoff';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -25,9 +26,10 @@ gsap.registerPlugin(ScrollTrigger);
  */
 
 const FRAME_COUNT = 80;
-const SCRUB_END = 0.62;   // frames finish here
-const LOGO_START = 0.55;  // slight overlap so the two phases cross-fade
-const LOGO_END = 0.9;     // mark fully resolved, and held until the handoff
+const SCRUB_END = 0.52;      // frames finish here
+const LOGO_START = 0.45;     // slight overlap so the two phases cross-fade
+const LOGO_END = 0.70;       // mark fully resolved
+const HANDOFF_START = 0.78;  // footage dissolves into the live 3D scene
 
 // Enough of the sequence to start without stalling; the rest streams in behind.
 const FRAMES_BEFORE_START = 14;
@@ -56,6 +58,12 @@ export default function IntroScrollSequence() {
 
         const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
         const tier = window.matchMedia('(max-width: 767px)').matches ? 'mobile' : 'desktop';
+
+        // Take ownership of the 3D scene's opening pose for as long as this
+        // section is mounted. Starting at 0 holds the buggy on the frame that
+        // matches the footage, so nothing jumps when the dissolve begins.
+        introHandoff.active = true;
+        introHandoff.progress = 0;
 
         const images = Array.from({ length: FRAME_COUNT });
         let loadedCount = 0;
@@ -86,24 +94,21 @@ export default function IntroScrollSequence() {
             const ch = canvas.height;
             if (!cw || !ch) return;
 
-            // The footage is landscape. Cover-fitting it into a portrait phone
-            // crops so aggressively that only a fragment of the vehicle is
-            // left on screen, so portrait viewports letterbox it instead and
-            // keep the whole buggy visible. Landscape still fills the frame.
-            // The 1.12 nudge past pure contain fills more of a phone screen.
-            // The vehicle sits inside roughly the middle 80% of the frame, so
-            // trimming ~6% from each edge does not reach the wheels.
-            const portrait = ch > cw;
-            const scale = portrait
-                ? Math.min(cw / img.naturalWidth, ch / img.naturalHeight) * 1.12
-                : Math.max(cw / img.naturalWidth, ch / img.naturalHeight);
+            // Cover on every viewport: the footage fills the screen edge to
+            // edge. Letterboxing portrait kept the whole vehicle visible but
+            // turned the opening shot into a small band floating in a dark
+            // field, which read as a video player rather than a full-bleed
+            // sequence.
+            const scale = Math.max(cw / img.naturalWidth, ch / img.naturalHeight);
 
             const dw = img.naturalWidth * scale;
             const dh = img.naturalHeight * scale;
 
-            // Sit the band a little above centre on portrait, leaving the
-            // lower third clear for the mark.
-            const originY = portrait ? (ch - dh) * 0.38 : (ch - dh) / 2;
+            // Portrait crops hard, so bias the visible window slightly above
+            // centre: the buggy sits a little high in frame and the floor,
+            // which carries no detail, is what gets cut.
+            const portrait = ch > cw;
+            const originY = portrait ? (ch - dh) * 0.42 : (ch - dh) / 2;
 
             ctx.fillStyle = '#0f172a';
             ctx.fillRect(0, 0, cw, ch);
@@ -220,14 +225,40 @@ export default function IntroScrollSequence() {
                     );
                     const eased = gsap.parseEase('power2.out')(logoP);
 
-                    gsap.set(scrimRef.current, { opacity: eased * 0.82 });
+                    // The closing stretch dissolves the footage into the live
+                    // 3D scene sitting behind this stage, rather than cutting
+                    // from a dark video straight into a light page. The frame
+                    // canvas and the scrim fade to transparent, which reveals
+                    // FloatingBackground underneath, and `introHandoff` tells
+                    // the WebGL scene to travel from the pose that matches this
+                    // closing frame to its normal hero mark over the same
+                    // stretch of scroll. Both halves of the cross-dissolve
+                    // therefore move together instead of swapping.
+                    const rawHandoff = gsap.utils.clamp(
+                        0,
+                        1,
+                        (p - HANDOFF_START) / (1 - HANDOFF_START)
+                    );
+                    const handoff = gsap.parseEase('power2.inOut')(rawHandoff);
+
+                    introHandoff.progress = handoff;
+
+                    const veil = 1 - handoff;
+
+                    gsap.set(canvasRef.current, { opacity: veil });
+                    gsap.set(scrimRef.current, { opacity: eased * 0.82 * veil });
+
+                    // The mark clears before the hero copy arrives, a little
+                    // ahead of the footage, so the two never overlap.
+                    const markVeil = 1 - gsap.utils.clamp(0, 1, rawHandoff * 1.35);
+
                     gsap.set(logoRef.current, {
-                        opacity: eased,
+                        opacity: eased * markVeil,
                         scale: 0.82 + eased * 0.18,
                         y: (1 - eased) * 34,
                     });
                     gsap.set(captionRef.current, {
-                        opacity: gsap.utils.clamp(0, 1, (logoP - 0.35) / 0.65),
+                        opacity: gsap.utils.clamp(0, 1, (logoP - 0.35) / 0.65) * markVeil,
                         y: (1 - eased) * 18,
                     });
 
@@ -246,6 +277,10 @@ export default function IntroScrollSequence() {
         // already resolved, and let the section collapse to a single screen.
         const applyReducedMotion = () => {
             section.style.height = '100vh';
+            // No scrub means no dissolve to drive, so the 3D scene keeps its
+            // normal framing from the start.
+            introHandoff.progress = 1;
+            introHandoff.active = false;
             // Without a scrub there is nothing to drive the fixed stage out of
             // the way, so it becomes a normal in-flow layer that scrolls off.
             if (stageRef.current) stageRef.current.style.position = 'absolute';
@@ -271,6 +306,7 @@ export default function IntroScrollSequence() {
 
         return () => {
             cancelled = true;
+            resetIntroHandoff();
             window.removeEventListener('resize', resize);
             trigger?.kill();
             // Drop the decoded bitmaps; 80 frames is a real amount of memory to
@@ -286,7 +322,11 @@ export default function IntroScrollSequence() {
         <section
             ref={sectionRef}
             id="intro"
-            className="relative w-full h-[280vh] bg-slate-900 select-none"
+            // Deliberately transparent. The dark backdrop is painted by the
+            // frame canvas itself, so fading that canvas out at the end reveals
+            // the live 3D scene sitting behind this section instead of a flat
+            // slate panel, which is what made the handoff read as a hard cut.
+            className="relative w-full h-[280vh] select-none"
             aria-label="Team Asterix buggy walkaround"
         >
             {/* Fixed rather than sticky. The app root and body both set
@@ -314,10 +354,11 @@ export default function IntroScrollSequence() {
                 />
 
                 {/* Emerging team mark */}
-                {/* Portrait letterboxes the footage into the upper part of the
-                    screen, so the mark drops into the clear lower third rather
-                    than sitting on top of the vehicle. */}
-                <div className="absolute inset-0 flex flex-col items-center justify-end pb-24 gap-6 landscape:justify-center landscape:pb-0 sm:justify-center sm:pb-0 sm:gap-10 px-6 pointer-events-none">
+                {/* Centred on every viewport. The mark used to be pushed into
+                    the lower third to clear a letterboxed band; the footage is
+                    full-bleed now, and the scrim gives it contrast wherever it
+                    lands. */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 sm:gap-10 px-6 pointer-events-none">
                     {/* The team mark is dark artwork intended for a light
                         background. Knocked out to solid white so it reads
                         against the scrim, with a sky glow behind it. */}
