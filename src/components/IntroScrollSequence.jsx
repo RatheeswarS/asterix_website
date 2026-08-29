@@ -13,9 +13,16 @@ gsap.registerPlugin(ScrollTrigger);
  *
  * The frames were extracted from the workshop turntable clip by
  * scripts/extract-intro-frames.ps1 into public/intro/{desktop,mobile}, every
- * third frame, cropped to drop the generator watermark. They are played in
- * reverse: see `sourceFrame` below. Two tiers exist so phones do not download
- * the full-resolution sequence.
+ * third frame, cropped to drop the generator watermark. Two tiers exist so
+ * phones do not download the full-resolution sequence.
+ *
+ * Playback order is the clip's own. The orbit runs rear-three-quarter (frame 1)
+ * -> side profile (~frame 33) -> dead front (~frame 62) -> front-three-quarter
+ * (frame 80), so it already opens on the buggy's back and turns it to face the
+ * reader. Frame 80 is the pose Car3DCanvas holds through the cross-dissolve:
+ * the model is built nose-on-+Z with the camera at +Z, so its `rotY: -0.48`
+ * hero keyframe is a front three-quarter, and reversing the sequence would land
+ * the footage 180 degrees away from it.
  *
  * Implementation notes:
  * - The sticky child inside a tall section gives the pinned effect without
@@ -45,16 +52,8 @@ const FRAMES_BEFORE_START = 14;
 // the scroll.
 const FRAME_TAU = 0.085;
 
-// The clip orbits the buggy front-three-quarter -> side profile -> rear, so
-// played forward it turns the vehicle away from the reader and ends on its
-// back. Played back to front it opens on the rear three-quarter, turns the
-// buggy round to face the reader, and lands on the clip's first frame -- a
-// dead-still front three-quarter, which is the pose Car3DCanvas holds for the
-// cross-dissolve. Playback index 0 is therefore the last file on disk.
-const sourceFrame = (index) => FRAME_COUNT - 1 - index;
-
 const framePath = (tier, index) =>
-    `${import.meta.env.BASE_URL}intro/${tier}/frame_${String(sourceFrame(index) + 1).padStart(3, '0')}.webp`;
+    `${import.meta.env.BASE_URL}intro/${tier}/frame_${String(index + 1).padStart(3, '0')}.webp`;
 
 export default function IntroScrollSequence() {
     const sectionRef = useRef(null);

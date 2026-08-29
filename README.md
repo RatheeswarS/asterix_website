@@ -41,11 +41,12 @@ reader, resolves into the team mark, then dissolves into the live 3D scene.
   `scripts/extract-intro-frames.ps1` regenerates them from the source clip with
   ffmpeg. The clip itself is not committed — it is large, and the frames are
   what ships.
-- The sequence is played **in reverse**. Forward, the clip orbits
-  front-three-quarter → side profile → rear, which turns the buggy away from
-  the reader; back to front it opens on the rear and turns it to camera.
-  `Car3DCanvas`'s yaw track carries a `YAW_SHIFT` so the hero pose is the front
-  three-quarter the reversed footage lands on.
+- Playback order is the clip's own. The orbit runs rear-three-quarter (frame 1)
+  → side profile (~33) → dead front (~62) → front-three-quarter (frame 80), so
+  it opens on the buggy's back and turns it to face the reader. The 3D buggy is
+  built nose-on-+Z with the camera at +Z, so `Car3DCanvas`'s `rotY: -0.48` hero
+  keyframe is a front three-quarter — it matches frame 80, and reversing the
+  sequence would land the footage 180° away from it.
 - The canvas cross-fades the two frames bracketing a fractional scroll position,
   eased in its own rAF loop, so the turn reads as continuous rotation rather
   than 80 discrete stills.
