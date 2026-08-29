@@ -34,13 +34,17 @@ built-in `node:sqlite` module.
 
 ### Opening sequence
 
-The landing page opens on a scroll-scrubbed turntable of the buggy that
-resolves into the team mark, then dissolves into the live 3D scene.
+The landing page opens on the buggy's rear and scroll-scrubs it round to face
+the reader, resolves into the team mark, then dissolves into the live 3D scene.
 
-- Frames live in `public/intro/{desktop,mobile}` as WebP, 80 per tier.
-  `scripts/extract-intro-frames.ps1` regenerates them from the source clip with
-  ffmpeg. The clip itself is not committed — it is large, and the frames are
-  what ships.
+- Frames live in `public/intro/{desktop,mobile}` as WebP, 56 per tier — the
+  closing ~145 degrees of the source turntable, at the full 24fps.
+  `scripts/extract-intro-frames.py` regenerates them from the source clip with
+  OpenCV and Pillow. The clip itself is not committed — it is large, and the
+  frames are what ships.
+- The canvas cross-fades the two frames bracketing a fractional scroll position,
+  eased in its own rAF loop, so the turn reads as continuous rotation rather
+  than 56 discrete stills.
 - `IntroScrollSequence` paints frames to a canvas and reads scroll progress from
   a GSAP ScrollTrigger. Its stage is `position: fixed`, not `sticky`, because
   the app root and `body` both set `overflow-x: hidden`, which per spec makes

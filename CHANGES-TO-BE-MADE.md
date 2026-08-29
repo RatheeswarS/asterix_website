@@ -91,12 +91,12 @@ That alone should move several hundred KB off the landing path. `AdminDashboard`
 ### 3.2 Gallery images are ~1 MB each
 `public/gallery/*.jpg` are 920 KB – 1.1 MB apiece, six of them, all fetched for
 the drift wall. Convert to WebP at ~1600px wide and add `srcset`. Expect ~85%
-saved. `scripts/extract-intro-frames.ps1` shows the ffmpeg pattern.
+saved. `scripts/extract-intro-frames.py` shows the WebP encoding pattern.
 
 ### 3.3 Intro sequence weight
-`public/intro/` is 4.1 MB across 160 frames. Acceptable for a hero, but if the
-budget tightens: drop desktop to every 4th frame (60 frames) or lower the WebP
-quality from 74 to ~66.
+`public/intro/` is 3.1 MB across 112 frames. Acceptable for a hero, but if the
+budget tightens: lower the WebP quality from 82/80 to ~70, or trim the arc to
+start closer to the three-quarter it lands on.
 
 ---
 
