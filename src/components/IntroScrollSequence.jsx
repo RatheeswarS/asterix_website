@@ -11,12 +11,11 @@ gsap.registerPlugin(ScrollTrigger);
  * A scroll-scrubbed turn of the buggy, from its rear round to the pose the live
  * 3D scene is holding, ending with the team mark emerging.
  *
- * The frames are the tail of the workshop turntable clip, extracted by
- * scripts/extract-intro-frames.py into public/intro/{desktop,mobile}. The clip
- * orbits the whole way around the vehicle; only the closing ~145 degrees ship,
- * so the section opens on the buggy's back and turns it to face the reader
- * instead of opening on the three-quarter it is going to end on anyway. Two
- * tiers exist so phones do not download the full-resolution sequence.
+ * The frames were extracted from the workshop turntable clip by
+ * scripts/extract-intro-frames.ps1 into public/intro/{desktop,mobile}, every
+ * third frame, cropped to drop the generator watermark. They are played in
+ * reverse: see `sourceFrame` below. Two tiers exist so phones do not download
+ * the full-resolution sequence.
  *
  * Implementation notes:
  * - The sticky child inside a tall section gives the pinned effect without
@@ -27,27 +26,35 @@ gsap.registerPlugin(ScrollTrigger);
  * - The canvas is driven by its own rAF loop rather than painted straight from
  *   the scroll handler. Scroll position is a *fractional* frame index that the
  *   loop eases toward, and the two frames bracketing it are cross-faded. Those
- *   two things together are what make 56 discrete stills read as continuous
+ *   two things together are what make 80 discrete stills read as continuous
  *   rotation rather than a slide show, and stop a flicked mouse wheel from
  *   jumping the turn several degrees in one paint.
  */
 
-const FRAME_COUNT = 56;
-const SCRUB_END = 0.55;      // the turn finishes here
-const LOGO_START = 0.50;     // slight overlap so the two phases cross-fade
-const LOGO_END = 0.72;       // mark fully resolved
+const FRAME_COUNT = 80;
+const SCRUB_END = 0.52;      // the turn finishes here
+const LOGO_START = 0.45;     // slight overlap so the two phases cross-fade
+const LOGO_END = 0.70;       // mark fully resolved
 const HANDOFF_START = 0.78;  // footage dissolves into the live 3D scene
 
 // Enough of the sequence to start without stalling; the rest streams in behind.
-const FRAMES_BEFORE_START = 12;
+const FRAMES_BEFORE_START = 14;
 
 // Settling time for the eased frame position, in seconds. Long enough to
 // absorb a wheel notch, short enough that the turn never feels detached from
 // the scroll.
 const FRAME_TAU = 0.085;
 
+// The clip orbits the buggy front-three-quarter -> side profile -> rear, so
+// played forward it turns the vehicle away from the reader and ends on its
+// back. Played back to front it opens on the rear three-quarter, turns the
+// buggy round to face the reader, and lands on the clip's first frame -- a
+// dead-still front three-quarter, which is the pose Car3DCanvas holds for the
+// cross-dissolve. Playback index 0 is therefore the last file on disk.
+const sourceFrame = (index) => FRAME_COUNT - 1 - index;
+
 const framePath = (tier, index) =>
-    `${import.meta.env.BASE_URL}intro/${tier}/frame_${String(index + 1).padStart(3, '0')}.webp`;
+    `${import.meta.env.BASE_URL}intro/${tier}/frame_${String(sourceFrame(index) + 1).padStart(3, '0')}.webp`;
 
 export default function IntroScrollSequence() {
     const sectionRef = useRef(null);
@@ -146,7 +153,7 @@ export default function IntroScrollSequence() {
             ctx.fillRect(0, 0, cw, ch);
 
             // Both bracketing frames present: cross-fade between them, which is
-            // what turns a 56-still sequence into a continuous turn. If either
+            // what turns an 80-still sequence into a continuous turn. If either
             // is still downloading, fall back to the nearest whole frame rather
             // than blending in something from a different part of the orbit.
             if (hi !== lo && t > 0.002 && isLoaded(lo) && isLoaded(hi)) {

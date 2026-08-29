@@ -669,6 +669,17 @@ export default function Car3DCanvas() {
         // no boundary left to pop at. Yaw increases monotonically across the
         // page: the buggy turns through one full revolution as you read, and
         // dwells on the side profile where the suspension is worth looking at.
+        // The intro plays its turntable in reverse and so lands on the clip's
+        // first frame -- a front three-quarter -- where it used to land on the
+        // rear three-quarter at the clip's end. Those two frames are 191
+        // degrees apart, so the whole yaw track is rotated by that much. Only
+        // the absolute facing changes: the buggy still turns through one full
+        // revolution as you read and still dwells near a side profile through
+        // the middle of the page, and the hero now shows the vehicle's front
+        // rather than its back. If the cross-dissolve looks even slightly
+        // rotated against the closing frame, this is the one number to nudge.
+        const YAW_SHIFT = 3.334;
+
         const buildKeyframes = (isMobile, aspect) => {
             const heroX = isMobile ? 0.32 : Math.min(2.1, Math.max(1.55, aspect * 0.96));
             const px = (desktop) => (isMobile ? 0 : desktop);
@@ -678,14 +689,14 @@ export default function Car3DCanvas() {
                 // Portrait drops the vehicle toward the lower half of the
                 // screen. Landscape can sit it beside the copy; a phone cannot,
                 // and centred it sat straight on top of the hero wordmark.
-                { at: 0.00, x: heroX, y: sc(0.02, -2.60), z: 0.28, rotY: -0.48, rotX: 0.12, rotZ: -0.02, scale: sc(1.48, 0.88) },
-                { at: 0.12, x: heroX - 0.25, y: sc(0.02, -2.30), z: 0.22, rotY: -0.26, rotX: 0.12, rotZ: -0.02, scale: sc(1.44, 0.90) },
-                { at: 0.32, x: px(0.85), y: sc(0.02, -0.80), z: -0.10, rotY: 0.85, rotX: 0.10, rotZ: 0.03, scale: sc(1.36, 0.95) },
-                { at: 0.45, x: px(1.50), y: sc(0.06, -0.06), z: 0.15, rotY: Math.PI * 0.5, rotX: 0.08, rotZ: -0.03, scale: sc(1.38, 0.96) },
-                { at: 0.58, x: px(1.35), y: sc(0.06, -0.06), z: 0.15, rotY: 1.95, rotX: 0.08, rotZ: -0.03, scale: sc(1.38, 0.96) },
-                { at: 0.70, x: px(0.75), y: sc(-0.06, -0.04), z: 0.10, rotY: 3.05, rotX: 0.16, rotZ: 0.02, scale: sc(1.32, 0.95) },
-                { at: 0.82, x: px(1.15), y: sc(-0.06, -0.04), z: 0.10, rotY: 4.20, rotX: 0.16, rotZ: 0.02, scale: sc(1.32, 0.95) },
-                { at: 1.00, x: px(0.00), y: sc(0.05, 0.00), z: 0.25, rotY: 5.80, rotX: 0.12, rotZ: 0.00, scale: sc(1.42, 1.00) },
+                { at: 0.00, x: heroX, y: sc(0.02, -2.60), z: 0.28, rotY: -0.48 + YAW_SHIFT, rotX: 0.12, rotZ: -0.02, scale: sc(1.48, 0.88) },
+                { at: 0.12, x: heroX - 0.25, y: sc(0.02, -2.30), z: 0.22, rotY: -0.26 + YAW_SHIFT, rotX: 0.12, rotZ: -0.02, scale: sc(1.44, 0.90) },
+                { at: 0.32, x: px(0.85), y: sc(0.02, -0.80), z: -0.10, rotY: 0.85 + YAW_SHIFT, rotX: 0.10, rotZ: 0.03, scale: sc(1.36, 0.95) },
+                { at: 0.45, x: px(1.50), y: sc(0.06, -0.06), z: 0.15, rotY: Math.PI * 0.5 + YAW_SHIFT, rotX: 0.08, rotZ: -0.03, scale: sc(1.38, 0.96) },
+                { at: 0.58, x: px(1.35), y: sc(0.06, -0.06), z: 0.15, rotY: 1.95 + YAW_SHIFT, rotX: 0.08, rotZ: -0.03, scale: sc(1.38, 0.96) },
+                { at: 0.70, x: px(0.75), y: sc(-0.06, -0.04), z: 0.10, rotY: 3.05 + YAW_SHIFT, rotX: 0.16, rotZ: 0.02, scale: sc(1.32, 0.95) },
+                { at: 0.82, x: px(1.15), y: sc(-0.06, -0.04), z: 0.10, rotY: 4.20 + YAW_SHIFT, rotX: 0.16, rotZ: 0.02, scale: sc(1.32, 0.95) },
+                { at: 1.00, x: px(0.00), y: sc(0.05, 0.00), z: 0.25, rotY: 5.80 + YAW_SHIFT, rotX: 0.12, rotZ: 0.00, scale: sc(1.42, 1.00) },
             ];
         };
 
@@ -698,8 +709,8 @@ export default function Car3DCanvas() {
         // pulling back off the vehicle rather than the vehicle shrinking.
         const matchPose = (isMobileNow) =>
             isMobileNow
-                ? { x: 0, y: -0.20, z: 0.30, rotY: -0.48, rotX: 0.04, rotZ: -0.02, scale: 2.10 }
-                : { x: 0, y: -0.34, z: 0.30, rotY: -0.48, rotX: 0.04, rotZ: -0.02, scale: 0.96 };
+                ? { x: 0, y: -0.20, z: 0.30, rotY: -0.48 + YAW_SHIFT, rotX: 0.04, rotZ: -0.02, scale: 2.10 }
+                : { x: 0, y: -0.34, z: 0.30, rotY: -0.48 + YAW_SHIFT, rotX: 0.04, rotZ: -0.02, scale: 0.96 };
 
         // Smoothstep between keyframes so the track has no velocity
         // discontinuity where two segments meet.
