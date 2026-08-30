@@ -27,6 +27,9 @@ export default function AdminDashboard({ onExit }) {
         deleteAccount,
         updateSponsorship,
         updateRecruitment,
+        syncState,
+        syncError,
+        syncToServer,
         resetToDefaults,
         loadFromBackup,
         AUTH_SESSION_KEY,
@@ -465,8 +468,16 @@ export default function AdminDashboard({ onExit }) {
                             <h1 className="text-base sm:text-lg font-black uppercase text-slate-900 leading-none">
                                 ASTERIX MANAGEMENT CONSOLE
                             </h1>
-                            <span className={`px-2 py-0.5 text-[9px] font-mono font-black border border-slate-900 uppercase ${isServerConnected ? 'bg-emerald-300 text-slate-900' : 'bg-amber-300 text-slate-900'}`}>
-                                {isServerConnected ? '● SQLite Online' : '○ Local Cache'}
+                            <span className={`px-2 py-0.5 text-[9px] font-mono font-black border border-slate-900 uppercase ${
+                                syncState === 'synced' ? 'bg-emerald-300 text-slate-900' :
+                                syncState === 'saving' ? 'bg-sky-300 text-slate-900 animate-pulse' :
+                                syncState === 'error' ? 'bg-amber-300 text-slate-900' :
+                                isServerConnected ? 'bg-emerald-300 text-slate-900' : 'bg-slate-200 text-slate-700'
+                            }`} title={syncError || 'Data synced with cloud database'}>
+                                {syncState === 'saving' ? '⟳ Saving to Cloud...' :
+                                 syncState === 'synced' ? '● Cloud Synced' :
+                                 syncState === 'error' ? '⚠️ Local (Cloud Quota Exceeded)' :
+                                 isServerConnected ? '● Online' : '○ Local Cache'}
                             </span>
                         </div>
                         <span className="text-[10px] font-mono font-bold text-slate-500">
@@ -481,6 +492,23 @@ export default function AdminDashboard({ onExit }) {
                             ✓ {statusMessage}
                         </span>
                     )}
+
+                    <button
+                        type="button"
+                        onClick={async () => {
+                            showStatus('Pushing changes to Cloud Database...');
+                            const ok = await syncToServer(siteData);
+                            if (ok) {
+                                showStatus('All changes synced to Cloud Firestore! ✓');
+                            } else {
+                                showStatus(syncError || 'Cloud write quota reached. Edits are preserved safely in browser.');
+                            }
+                        }}
+                        className="press px-3.5 py-1.5 bg-emerald-400 hover:bg-emerald-300 border-2 border-slate-900 text-slate-900 font-mono font-black text-xs uppercase shadow-[2px_2px_0px_#0f172a] cursor-pointer"
+                        title="Push current modifications to Cloud Database"
+                    >
+                        ☁ Sync Cloud
+                    </button>
 
                     <button
                         onClick={onExit}

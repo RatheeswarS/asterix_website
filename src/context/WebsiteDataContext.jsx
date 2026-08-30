@@ -247,12 +247,32 @@ const initialRecruitmentData = {
     ]
 };
 
-// Helper to ensure 4 subsystems are active
+// Helper to ensure 4 subsystems are active without discarding user edits
 const normalizeSubsystems = (subs) => {
-    if (!subs || !Array.isArray(subs) || subs.length === 5 || !subs.some(s => s.id === 'mechanical')) {
+    if (!subs || !Array.isArray(subs) || subs.length === 0) {
         return initialSubsystems;
     }
-    return subs;
+    const filtered = subs.filter(s => s.id !== 'drive-by-wire' && s.id !== 'brake-by-wire');
+
+    if (!filtered.some(s => s.id === 'mechanical')) {
+        const defaultMechanical = initialSubsystems.find(s => s.id === 'mechanical');
+        if (defaultMechanical) filtered.splice(2, 0, defaultMechanical);
+    }
+
+    const requiredIds = ['software-perception', 'powertrain', 'mechanical', 'leads'];
+    const result = requiredIds.map(id => {
+        const existing = filtered.find(s => s.id === id);
+        if (existing) {
+            const teamMembers = (existing.teamMembers || []).map(m => ({
+                ...m,
+                status: m.status || 'Active Member'
+            }));
+            return { ...existing, teamMembers };
+        }
+        return initialSubsystems.find(s => s.id === id);
+    }).filter(Boolean);
+
+    return result.length === 4 ? result : initialSubsystems;
 };
 
 const WebsiteDataContext = createContext(null);
@@ -260,6 +280,10 @@ const WebsiteDataContext = createContext(null);
 export function WebsiteDataProvider({ children }) {
     const [isServerConnected, setIsServerConnected] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
+    const [syncState, setSyncState] = useState('idle'); // 'idle' | 'saving' | 'synced' | 'error'
+    const [syncError, setSyncError] = useState(null);
+    const isRemoteUpdate = useRef(false);
+    const isInitialMount = useRef(true);
 
     // Initial state from localStorage or defaults
     const [siteData, setSiteData] = useState(() => {
@@ -297,8 +321,6 @@ export function WebsiteDataProvider({ children }) {
         };
     });
 
-    const isInitialMount = useRef(true);
-
     // Listen in real-time from Cloud Firestore if configured
     useEffect(() => {
         if (!isFirebaseConfigured || !db) return;
@@ -308,6 +330,19 @@ export function WebsiteDataProvider({ children }) {
             if (docSnap.exists()) {
                 const data = docSnap.data();
                 setSiteData(prev => {
+                    const remoteTime = new Date(data.lastModified || 0).getTime();
+                    const localTime = new Date(prev.lastModified || 0).getTime();
+
+                    // If local edits are NEWER than the remote document (e.g. cloud quota was hit),
+                    // NEVER wipe out local edits!
+                    if (localTime > remoteTime) {
+                        console.log('Local modifications are newer than cloud snapshot; preserving local state.');
+                        return prev;
+                    }
+
+                    // Mark that this update came from the server so we don't loop-sync it back
+                    isRemoteUpdate.current = true;
+
                     const merged = {
                         ...prev,
                         hero: data.hero || prev.hero,
@@ -357,7 +392,6 @@ export function WebsiteDataProvider({ children }) {
         return () => unsubscribe();
     }, []);
 
-
     // Fetch live website data from database API on load (fallback if Firebase is not configured)
     const fetchFromDatabase = useCallback(async () => {
         if (isFirebaseConfigured) return;
@@ -374,6 +408,8 @@ export function WebsiteDataProvider({ children }) {
                         gallery: (data.gallery && data.gallery.length > 0) ? data.gallery : prev.gallery,
                         updates: (data.updates && data.updates.length > 0) ? data.updates : prev.updates,
                         contact: data.contact || prev.contact,
+                        sponsorship: data.sponsorship || prev.sponsorship || initialSponsorshipData,
+                        recruitment: data.recruitment || prev.recruitment || initialRecruitmentData,
                         lastModified: data.lastModified || prev.lastModified
                     };
                     try {
@@ -401,30 +437,49 @@ export function WebsiteDataProvider({ children }) {
 
     // Save to database (Firestore if configured, otherwise Express API)
     const syncToServer = useCallback(async (dataToSync) => {
+        if (!dataToSync) return false;
+
+        setSyncState('saving');
+        const payload = {
+            hero: dataToSync.hero,
+            story: dataToSync.story,
+            subsystems: dataToSync.subsystems,
+            gallery: dataToSync.gallery,
+            updates: dataToSync.updates,
+            contact: dataToSync.contact,
+            sponsorship: dataToSync.sponsorship || initialSponsorshipData,
+            recruitment: dataToSync.recruitment || initialRecruitmentData,
+            lastModified: new Date().toISOString()
+        };
+
         // 1. Firebase Cloud Firestore
         if (isFirebaseConfigured && db) {
             try {
                 const docRef = doc(db, 'site_data', 'main');
-                await setDoc(docRef, {
-                    hero: dataToSync.hero,
-                    story: dataToSync.story,
-                    subsystems: dataToSync.subsystems,
-                    gallery: dataToSync.gallery,
-                    updates: dataToSync.updates,
-                    contact: dataToSync.contact,
-                    lastModified: new Date().toISOString()
-                }, { merge: true });
+                await setDoc(docRef, payload, { merge: true });
                 setIsServerConnected(true);
-                return;
+                setSyncState('synced');
+                setSyncError(null);
+                return true;
             } catch (err) {
                 console.warn('Failed to sync changes to Firestore:', err);
+                const isQuota = err.message?.includes('RESOURCE_EXHAUSTED') || err.code === 'resource-exhausted' || err.code === 8;
+                const errorMsg = isQuota
+                    ? 'Firebase daily write quota reached (resets at 00:00 Pacific). Your edits are safely preserved in browser storage.'
+                    : (err.message || 'Cloud sync failed.');
+                setSyncState('error');
+                setSyncError(errorMsg);
                 setIsServerConnected(false);
+                return false;
             }
         }
 
         // 2. Express Server API fallback
         const token = sessionStorage.getItem(AUTH_TOKEN_KEY);
-        if (!token) return;
+        if (!token) {
+            setSyncState('synced');
+            return true;
+        }
 
         try {
             const res = await fetch(apiUrl('/api/site-data'), {
@@ -433,25 +488,27 @@ export function WebsiteDataProvider({ children }) {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({
-                    hero: dataToSync.hero,
-                    story: dataToSync.story,
-                    subsystems: dataToSync.subsystems,
-                    gallery: dataToSync.gallery,
-                    updates: dataToSync.updates,
-                    contact: dataToSync.contact
-                })
+                body: JSON.stringify(payload)
             });
 
             if (res.ok) {
                 setIsServerConnected(true);
+                setSyncState('synced');
+                setSyncError(null);
+                return true;
+            } else {
+                setSyncState('error');
+                setSyncError('Backend database returned an error.');
+                return false;
             }
         } catch (err) {
             console.warn('Failed to sync changes to database server:', err);
             setIsServerConnected(false);
+            setSyncState('error');
+            setSyncError('Backend server unreachable. Changes saved locally.');
+            return false;
         }
     }, []);
-
 
     // Save changes to localStorage and automatically sync to backend database if admin is authenticated
     useEffect(() => {
@@ -466,13 +523,28 @@ export function WebsiteDataProvider({ children }) {
             console.error("Failed to save website data to localStorage:", e);
         }
 
-        // Sync to server database if authenticated
+        // If this update was received from remote Firestore onSnapshot, NEVER echo it back!
+        if (isRemoteUpdate.current) {
+            isRemoteUpdate.current = false;
+            return;
+        }
+
+        // ONLY sync to remote server if an admin is currently authenticated!
+        const isAdminLoggedIn = Boolean(
+            sessionStorage.getItem(AUTH_SESSION_KEY) || sessionStorage.getItem(AUTH_TOKEN_KEY)
+        );
+        if (!isAdminLoggedIn) {
+            return;
+        }
+
+        // Debounce syncing manual admin edits to database
         const timer = setTimeout(() => {
             syncToServer(siteData);
-        }, 500);
+        }, 1000);
 
         return () => clearTimeout(timer);
     }, [siteData, syncToServer]);
+
 
     // Update helpers
     const updateHero = (newHero) => {
@@ -695,6 +767,8 @@ export function WebsiteDataProvider({ children }) {
             deleteAccount,
             updateSponsorship,
             updateRecruitment,
+            syncState,
+            syncError,
             resetToDefaults,
             loadFromBackup,
             AUTH_SESSION_KEY,
