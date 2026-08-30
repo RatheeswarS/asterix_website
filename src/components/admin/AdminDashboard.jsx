@@ -159,15 +159,15 @@ export default function AdminDashboard({ onExit }) {
             } else if (res.status === 401) {
                 if (tryLocalLogin()) return;
                 const errData = await res.json().catch(() => ({}));
-                setLoginError(errData.error || 'Invalid username or password. Default is: admin / asterix2026');
+                setLoginError(errData.error || 'Invalid username or password.');
                 return;
             } else {
                 if (tryLocalLogin()) return;
-                setLoginError('Invalid username or password. Default is: admin / asterix2026');
+                setLoginError('Invalid username or password.');
             }
         } catch {
             if (tryLocalLogin()) return;
-            setLoginError('Invalid username or password. Default is: admin / asterix2026');
+            setLoginError('Invalid username or password.');
         } finally {
             setIsLoggingIn(false);
         }
@@ -175,7 +175,7 @@ export default function AdminDashboard({ onExit }) {
 
     const handleLogout = () => {
         if (isFirebaseConfigured && auth) {
-            signOut(auth).catch(() => {});
+            signOut(auth).catch(() => { });
         }
         setCurrentUser(null);
         sessionStorage.removeItem(AUTH_SESSION_KEY);
@@ -427,7 +427,6 @@ export default function AdminDashboard({ onExit }) {
                     </form>
 
                     <div className="mt-6 pt-4 border-t-2 border-slate-200 flex items-center justify-between text-[11px] font-mono font-bold text-slate-500">
-                        <span>Default: admin / asterix2026</span>
                         <button
                             onClick={onExit}
                             className="press press-flat text-sky-600 hover:text-slate-900 underline cursor-pointer"
@@ -458,7 +457,7 @@ export default function AdminDashboard({ onExit }) {
 
     return (
         <div className="min-h-screen bg-slate-100 text-slate-900 flex flex-col selection:bg-sky-500 selection:text-white select-none">
-            
+
             {/* Top Navigation Bar */}
             <header className="sticky top-0 z-40 bg-white border-b-4 border-slate-900 px-4 sm:px-8 py-3 flex flex-wrap items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
@@ -468,16 +467,15 @@ export default function AdminDashboard({ onExit }) {
                             <h1 className="text-base sm:text-lg font-black uppercase text-slate-900 leading-none">
                                 ASTERIX MANAGEMENT CONSOLE
                             </h1>
-                            <span className={`px-2 py-0.5 text-[9px] font-mono font-black border border-slate-900 uppercase ${
-                                syncState === 'synced' ? 'bg-emerald-300 text-slate-900' :
+                            <span className={`px-2 py-0.5 text-[9px] font-mono font-black border border-slate-900 uppercase ${syncState === 'synced' ? 'bg-emerald-300 text-slate-900' :
                                 syncState === 'saving' ? 'bg-sky-300 text-slate-900 animate-pulse' :
-                                syncState === 'error' ? 'bg-amber-300 text-slate-900' :
-                                isServerConnected ? 'bg-emerald-300 text-slate-900' : 'bg-slate-200 text-slate-700'
-                            }`} title={syncError || 'Data synced with cloud database'}>
+                                    syncState === 'error' ? 'bg-amber-300 text-slate-900' :
+                                        isServerConnected ? 'bg-emerald-300 text-slate-900' : 'bg-slate-200 text-slate-700'
+                                }`} title={syncError || 'Data synced with cloud database'}>
                                 {syncState === 'saving' ? '⟳ Saving to Cloud...' :
-                                 syncState === 'synced' ? '● Cloud Synced' :
-                                 syncState === 'error' ? '⚠️ Local (Cloud Quota Exceeded)' :
-                                 isServerConnected ? '● Online' : '○ Local Cache'}
+                                    syncState === 'synced' ? '● Cloud Synced' :
+                                        syncState === 'error' ? '⚠️ Local (Cloud Quota Exceeded)' :
+                                            isServerConnected ? '● Online' : '○ Local Cache'}
                             </span>
                         </div>
                         <span className="text-[10px] font-mono font-bold text-slate-500">
@@ -528,7 +526,7 @@ export default function AdminDashboard({ onExit }) {
 
             {/* Main Workspace Layout */}
             <div className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 grid grid-cols-1 md:grid-cols-4 gap-6">
-                
+
                 {/* Sidebar Navigation */}
                 <aside className="md:col-span-1 bg-white border-4 border-slate-900 shadow-[6px_6px_0px_#0f172a] p-4 h-fit flex flex-col gap-1.5">
                     <span className="text-[10px] font-mono font-black text-sky-600 uppercase tracking-widest block mb-2 px-2">
@@ -538,11 +536,10 @@ export default function AdminDashboard({ onExit }) {
                         <button
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
-                            className={`press press-flat w-full text-left px-3.5 py-2.5 border-2 font-mono font-black text-xs uppercase cursor-pointer flex items-center justify-between gap-2 ${
-                                activeTab === tab.id
-                                    ? 'bg-sky-500 text-white border-slate-900 shadow-[2px_2px_0px_#0f172a] translate-x-1'
-                                    : 'bg-white hover:bg-sky-50 text-slate-800 border-transparent hover:border-slate-300'
-                            }`}
+                            className={`press press-flat w-full text-left px-3.5 py-2.5 border-2 font-mono font-black text-xs uppercase cursor-pointer flex items-center justify-between gap-2 ${activeTab === tab.id
+                                ? 'bg-sky-500 text-white border-slate-900 shadow-[2px_2px_0px_#0f172a] translate-x-1'
+                                : 'bg-white hover:bg-sky-50 text-slate-800 border-transparent hover:border-slate-300'
+                                }`}
                             aria-current={activeTab === tab.id ? 'page' : undefined}
                         >
                             <span className="flex items-center gap-2">
@@ -565,7 +562,7 @@ export default function AdminDashboard({ onExit }) {
 
                 {/* Content Workspace Area */}
                 <main className="md:col-span-3 bg-white border-4 border-slate-900 shadow-[6px_6px_0px_#0f172a] p-6 sm:p-8">
-                    
+
                     {/* TAB 1: OVERVIEW */}
                     {activeTab === 'overview' && (
                         <div className="space-y-6">
@@ -835,11 +832,10 @@ export default function AdminDashboard({ onExit }) {
                                     <button
                                         key={s.id}
                                         onClick={() => setSelectedSubsystemId(s.id)}
-                                        className={`px-3 py-1.5 border-2 border-slate-900 font-mono font-black text-xs uppercase transition-all cursor-pointer ${
-                                            selectedSubsystemId === s.id
-                                                ? 'bg-slate-900 text-white shadow-[2px_2px_0px_#0ea5e9]'
-                                                : 'bg-white hover:bg-slate-100 text-slate-800'
-                                        }`}
+                                        className={`px-3 py-1.5 border-2 border-slate-900 font-mono font-black text-xs uppercase transition-all cursor-pointer ${selectedSubsystemId === s.id
+                                            ? 'bg-slate-900 text-white shadow-[2px_2px_0px_#0ea5e9]'
+                                            : 'bg-white hover:bg-slate-100 text-slate-800'
+                                            }`}
                                     >
                                         {s.name}
                                     </button>
@@ -979,17 +975,15 @@ export default function AdminDashboard({ onExit }) {
                                                         <select
                                                             value={m.status || 'Active Member'}
                                                             onChange={e => updateTeamMember(currentSubsystem.id, idx, { status: e.target.value })}
-                                                            className={`font-mono text-[10px] font-black border border-slate-900 px-2 py-0.5 cursor-pointer ${
-                                                                m.status === 'Alumni' ? 'bg-amber-100 text-amber-900' : 'bg-sky-100 text-sky-900'
-                                                            }`}
+                                                            className={`font-mono text-[10px] font-black border border-slate-900 px-2 py-0.5 cursor-pointer ${m.status === 'Alumni' ? 'bg-amber-100 text-amber-900' : 'bg-sky-100 text-sky-900'
+                                                                }`}
                                                         >
                                                             <option value="Active Member">Active Member</option>
                                                             <option value="Alumni">Alumni</option>
                                                         </select>
                                                     </div>
-                                                    <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 border border-slate-900 ${
-                                                        m.status === 'Alumni' ? 'bg-amber-300 text-amber-950' : 'bg-sky-300 text-sky-950'
-                                                    }`}>
+                                                    <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 border border-slate-900 ${m.status === 'Alumni' ? 'bg-amber-300 text-amber-950' : 'bg-sky-300 text-sky-950'
+                                                        }`}>
                                                         {m.status === 'Alumni' ? '★ ALUMNI' : '● ACTIVE'}
                                                     </span>
                                                 </div>
