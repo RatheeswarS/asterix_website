@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { apiUrl } from '../lib/api';
+import { db, isFirebaseConfigured } from '../lib/firebase';
+import { doc, setDoc } from 'firebase/firestore';
 
 export default function CyberNewsletterCTA() {
     const [email, setEmail] = useState('');
@@ -15,6 +17,25 @@ export default function CyberNewsletterCTA() {
         setIsSubmitting(true);
         setStatusNote('');
 
+        // 1. Firebase Cloud Firestore
+        if (isFirebaseConfigured && db) {
+            try {
+                const cleanEmail = email.trim().toLowerCase();
+                const docId = cleanEmail.replace(/[^a-zA-Z0-9]/g, '_');
+                await setDoc(doc(db, 'subscribers', docId), {
+                    email: cleanEmail,
+                    phone: phone ? phone.trim() : null,
+                    created_at: new Date().toISOString()
+                }, { merge: true });
+                setSubmitted(true);
+                setIsSubmitting(false);
+                return;
+            } catch (err) {
+                console.warn('Firestore subscription error, falling back:', err);
+            }
+        }
+
+        // 2. Server API fallback
         try {
             const res = await fetch(apiUrl('/api/subscribers'), {
                 method: 'POST',

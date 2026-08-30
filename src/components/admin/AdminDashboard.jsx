@@ -1,6 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useWebsiteData, AUTH_TOKEN_KEY } from '../../context/WebsiteDataContext';
 import { apiUrl } from '../../lib/api';
+import { auth, db, isFirebaseConfigured } from '../../lib/firebase';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
+import { collection, getDocs, deleteDoc, doc } from 'firebase/firestore';
+import { compressImage } from '../../lib/imageOptimizer';
 import Icon from '../Icon';
 
 export default function AdminDashboard({ onExit }) {
@@ -87,6 +91,51 @@ export default function AdminDashboard({ onExit }) {
             return false;
         };
 
+        // 1. Firebase Authentication
+        if (isFirebaseConfigured && auth) {
+            try {
+                const email = username.includes('@') ? username : `${username}@teamasterix.com`;
+                let userCred;
+                try {
+                    userCred = await signInWithEmailAndPassword(auth, email, password);
+                } catch (signInErr) {
+                    // If default admin does not exist yet in Firebase project, auto-bootstrap it
+                    if ((signInErr.code === 'auth/user-not-found' || signInErr.code === 'auth/invalid-credential') &&
+                        username.toLowerCase() === 'admin' && (password === 'asterix2026' || password === 'password123')) {
+                        userCred = await createUserWithEmailAndPassword(auth, 'admin@teamasterix.com', 'asterix2026');
+                    } else {
+                        throw signInErr;
+                    }
+                }
+
+                if (userCred?.user) {
+                    const fbUser = {
+                        id: userCred.user.uid,
+                        username: username,
+                        name: userCred.user.displayName || (username.toLowerCase() === 'admin' ? 'Ratheeswar' : username),
+                        role: username.toLowerCase() === 'admin' ? 'System Administrator & Software Lead' : 'Team Member',
+                        accessLevel: username.toLowerCase() === 'admin' ? 'SuperAdmin' : 'Lead',
+                        email: userCred.user.email
+                    };
+                    setCurrentUser(fbUser);
+                    sessionStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(fbUser));
+                    showStatus(`Welcome back, ${fbUser.name}! (Connected to Firebase 🔥)`);
+                    setIsLoggingIn(false);
+                    return;
+                }
+            } catch (fbErr) {
+                console.warn('Firebase login check:', fbErr.message);
+                if (tryLocalLogin()) {
+                    setIsLoggingIn(false);
+                    return;
+                }
+                setLoginError(fbErr.message?.replace('Firebase: ', '') || 'Invalid username or password.');
+                setIsLoggingIn(false);
+                return;
+            }
+        }
+
+        // 2. Server API authentication
         try {
             const res = await fetch(apiUrl('/api/auth/login'), {
                 method: 'POST',
@@ -99,22 +148,19 @@ export default function AdminDashboard({ onExit }) {
                 setCurrentUser(data.user);
                 sessionStorage.setItem(AUTH_TOKEN_KEY, data.token);
                 sessionStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(data.user));
-                showStatus(`Welcome back, ${data.user.name}! (Connected to SQLite DB)`);
+                showStatus(`Welcome back, ${data.user.name}! (Connected to DB)`);
                 fetchFromDatabase?.();
                 return;
             } else if (res.status === 401) {
-                // If DB rejected, double check local accounts in case user created a local member
                 if (tryLocalLogin()) return;
                 const errData = await res.json().catch(() => ({}));
                 setLoginError(errData.error || 'Invalid username or password. Default is: admin / asterix2026');
                 return;
             } else {
-                // Non-401 (e.g. 404 proxy offline or 500), fall back to local accounts
                 if (tryLocalLogin()) return;
                 setLoginError('Invalid username or password. Default is: admin / asterix2026');
             }
         } catch {
-            // Fallback to local accounts check if server or proxy completely offline
             if (tryLocalLogin()) return;
             setLoginError('Invalid username or password. Default is: admin / asterix2026');
         } finally {
@@ -123,13 +169,16 @@ export default function AdminDashboard({ onExit }) {
     };
 
     const handleLogout = () => {
+        if (isFirebaseConfigured && auth) {
+            signOut(auth).catch(() => {});
+        }
         setCurrentUser(null);
         sessionStorage.removeItem(AUTH_SESSION_KEY);
         sessionStorage.removeItem(AUTH_TOKEN_KEY);
         setLoginForm({ username: '', password: '' });
     };
 
-    // Handle image file upload to server /uploads endpoint with Base64 fallback
+    // Handle image file upload with client-side WebP compression (stored directly in Firestore & siteData)
     const handleImageUpload = async (e, callback) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -139,50 +188,26 @@ export default function AdminDashboard({ onExit }) {
             return;
         }
 
-        showStatus('Uploading image to server...');
-        const token = sessionStorage.getItem(AUTH_TOKEN_KEY);
-
-        if (token) {
-            try {
-                const formData = new FormData();
-                formData.append('image', file);
-
-                const res = await fetch(apiUrl('/api/upload'), {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: formData
-                });
-
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data.url) {
-                        callback(data.url);
-                        showStatus('Image uploaded to server successfully! ✓');
-                        e.target.value = '';
-                        return;
-                    }
-                } else {
-                    const err = await res.json().catch(() => ({}));
-                    console.warn('Server upload rejected:', err);
-                }
-            } catch (err) {
-                console.warn('Server upload error, falling back to local data URL:', err);
-            }
-        }
-
-        // Fallback: read file as Base64 data URL
-        const reader = new FileReader();
-        reader.onload = () => {
-            callback(reader.result);
-            showStatus('Image loaded as local data URL! ✓');
+        showStatus('Optimizing & compressing image... ⚡');
+        try {
+            // Compress raw camera/paddock photo down to lightweight WebP (~40-80KB)
+            const compressedDataUrl = await compressImage(file, 1280, 1280, 0.82);
+            callback(compressedDataUrl);
+            showStatus('Image compressed & saved! (Syncs to Firestore ✓)');
             e.target.value = '';
-        };
-        reader.onerror = () => {
-            alert('Failed to read image file.');
-        };
-        reader.readAsDataURL(file);
+        } catch (err) {
+            console.warn('Compression notice, loading file directly:', err);
+            const reader = new FileReader();
+            reader.onload = () => {
+                callback(reader.result);
+                showStatus('Image loaded! ✓');
+                e.target.value = '';
+            };
+            reader.onerror = () => {
+                alert('Failed to read image file.');
+            };
+            reader.readAsDataURL(file);
+        }
     };
 
     // Export complete data snapshot as JSON
@@ -219,8 +244,25 @@ export default function AdminDashboard({ onExit }) {
         reader.readAsText(file);
     };
 
-    // Fetch Alliance Subscribers from database
+    // Fetch Alliance Subscribers from database or Firestore
     const fetchSubscribers = useCallback(async () => {
+        // 1. Cloud Firestore
+        if (isFirebaseConfigured && db) {
+            setIsLoadingSubscribers(true);
+            try {
+                const snap = await getDocs(collection(db, 'subscribers'));
+                const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                list.sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
+                setSubscribers(list);
+            } catch (err) {
+                console.warn('Failed to fetch subscribers from Firestore:', err);
+            } finally {
+                setIsLoadingSubscribers(false);
+            }
+            return;
+        }
+
+        // 2. Server API
         const token = sessionStorage.getItem(AUTH_TOKEN_KEY);
         if (!token) return;
 
@@ -242,6 +284,19 @@ export default function AdminDashboard({ onExit }) {
 
     // Delete single subscriber
     const handleDeleteSubscriber = async (id) => {
+        // 1. Cloud Firestore
+        if (isFirebaseConfigured && db) {
+            try {
+                await deleteDoc(doc(db, 'subscribers', id));
+                setSubscribers(prev => prev.filter(s => s.id !== id));
+                showStatus('Subscriber removed from Firestore.');
+                return;
+            } catch (err) {
+                console.error('Failed to delete subscriber from Firestore:', err);
+            }
+        }
+
+        // 2. Server API
         const token = sessionStorage.getItem(AUTH_TOKEN_KEY);
         if (!token) return;
 

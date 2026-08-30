@@ -1,6 +1,8 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { subsystems as initialSubsystems } from '../data/subsystemsData';
 import { apiUrl } from '../lib/api';
+import { db, isFirebaseConfigured } from '../lib/firebase';
+import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 
 import imgPaddock from '../assets/gallery/01_team_paddock.jpg';
 import imgWelding from '../assets/gallery/02_workshop_welding.jpg';
@@ -232,8 +234,63 @@ export function WebsiteDataProvider({ children }) {
 
     const isInitialMount = useRef(true);
 
-    // Fetch live website data from database API on load
+    // Listen in real-time from Cloud Firestore if configured
+    useEffect(() => {
+        if (!isFirebaseConfigured || !db) return;
+
+        const docRef = doc(db, 'site_data', 'main');
+        const unsubscribe = onSnapshot(docRef, async (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                setSiteData(prev => {
+                    const merged = {
+                        ...prev,
+                        hero: data.hero || prev.hero,
+                        story: data.story || prev.story,
+                        subsystems: (data.subsystems && data.subsystems.length > 0) ? data.subsystems : prev.subsystems,
+                        gallery: (data.gallery && data.gallery.length > 0) ? data.gallery : prev.gallery,
+                        updates: (data.updates && data.updates.length > 0) ? data.updates : prev.updates,
+                        contact: data.contact || prev.contact,
+                        lastModified: data.lastModified || prev.lastModified
+                    };
+                    try {
+                        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(merged));
+                    } catch { /* ignore */ }
+                    return merged;
+                });
+                setIsServerConnected(true);
+                setIsLoading(false);
+            } else {
+                // Auto-seed Firestore on first project launch
+                console.log('⚡ Initializing and seeding Firestore with default Asterix data...');
+                try {
+                    await setDoc(docRef, {
+                        hero: initialHeroData,
+                        story: initialStoryText,
+                        subsystems: initialSubsystems,
+                        gallery: initialGalleryItems,
+                        updates: initialUpdates,
+                        contact: initialContactInfo,
+                        lastModified: new Date().toISOString()
+                    });
+                    setIsServerConnected(true);
+                } catch (seedErr) {
+                    console.warn('Could not auto-seed Firestore:', seedErr);
+                }
+                setIsLoading(false);
+            }
+        }, (err) => {
+            console.warn('Firestore subscription notice (running on cache):', err.message);
+            setIsServerConnected(false);
+            setIsLoading(false);
+        });
+
+        return () => unsubscribe();
+    }, []);
+
+    // Fetch live website data from database API on load (fallback if Firebase is not configured)
     const fetchFromDatabase = useCallback(async () => {
+        if (isFirebaseConfigured) return;
         try {
             const res = await fetch(apiUrl('/api/site-data'));
             if (res.ok) {
@@ -267,11 +324,35 @@ export function WebsiteDataProvider({ children }) {
     }, []);
 
     useEffect(() => {
-        fetchFromDatabase();
+        if (!isFirebaseConfigured) {
+            fetchFromDatabase();
+        }
     }, [fetchFromDatabase]);
 
-    // Save to server database
+    // Save to database (Firestore if configured, otherwise Express API)
     const syncToServer = useCallback(async (dataToSync) => {
+        // 1. Firebase Cloud Firestore
+        if (isFirebaseConfigured && db) {
+            try {
+                const docRef = doc(db, 'site_data', 'main');
+                await setDoc(docRef, {
+                    hero: dataToSync.hero,
+                    story: dataToSync.story,
+                    subsystems: dataToSync.subsystems,
+                    gallery: dataToSync.gallery,
+                    updates: dataToSync.updates,
+                    contact: dataToSync.contact,
+                    lastModified: new Date().toISOString()
+                }, { merge: true });
+                setIsServerConnected(true);
+                return;
+            } catch (err) {
+                console.warn('Failed to sync changes to Firestore:', err);
+                setIsServerConnected(false);
+            }
+        }
+
+        // 2. Express Server API fallback
         const token = sessionStorage.getItem(AUTH_TOKEN_KEY);
         if (!token) return;
 
@@ -300,6 +381,7 @@ export function WebsiteDataProvider({ children }) {
             setIsServerConnected(false);
         }
     }, []);
+
 
     // Save changes to localStorage and automatically sync to backend database if admin is authenticated
     useEffect(() => {
