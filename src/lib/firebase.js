@@ -4,12 +4,12 @@ import { getAuth } from 'firebase/auth';
 import { getStorage } from 'firebase/storage';
 
 const firebaseConfig = {
-    apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyAmxyCfSAqSYybTlZXQaDQv6YkyCdvNii8",
-    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "team-asterix-portal.firebaseapp.com",
-    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "team-asterix-portal",
-    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "team-asterix-portal.firebasestorage.app",
-    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "185526946853",
-    appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:185526946853:web:4538255dc8075a0d9643cc"
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyA4mx9u8dMMuElPNR5GpjrhaHH2aShNzGs",
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "team-asterix-website.firebaseapp.com",
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "team-asterix-website",
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "team-asterix-website.firebasestorage.app",
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "108263527930",
+    appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:108263527930:web:12c0c76ce38afc88d08043"
 };
 
 export const isFirebaseConfigured = Boolean(
