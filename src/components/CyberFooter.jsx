@@ -135,7 +135,7 @@ export default function CyberFooter({ onOpenAdmin }) {
                 </div>
                 <div className="pt-6 border-t border-slate-200 mt-6 flex justify-center items-center text-center w-full">
                     <p className="text-xs sm:text-sm font-mono font-bold text-slate-600 flex items-center justify-center gap-1.5">
-                        <span>Built by the Software Subsystem</span>
+                        <span>Crafted with ❤️ by the Software & Perception Subsystem</span>
                     </p>
                 </div>
 
