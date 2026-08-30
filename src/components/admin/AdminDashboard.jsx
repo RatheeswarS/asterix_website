@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useWebsiteData, AUTH_TOKEN_KEY } from '../../context/WebsiteDataContext';
+import { apiUrl } from '../../lib/api';
 import Icon from '../Icon';
 
 export default function AdminDashboard({ onExit }) {
@@ -87,7 +88,7 @@ export default function AdminDashboard({ onExit }) {
         };
 
         try {
-            const res = await fetch('/api/auth/login', {
+            const res = await fetch(apiUrl('/api/auth/login'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username, password })
@@ -146,7 +147,7 @@ export default function AdminDashboard({ onExit }) {
                 const formData = new FormData();
                 formData.append('image', file);
 
-                const res = await fetch('/api/upload', {
+                const res = await fetch(apiUrl('/api/upload'), {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`
@@ -225,7 +226,7 @@ export default function AdminDashboard({ onExit }) {
 
         setIsLoadingSubscribers(true);
         try {
-            const res = await fetch('/api/subscribers', {
+            const res = await fetch(apiUrl('/api/subscribers'), {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
@@ -245,7 +246,7 @@ export default function AdminDashboard({ onExit }) {
         if (!token) return;
 
         try {
-            const res = await fetch(`/api/subscribers/${id}`, {
+            const res = await fetch(apiUrl(`/api/subscribers/${id}`), {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -280,7 +281,7 @@ export default function AdminDashboard({ onExit }) {
         if (!token) return;
 
         try {
-            const res = await fetch('/api/auth/accounts', {
+            const res = await fetch(apiUrl('/api/auth/accounts'), {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
@@ -1337,7 +1338,7 @@ export default function AdminDashboard({ onExit }) {
                                         const token = sessionStorage.getItem(AUTH_TOKEN_KEY);
                                         if (token) {
                                             try {
-                                                const res = await fetch('/api/auth/accounts', {
+                                                const res = await fetch(apiUrl('/api/auth/accounts'), {
                                                     method: 'POST',
                                                     headers: {
                                                         'Content-Type': 'application/json',
@@ -1402,7 +1403,7 @@ export default function AdminDashboard({ onExit }) {
                                                                 const token = sessionStorage.getItem(AUTH_TOKEN_KEY);
                                                                 if (token) {
                                                                     try {
-                                                                        const res = await fetch(`/api/auth/accounts/${acc.id}`, {
+                                                                        const res = await fetch(apiUrl(`/api/auth/accounts/${acc.id}`), {
                                                                             method: 'DELETE',
                                                                             headers: { 'Authorization': `Bearer ${token}` }
                                                                         });

@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { subsystems as initialSubsystems } from '../data/subsystemsData';
+import { apiUrl } from '../lib/api';
 
 import imgPaddock from '../assets/gallery/01_team_paddock.jpg';
 import imgWelding from '../assets/gallery/02_workshop_welding.jpg';
@@ -234,7 +235,7 @@ export function WebsiteDataProvider({ children }) {
     // Fetch live website data from database API on load
     const fetchFromDatabase = useCallback(async () => {
         try {
-            const res = await fetch('/api/site-data');
+            const res = await fetch(apiUrl('/api/site-data'));
             if (res.ok) {
                 const data = await res.json();
                 setSiteData(prev => {
@@ -275,7 +276,7 @@ export function WebsiteDataProvider({ children }) {
         if (!token) return;
 
         try {
-            const res = await fetch('/api/site-data', {
+            const res = await fetch(apiUrl('/api/site-data'), {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',

@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import DriftWall from './DriftWall';
 import { useWebsiteData } from '../context/WebsiteDataContext';
+import { apiUrl } from '../lib/api';
 import Icon from './Icon';
 
 export default function TeamGallery() {
@@ -29,7 +30,7 @@ export default function TeamGallery() {
             category: g.category || "PADDOCK & TRACK",
             location: g.location || "SAEINDIA Circuit & Workshop",
             date: g.year || "2026",
-            image: g.src,
+            image: apiUrl(g.src),
             badge: g.category || "GALLERY",
             description: g.desc || ""
         }));

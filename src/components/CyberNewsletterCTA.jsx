@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { apiUrl } from '../lib/api';
 
 export default function CyberNewsletterCTA() {
     const [email, setEmail] = useState('');
@@ -15,7 +16,7 @@ export default function CyberNewsletterCTA() {
         setStatusNote('');
 
         try {
-            const res = await fetch('/api/subscribers', {
+            const res = await fetch(apiUrl('/api/subscribers'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, phone })

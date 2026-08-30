@@ -1,0 +1,27 @@
+# Render Infrastructure as Code Blueprint
+# https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: asterix-backend
+    runtime: node
+    plan: starter # Persistent disks require a paid/starter instance on Render ($7/mo)
+    region: oregon
+    buildCommand: cd server && npm ci
+    startCommand: node server/src/index.js
+    envVars:
+      - key: NODE_VERSION
+        value: 24.0.0
+      - key: PORT
+        value: 5000
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ORIGIN
+        value: https://asterix-website.vercel.app,http://localhost:5173
+      - key: DATA_DIR
+        value: /var/data
+      - key: UPLOADS_DIR
+        value: /var/data/uploads
+    disk:
+      name: asterix-data
+      mountPath: /var/data
+      sizeGB: 1

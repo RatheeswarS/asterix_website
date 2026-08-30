@@ -22,8 +22,21 @@ const PORT = process.env.PORT || 5000;
 initDatabase();
 
 // Middleware
+const allowedOrigins = process.env.CORS_ORIGIN
+    ? process.env.CORS_ORIGIN.split(',').map(s => s.trim())
+    : ['http://localhost:5173', 'http://localhost:3000', 'https://asterix-website.vercel.app'];
+
 app.use(cors({
-    origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+    origin: (origin, callback) => {
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        }
+        if (origin.endsWith('.vercel.app') && origin.includes('asterix')) {
+            return callback(null, true);
+        }
+        return callback(null, true);
+    },
     credentials: true
 }));
 
@@ -31,7 +44,9 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Static uploads serving
-const uploadsPath = path.resolve(__dirname, '../uploads');
+const uploadsPath = process.env.UPLOADS_DIR
+    ? path.resolve(process.env.UPLOADS_DIR)
+    : path.resolve(__dirname, '../uploads');
 app.use('/uploads', express.static(uploadsPath));
 
 // Health check endpoint
@@ -57,7 +72,10 @@ app.use((err, req, res, _next) => {
     });
 });
 
-app.listen(PORT, () => {
-    console.log(`🚀 Asterix Server & Database running on http://localhost:${PORT}`);
-    console.log(`📁 Uploads available at http://localhost:${PORT}/uploads/`);
+const HOST = process.env.HOST || '0.0.0.0';
+
+app.listen(PORT, HOST, () => {
+    console.log(`🚀 Asterix Server & Database running on http://${HOST === '0.0.0.0' ? 'localhost' : HOST}:${PORT}`);
+    console.log(`📁 Uploads available at http://${HOST === '0.0.0.0' ? 'localhost' : HOST}:${PORT}/uploads/`);
 });
+

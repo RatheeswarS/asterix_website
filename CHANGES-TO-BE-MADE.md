@@ -25,17 +25,17 @@ Two things are worth adding when there is time:
   route with hash-based admin, so nothing is broken today.
 
 ### 1.2 The backend has nowhere to live
-`server/` is Express + `node:sqlite` + local disk uploads. It runs only on a
-developer machine. Until it is hosted:
+`server/` is Express + `node:sqlite` + local disk uploads. The backend code has
+now been prepared for deployment with configurable `DATA_DIR` and `UPLOADS_DIR`,
+and turnkey configurations have been added:
+- `render.yaml` (Render Blueprint with 1GB persistent disk)
+- `server/fly.toml` (Fly.io configuration with persistent volume)
+- `server/Dockerfile` (Production container for Railway, VPS, or Docker hosts)
+- `vercel.json` and `src/lib/api.js` (`VITE_API_URL` support)
 
-- `/api/site-data` 502s in production, and the site silently falls back to
-  `localStorage` defaults.
-- The admin dashboard at `#admin` cannot persist anything across devices.
-- Uploaded gallery images live in `server/uploads/` on one machine.
-
-Hosting it needs a persistent disk (Fly.io volume, Render disk, or a VPS) —
-`node:sqlite` and the uploads directory are both filesystem-backed, so a
-stateless container will lose data on every restart.
+Once deployed on any of these hosts, set `VITE_API_URL=https://your-backend-url`
+in your Vercel project environment variables, and the frontend will automatically
+sync site data and admin edits across all devices.
 
 ### 1.3 Secrets
 `server/.env.example` ships `JWT_SECRET=your_jwt_secret_key_here`. A real

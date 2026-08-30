@@ -26,7 +26,7 @@ npm run dev          # client on :5173 and API on :5000 together
 
 The backend needs `server/.env`; copy `server/.env.example` and set a real
 `JWT_SECRET`. Node 24 or newer is required — the database layer uses the
-built-in `node:sqlite` module.
+built-in `node:sqlite` module. See [BACKEND.md](./BACKEND.md) for full backend architecture, database schema, and API documentation.
 
 ---
 
