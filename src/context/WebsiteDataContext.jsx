@@ -24,7 +24,7 @@ About a year later, the group decided to take the program seriously and register
 
 That was where the real learning began.
 
-The project was divided into five major subsystems: Software, Sensors, Powertrain, Steer-by-Wire, and Brake & Throttle-by-Wire. Each had its own challenges, but the vehicle could only work when all five came together.
+The project was divided into four major subsystems: Software & Perception, Powertrain, Mechanical, and Leads. Each had its own challenges, but the vehicle could only work when all four came together.
 
 The team started with planning. Budgets were prepared, timelines were drawn, documents were written, and everything looked organized on paper. But this was the first BAJA vehicle ever built by this group. When work moved from paper to the workshop, reality hit hard.
 
@@ -194,6 +194,67 @@ const initialAccounts = [
     }
 ];
 
+const initialSponsorshipData = {
+    brochureUrl: '',
+    deckUrl: '',
+    contactPerson: 'Ratheeswar & Team Leads',
+    contactEmail: 'asterix.psgitech@gmail.com',
+    contactPhone: '+91 98765 43210'
+};
+
+const initialRecruitmentData = {
+    status: 'Open',
+    title: 'SAEINDIA BAJA 2026-27 CREW RECRUITMENT',
+    description: 'Join Team Asterix and build next-generation off-road and autonomous racing machines. Open for 1st, 2nd, and 3rd year engineering students.',
+    applicationLink: 'https://forms.gle/6hHG6aXqrunnfj7V6',
+    problemStatements: [
+        {
+            id: 'ps-software',
+            subsystem: 'Software & Perception',
+            title: 'OpenCV Lane Extraction & Stanley Lateral Controller',
+            description: 'Design a high-speed vision pipeline to crop and warp camera feeds into Bird\'s-Eye View and calculate real-time steering error using the Stanley algorithm.',
+            fileUrl: ''
+        },
+        {
+            id: 'ps-powertrain',
+            subsystem: 'Powertrain',
+            title: 'CVT Shift Curve Optimization & Dynamic Reduction',
+            description: 'Calculate secondary spring preload and flyweight profiles for a 305cc Vanguard engine to sustain instant rock crawl torque and 45 km/h top speed.',
+            fileUrl: ''
+        },
+        {
+            id: 'ps-mechanical',
+            subsystem: 'Mechanical',
+            title: 'Roll Cage Torsional Rigidity & Suspension Kinematics',
+            description: 'Design a double wishbone suspension with minimal bump steer and conduct FEA crash simulations on an AISI 4130 tubular spaceframe.',
+            fileUrl: ''
+        },
+        {
+            id: 'ps-leads',
+            subsystem: 'Leads & Management',
+            title: 'Corporate Sponsorship Pitch Deck & Paddock Budgeting',
+            description: 'Develop a 5-page corporate sponsorship pitch deck and create a risk-mitigated procurement and logistics plan for BAJA national endurance.',
+            fileUrl: ''
+        }
+    ],
+    results: [
+        {
+            title: 'Round 1 Shortlist (Written & CAD Tasks)',
+            date: 'Ongoing Evaluation',
+            status: 'Screening in Progress',
+            announcement: 'Submissions are currently under review by subsystem leads. Shortlisted candidates will be listed here in real time.'
+        }
+    ]
+};
+
+// Helper to ensure 4 subsystems are active
+const normalizeSubsystems = (subs) => {
+    if (!subs || !Array.isArray(subs) || subs.length === 5 || !subs.some(s => s.id === 'mechanical')) {
+        return initialSubsystems;
+    }
+    return subs;
+};
+
 const WebsiteDataContext = createContext(null);
 
 export function WebsiteDataProvider({ children }) {
@@ -209,11 +270,13 @@ export function WebsiteDataProvider({ children }) {
                 return {
                     hero: parsed.hero || initialHeroData,
                     story: parsed.story || initialStoryText,
-                    subsystems: parsed.subsystems || initialSubsystems,
+                    subsystems: normalizeSubsystems(parsed.subsystems),
                     gallery: parsed.gallery || initialGalleryItems,
                     updates: parsed.updates || initialUpdates,
                     contact: parsed.contact || initialContactInfo,
                     accounts: parsed.accounts || initialAccounts,
+                    sponsorship: parsed.sponsorship || initialSponsorshipData,
+                    recruitment: parsed.recruitment || initialRecruitmentData,
                     lastModified: parsed.lastModified || new Date().toISOString()
                 };
             }
@@ -228,6 +291,8 @@ export function WebsiteDataProvider({ children }) {
             updates: initialUpdates,
             contact: initialContactInfo,
             accounts: initialAccounts,
+            sponsorship: initialSponsorshipData,
+            recruitment: initialRecruitmentData,
             lastModified: new Date().toISOString()
         };
     });
@@ -247,10 +312,12 @@ export function WebsiteDataProvider({ children }) {
                         ...prev,
                         hero: data.hero || prev.hero,
                         story: data.story || prev.story,
-                        subsystems: (data.subsystems && data.subsystems.length > 0) ? data.subsystems : prev.subsystems,
+                        subsystems: normalizeSubsystems(data.subsystems || prev.subsystems),
                         gallery: (data.gallery && data.gallery.length > 0) ? data.gallery : prev.gallery,
                         updates: (data.updates && data.updates.length > 0) ? data.updates : prev.updates,
                         contact: data.contact || prev.contact,
+                        sponsorship: data.sponsorship || prev.sponsorship || initialSponsorshipData,
+                        recruitment: data.recruitment || prev.recruitment || initialRecruitmentData,
                         lastModified: data.lastModified || prev.lastModified
                     };
                     try {
@@ -271,6 +338,8 @@ export function WebsiteDataProvider({ children }) {
                         gallery: initialGalleryItems,
                         updates: initialUpdates,
                         contact: initialContactInfo,
+                        sponsorship: initialSponsorshipData,
+                        recruitment: initialRecruitmentData,
                         lastModified: new Date().toISOString()
                     });
                     setIsServerConnected(true);
@@ -287,6 +356,7 @@ export function WebsiteDataProvider({ children }) {
 
         return () => unsubscribe();
     }, []);
+
 
     // Fetch live website data from database API on load (fallback if Firebase is not configured)
     const fetchFromDatabase = useCallback(async () => {
@@ -556,6 +626,22 @@ export function WebsiteDataProvider({ children }) {
         }));
     };
 
+    const updateSponsorship = (fields) => {
+        setSiteData(prev => ({
+            ...prev,
+            sponsorship: { ...(prev.sponsorship || initialSponsorshipData), ...fields },
+            lastModified: new Date().toISOString()
+        }));
+    };
+
+    const updateRecruitment = (fields) => {
+        setSiteData(prev => ({
+            ...prev,
+            recruitment: { ...(prev.recruitment || initialRecruitmentData), ...fields },
+            lastModified: new Date().toISOString()
+        }));
+    };
+
     const resetToDefaults = () => {
         const defaults = {
             hero: initialHeroData,
@@ -565,6 +651,8 @@ export function WebsiteDataProvider({ children }) {
             updates: initialUpdates,
             contact: initialContactInfo,
             accounts: initialAccounts,
+            sponsorship: initialSponsorshipData,
+            recruitment: initialRecruitmentData,
             lastModified: new Date().toISOString()
         };
         setSiteData(defaults);
@@ -605,6 +693,8 @@ export function WebsiteDataProvider({ children }) {
             addAccount,
             updateAccount,
             deleteAccount,
+            updateSponsorship,
+            updateRecruitment,
             resetToDefaults,
             loadFromBackup,
             AUTH_SESSION_KEY,

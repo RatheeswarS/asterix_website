@@ -15,19 +15,25 @@ import SubsystemDetail from "./components/SubsystemDetail";
 import FloatingBackground from "./components/FloatingBackground";
 import BajaModelPage from "./components/BajaModelPage";
 import AdminDashboard from "./components/admin/AdminDashboard";
+import SponsorPage from "./components/SponsorPage";
+import RecruitmentPage from "./components/RecruitmentPage";
 import { WebsiteDataProvider } from "./context/WebsiteDataContext";
 
 function MainApp() {
     const [selectedSubsystem, setSelectedSubsystem] = useState(null);
     const [isModelPage, setIsModelPage] = useState(false);
     const [isAdminOpen, setIsAdminOpen] = useState(() => window.location.hash === '#admin');
+    const [isSponsorPage, setIsSponsorPage] = useState(() => window.location.hash === '#sponsor');
+    const [isRecruitmentPage, setIsRecruitmentPage] = useState(() => window.location.hash === '#join' || window.location.hash === '#recruitment');
     const [lenisInstance, setLenisInstance] = useState(null);
 
     useEffect(() => {
         const handleHashChange = () => {
-            if (window.location.hash === '#admin') {
-                setIsAdminOpen(true);
-            }
+            const hash = window.location.hash;
+            setIsAdminOpen(hash === '#admin');
+            setIsSponsorPage(hash === '#sponsor');
+            setIsRecruitmentPage(hash === '#join' || hash === '#recruitment');
+            if (hash === '#model') setIsModelPage(true);
         };
         window.addEventListener('hashchange', handleHashChange);
         return () => window.removeEventListener('hashchange', handleHashChange);
@@ -79,6 +85,8 @@ function MainApp() {
         setSelectedSubsystem(id);
         setIsModelPage(false);
         setIsAdminOpen(false);
+        setIsSponsorPage(false);
+        setIsRecruitmentPage(false);
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
@@ -86,6 +94,28 @@ function MainApp() {
         setIsModelPage(true);
         setSelectedSubsystem(null);
         setIsAdminOpen(false);
+        setIsSponsorPage(false);
+        setIsRecruitmentPage(false);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const handleOpenSponsor = () => {
+        setIsSponsorPage(true);
+        setIsRecruitmentPage(false);
+        setIsAdminOpen(false);
+        setIsModelPage(false);
+        setSelectedSubsystem(null);
+        window.location.hash = '#sponsor';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const handleOpenRecruitment = () => {
+        setIsRecruitmentPage(true);
+        setIsSponsorPage(false);
+        setIsAdminOpen(false);
+        setIsModelPage(false);
+        setSelectedSubsystem(null);
+        window.location.hash = '#join';
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
@@ -93,34 +123,35 @@ function MainApp() {
         setSelectedSubsystem(null);
         setIsModelPage(false);
         setIsAdminOpen(false);
-        if (window.location.hash === '#admin') {
-            window.history.replaceState(null, '', ' ');
+        setIsSponsorPage(false);
+        setIsRecruitmentPage(false);
+        if (['#admin', '#sponsor', '#join', '#recruitment', '#model'].includes(window.location.hash)) {
+            window.history.replaceState(null, '', window.location.pathname);
         }
-        setTimeout(() => {
-            const squadEl = document.getElementById('squad');
-            if (squadEl) {
-                squadEl.scrollIntoView({ behavior: 'smooth' });
-            }
-        }, 50);
     };
 
     // Dedicated Full-Screen Admin Management Interface
     if (isAdminOpen) {
         return (
             <AdminDashboard
-                onExit={() => {
-                    setIsAdminOpen(false);
-                    if (window.location.hash === '#admin') {
-                        window.history.replaceState(null, '', ' ');
-                    }
-                }}
+                onExit={handleBackToHome}
             />
         );
     }
 
     // Dedicated Full-Screen 3D Baja Model Inspector Page
     if (isModelPage) {
-        return <BajaModelPage onBack={() => setIsModelPage(false)} />;
+        return <BajaModelPage onBack={handleBackToHome} />;
+    }
+
+    // Dedicated Full-Screen Sponsorship & Pitch Deck Portal
+    if (isSponsorPage) {
+        return <SponsorPage onBack={handleBackToHome} />;
+    }
+
+    // Dedicated Full-Screen Crew Recruitment Portal
+    if (isRecruitmentPage) {
+        return <RecruitmentPage onBack={handleBackToHome} />;
     }
 
     return (
@@ -136,6 +167,8 @@ function MainApp() {
                     onSelectSubsystem={handleSelectSubsystem}
                     isDetailPage={Boolean(selectedSubsystem)}
                     onBackToHome={handleBackToHome}
+                    onOpenSponsor={handleOpenSponsor}
+                    onOpenRecruitment={handleOpenRecruitment}
                 />
 
                 {selectedSubsystem ? (
@@ -170,15 +203,19 @@ function MainApp() {
                         <TeamUpdates />
 
                         {/* "OUR STORY" - Animated Sinusoidal Wave SVG Curved Text */}
-                        <OurStoryCurvedWave />
+                        <OurStoryCurvedWave onOpenRecruitment={handleOpenRecruitment} />
 
                         {/* "JOIN THE ALLIANCE" - Brutalist Sponsor / Newsletter Form */}
-                        <CyberNewsletterCTA />
+                        <CyberNewsletterCTA onOpenSponsor={handleOpenSponsor} />
                     </main>
                 )}
 
                 {/* 4-Column Cyberbites Brutalist Footer */}
-                <CyberFooter onOpenAdmin={() => setIsAdminOpen(true)} />
+                <CyberFooter 
+                    onOpenAdmin={() => setIsAdminOpen(true)}
+                    onOpenSponsor={handleOpenSponsor}
+                    onOpenRecruitment={handleOpenRecruitment}
+                />
             </div>
 
         </div>

@@ -3,10 +3,10 @@ import teamLogo from '../assets/Screenshot 2026-08-26 232320.png';
 import TextDock, { DockTextItem } from './Dock';
 import { useWebsiteData } from '../context/WebsiteDataContext';
 
-export default function CyberNavbar({ onSelectSubsystem, isDetailPage, onBackToHome }) {
+export default function CyberNavbar({ onSelectSubsystem, isDetailPage, onBackToHome, onOpenSponsor, onOpenRecruitment }) {
     const { siteData } = useWebsiteData();
     const subsystems = siteData.subsystems;
-    const { contact, hero } = siteData;
+    const { contact } = siteData;
     const [shopOpen, setShopOpen] = useState(false);
     const [contactOpen, setContactOpen] = useState(false);
     const [mobileOpen, setMobileOpen] = useState(false);
@@ -274,8 +274,11 @@ export default function CyberNavbar({ onSelectSubsystem, isDetailPage, onBackToH
                                 {/* Join Team Text Button with Dock Magnification */}
                                 <DockTextItem
                                     mouseX={mouseX}
-                                    onClick={() => window.open(hero.joinFormUrl || 'https://forms.gle/6hHG6aXqrunnfj7V6', '_blank')}
-                                    className="px-3.5 py-2 border-2 border-slate-900 bg-amber-300 text-slate-900 shadow-[2px_2px_0px_#0f172a] hover:bg-amber-400 hover:shadow-[3px_3px_0px_#0f172a] flex items-center gap-1"
+                                    onClick={() => {
+                                        if (onOpenRecruitment) onOpenRecruitment();
+                                        else window.location.hash = '#join';
+                                    }}
+                                    className="px-3.5 py-2 border-2 border-slate-900 bg-amber-300 text-slate-900 shadow-[2px_2px_0px_#0f172a] hover:bg-amber-400 hover:shadow-[3px_3px_0px_#0f172a] flex items-center gap-1 cursor-pointer"
                                 >
                                     <span>Join Team</span>
                                     <span className="text-[10px]">↗</span>
@@ -284,8 +287,11 @@ export default function CyberNavbar({ onSelectSubsystem, isDetailPage, onBackToH
                                 {/* Sponsor Team Text Button with Dock Magnification */}
                                 <DockTextItem
                                     mouseX={mouseX}
-                                    onClick={() => handleNavigate('#subscribe')}
-                                    className="px-4 py-2 border-2 border-slate-900 bg-sky-500 text-white shadow-[2px_2px_0px_#0f172a] hover:bg-sky-400 hover:shadow-[3px_3px_0px_#0f172a]"
+                                    onClick={() => {
+                                        if (onOpenSponsor) onOpenSponsor();
+                                        else window.location.hash = '#sponsor';
+                                    }}
+                                    className="px-4 py-2 border-2 border-slate-900 bg-sky-500 text-white shadow-[2px_2px_0px_#0f172a] hover:bg-sky-400 hover:shadow-[3px_3px_0px_#0f172a] cursor-pointer"
                                 >
                                     <span>Sponsor Team</span>
                                 </DockTextItem>
@@ -359,17 +365,27 @@ export default function CyberNavbar({ onSelectSubsystem, isDetailPage, onBackToH
                         )}
                     </div>
 
-                    <a
-                        href={hero.joinFormUrl || 'https://forms.gle/6hHG6aXqrunnfj7V6'}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={() => setMobileOpen(false)} 
-                        className="p-2 bg-amber-300 text-slate-900 border-2 border-slate-900 text-center flex items-center justify-center gap-1.5 shadow-[2px_2px_0px_#0f172a]"
+                    <button
+                        onClick={() => {
+                            setMobileOpen(false);
+                            if (onOpenRecruitment) onOpenRecruitment();
+                            else window.location.hash = '#join';
+                        }} 
+                        className="p-2 bg-amber-300 text-slate-900 border-2 border-slate-900 text-center flex items-center justify-center gap-1.5 shadow-[2px_2px_0px_#0f172a] font-bold cursor-pointer"
                     >
                         <span>Join Team</span>
                         <span>↗</span>
-                    </a>
-                    <button onClick={() => { setMobileOpen(false); handleNavigate('#subscribe'); }} className="p-2 bg-sky-500 text-white border-2 border-slate-900 text-center">Sponsor Team</button>
+                    </button>
+                    <button 
+                        onClick={() => {
+                            setMobileOpen(false);
+                            if (onOpenSponsor) onOpenSponsor();
+                            else window.location.hash = '#sponsor';
+                        }} 
+                        className="p-2 bg-sky-500 text-white border-2 border-slate-900 text-center font-bold cursor-pointer"
+                    >
+                        Sponsor Team
+                    </button>
                 </div>
             )}
         </nav>

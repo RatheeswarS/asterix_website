@@ -3,7 +3,7 @@ import { useWebsiteData } from '../context/WebsiteDataContext';
 
 const COLLAPSED_HEIGHT = 118;
 
-export default function OurStoryCurvedWave() {
+export default function OurStoryCurvedWave({ onOpenRecruitment }) {
     const { siteData } = useWebsiteData();
     const [isExpanded, setIsExpanded] = useState(false);
     const storyParagraphs = (siteData.story || "").split(/\n\n+/).filter(Boolean);
@@ -82,14 +82,15 @@ export default function OurStoryCurvedWave() {
                             </h2>
                         </div>
 
-                        <a
-                            href={siteData.hero.joinFormUrl || "https://forms.gle/6hHG6aXqrunnfj7V6"}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                        <button
+                            onClick={() => {
+                                if (onOpenRecruitment) onOpenRecruitment();
+                                else window.location.hash = '#join';
+                            }}
                             className="press cyber-button px-7 py-3.5 text-xs font-black tracking-wider uppercase inline-block self-start md:self-auto cursor-pointer whitespace-nowrap shadow-[4px_4px_0px_#0f172a]"
                         >
                             JOIN OUR CREW →
-                        </a>
+                        </button>
                     </div>
 
                     {/* Essay Container (Cut after 4 lines when collapsed, full story when expanded) */}
@@ -154,7 +155,7 @@ export default function OurStoryCurvedWave() {
                             <span className="text-[10px] font-bold text-slate-600 uppercase">Training Genesis</span>
                         </div>
                         <div className="p-4 bg-sky-50 border-2 border-slate-900 shadow-[3px_3px_0px_#0f172a]">
-                            <span className="text-2xl sm:text-3xl font-black text-slate-900 block">5</span>
+                            <span className="text-2xl sm:text-3xl font-black text-slate-900 block">4</span>
                             <span className="text-[10px] font-bold text-slate-600 uppercase">Core Subsystems</span>
                         </div>
                         <div className="p-4 bg-sky-50 border-2 border-slate-900 shadow-[3px_3px_0px_#0f172a]">

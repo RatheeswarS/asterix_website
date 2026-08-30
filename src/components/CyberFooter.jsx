@@ -63,8 +63,7 @@ export default function CyberFooter({ onOpenAdmin }) {
                         <div className="flex flex-col gap-2.5 text-xs font-bold text-slate-700">
                             <a href="#squad" className="hover:text-sky-600 transition-colors">Software & Perception</a>
                             <a href="#squad" className="hover:text-sky-600 transition-colors">Powertrain</a>
-                            <a href="#squad" className="hover:text-sky-600 transition-colors">Drive By Wire</a>
-                            <a href="#squad" className="hover:text-sky-600 transition-colors">Brake by wire</a>
+                            <a href="#squad" className="hover:text-sky-600 transition-colors">Mechanical</a>
                             <a href="#squad" className="hover:text-sky-600 transition-colors">Leads</a>
                         </div>
                     </div>
@@ -78,7 +77,24 @@ export default function CyberFooter({ onOpenAdmin }) {
                             <a href="#gallery" className="hover:text-sky-600 transition-colors">Photo Gallery</a>
                             <a href="#updates" className="hover:text-sky-600 transition-colors">Team Updates</a>
                             <a href="#story" className="hover:text-sky-600 transition-colors">Our Story</a>
-                            <a href="#subscribe" className="hover:text-sky-600 transition-colors">Sponsorship</a>
+                            <button
+                                onClick={() => {
+                                    if (onOpenRecruitment) onOpenRecruitment();
+                                    else window.location.hash = '#join';
+                                }}
+                                className="text-left hover:text-amber-600 transition-colors font-bold cursor-pointer"
+                            >
+                                Join Team / Recruitment
+                            </button>
+                            <button
+                                onClick={() => {
+                                    if (onOpenSponsor) onOpenSponsor();
+                                    else window.location.hash = '#sponsor';
+                                }}
+                                className="text-left hover:text-sky-600 transition-colors font-bold cursor-pointer"
+                            >
+                                Sponsorship Portal
+                            </button>
                             <a href="#hero" className="hover:text-sky-600 transition-colors">Back to Top ↑</a>
                         </div>
                     </div>

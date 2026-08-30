@@ -25,6 +25,8 @@ export default function AdminDashboard({ onExit }) {
         deleteUpdate,
         addAccount,
         deleteAccount,
+        updateSponsorship,
+        updateRecruitment,
         resetToDefaults,
         loadFromBackup,
         AUTH_SESSION_KEY,
@@ -51,7 +53,7 @@ export default function AdminDashboard({ onExit }) {
     const [selectedSubsystemId, setSelectedSubsystemId] = useState(siteData.subsystems[0]?.id || 'software-perception');
 
     // Forms state
-    const [newMember, setNewMember] = useState({ name: '', role: '', initials: '', bio: '', badge: 'SPECIALIST', photo: '' });
+    const [newMember, setNewMember] = useState({ name: '', role: '', initials: '', bio: '', badge: 'SPECIALIST', photo: '', status: 'Active Member' });
     const [newGallery, setNewGallery] = useState({ title: '', category: 'PIT LANE', year: '2026', src: '', desc: '' });
     const [newUpdateItem, setNewUpdateItem] = useState({ label: '', tag: 'PROVING GROUNDS', image: '', link: '#' });
     const [newAccount, setNewAccount] = useState({ username: '', password: '', name: '', role: 'Team Member', accessLevel: 'Lead' });
@@ -442,10 +444,12 @@ export default function AdminDashboard({ onExit }) {
         { id: 'hero', label: 'Hero & Banner', icon: 'edit' },
         { id: 'story', label: 'Our Story', icon: 'book' },
         { id: 'subsystems', label: 'Subsystems & Squad', icon: 'vehicle' },
+        { id: 'sponsorship', label: 'Sponsorship Portal', icon: 'folder' },
+        { id: 'recruitment', label: 'Recruitment Portal', icon: 'users' },
         { id: 'gallery', label: 'Media Gallery', icon: 'camera' },
         { id: 'updates', label: 'Team Updates', icon: 'megaphone' },
         { id: 'subscribers', label: 'Alliance Leads', icon: 'inbox' },
-        { id: 'accounts', label: 'Team Accounts', icon: 'users' },
+        { id: 'accounts', label: 'Team Accounts', icon: 'overview' },
         { id: 'settings', label: 'Settings & Backup', icon: 'settings' },
     ];
 
@@ -941,6 +945,26 @@ export default function AdminDashboard({ onExit }) {
                                                     placeholder="Role Title"
                                                     className="w-full font-mono text-xs text-sky-600 font-bold border-b border-slate-200 pb-0.5 focus:border-slate-900 focus:outline-none"
                                                 />
+                                                <div className="flex items-center justify-between gap-2 pt-1">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <span className="text-[10px] font-mono font-black uppercase text-slate-500">Status:</span>
+                                                        <select
+                                                            value={m.status || 'Active Member'}
+                                                            onChange={e => updateTeamMember(currentSubsystem.id, idx, { status: e.target.value })}
+                                                            className={`font-mono text-[10px] font-black border border-slate-900 px-2 py-0.5 cursor-pointer ${
+                                                                m.status === 'Alumni' ? 'bg-amber-100 text-amber-900' : 'bg-sky-100 text-sky-900'
+                                                            }`}
+                                                        >
+                                                            <option value="Active Member">Active Member</option>
+                                                            <option value="Alumni">Alumni</option>
+                                                        </select>
+                                                    </div>
+                                                    <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 border border-slate-900 ${
+                                                        m.status === 'Alumni' ? 'bg-amber-300 text-amber-950' : 'bg-sky-300 text-sky-950'
+                                                    }`}>
+                                                        {m.status === 'Alumni' ? '★ ALUMNI' : '● ACTIVE'}
+                                                    </span>
+                                                </div>
                                                 <textarea
                                                     value={m.bio}
                                                     onChange={e => updateTeamMember(currentSubsystem.id, idx, { bio: e.target.value })}
@@ -958,7 +982,7 @@ export default function AdminDashboard({ onExit }) {
                                     <span className="text-xs font-mono font-black uppercase text-slate-900 block">
                                         + Add New Specialist to {currentSubsystem.name}
                                     </span>
-                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                                         <input
                                             type="text"
                                             value={newMember.name}
@@ -980,6 +1004,14 @@ export default function AdminDashboard({ onExit }) {
                                             placeholder="Badge (e.g. SPECIALIST)"
                                             className="px-3 py-1.5 border-2 border-slate-900 bg-white text-xs font-mono"
                                         />
+                                        <select
+                                            value={newMember.status || 'Active Member'}
+                                            onChange={e => setNewMember({ ...newMember, status: e.target.value })}
+                                            className="px-3 py-1.5 border-2 border-slate-900 bg-white text-xs font-mono font-bold cursor-pointer"
+                                        >
+                                            <option value="Active Member">Active Member</option>
+                                            <option value="Alumni">Alumni</option>
+                                        </select>
                                     </div>
 
                                     {/* Member Photo Input */}
@@ -1025,12 +1057,131 @@ export default function AdminDashboard({ onExit }) {
                                             if (!newMember.name.trim()) return alert('Please enter specialist name');
                                             const initials = newMember.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'TM';
                                             addTeamMember(currentSubsystem.id, { ...newMember, initials });
-                                            setNewMember({ name: '', role: '', initials: '', bio: '', badge: 'SPECIALIST', photo: '' });
-                                            showStatus('New specialist added with photo!');
+                                            setNewMember({ name: '', role: '', initials: '', bio: '', badge: 'SPECIALIST', photo: '', status: 'Active Member' });
+                                            showStatus('New specialist added with photo & status!');
                                         }}
                                         className="press press-flat px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-mono font-black text-xs uppercase cursor-pointer"
                                     >
                                         Add Specialist →
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* TAB: SPONSORSHIP PORTAL */}
+                    {activeTab === 'sponsorship' && (
+                        <div className="space-y-6">
+                            <div className="border-b-2 border-slate-200 pb-4">
+                                <h2 className="text-2xl font-black uppercase text-slate-900">Sponsorship Portal & Deck Files</h2>
+                                <p className="text-xs font-bold text-slate-500 font-mono mt-1">
+                                    Configure downloadable pitch files, brochures, and partnership documents displayed on #sponsor.
+                                </p>
+                            </div>
+
+                            <div className="p-6 bg-white border-4 border-slate-900 shadow-[6px_6px_0px_#0f172a] space-y-4">
+                                <div>
+                                    <label className="block text-xs font-mono font-black uppercase text-slate-700 mb-1">
+                                        Official Sponsorship Brochure URL (PDF)
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={siteData.sponsorship?.brochureUrl || ''}
+                                        onChange={e => updateSponsorship({ brochureUrl: e.target.value })}
+                                        placeholder="https://... or /brochure.pdf (Leave blank for default auto-generated document)"
+                                        className="w-full px-3 py-2 border-2 border-slate-900 font-mono text-xs focus:outline-none"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-mono font-black uppercase text-slate-700 mb-1">
+                                        Vehicle Technical Architecture Pitch Deck URL
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={siteData.sponsorship?.deckUrl || ''}
+                                        onChange={e => updateSponsorship({ deckUrl: e.target.value })}
+                                        placeholder="https://... or /deck.pdf"
+                                        className="w-full px-3 py-2 border-2 border-slate-900 font-mono text-xs focus:outline-none"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-mono font-black uppercase text-slate-700 mb-1">
+                                        Formal Institution Endorsement Letter URL
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={siteData.sponsorship?.letterUrl || ''}
+                                        onChange={e => updateSponsorship({ letterUrl: e.target.value })}
+                                        placeholder="https://... or /institution_letter.pdf"
+                                        className="w-full px-3 py-2 border-2 border-slate-900 font-mono text-xs focus:outline-none"
+                                    />
+                                </div>
+
+                                <div className="pt-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => showStatus('Sponsorship portal settings updated successfully!')}
+                                        className="press px-6 py-2.5 bg-sky-500 hover:bg-sky-400 text-white font-mono font-black text-xs uppercase border-2 border-slate-900 shadow-[2px_2px_0px_#0f172a] cursor-pointer"
+                                    >
+                                        Save Sponsorship Settings →
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* TAB: RECRUITMENT PORTAL */}
+                    {activeTab === 'recruitment' && (
+                        <div className="space-y-6">
+                            <div className="border-b-2 border-slate-200 pb-4">
+                                <h2 className="text-2xl font-black uppercase text-slate-900">Recruitment & Results Portal</h2>
+                                <p className="text-xs font-bold text-slate-500 font-mono mt-1">
+                                    Manage recruitment cycles, application links, and live selection results on #join.
+                                </p>
+                            </div>
+
+                            <div className="p-6 bg-white border-4 border-slate-900 shadow-[6px_6px_0px_#0f172a] space-y-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-xs font-mono font-black uppercase text-slate-700 mb-1">
+                                            Recruitment Application Form URL
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={siteData.recruitment?.applicationLink || siteData.hero?.joinFormUrl || ''}
+                                            onChange={e => updateRecruitment({ applicationLink: e.target.value })}
+                                            placeholder="https://forms.gle/..."
+                                            className="w-full px-3 py-2 border-2 border-slate-900 font-mono text-xs focus:outline-none"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-mono font-black uppercase text-slate-700 mb-1">
+                                            Recruitment Stage Status Badge
+                                        </label>
+                                        <select
+                                            value={siteData.recruitment?.status || 'APPLICATIONS OPEN'}
+                                            onChange={e => updateRecruitment({ status: e.target.value })}
+                                            className="w-full px-3 py-2 border-2 border-slate-900 font-mono text-xs font-bold bg-white cursor-pointer focus:outline-none"
+                                        >
+                                            <option value="APPLICATIONS OPEN">APPLICATIONS OPEN</option>
+                                            <option value="SCREENING ONGOING">SCREENING ONGOING</option>
+                                            <option value="PROBLEM STATEMENTS ACTIVE">PROBLEM STATEMENTS ACTIVE</option>
+                                            <option value="INTERVIEWS SCHEDULED">INTERVIEWS SCHEDULED</option>
+                                            <option value="RESULTS PUBLISHED">RESULTS PUBLISHED</option>
+                                            <option value="RECRUITMENT CLOSED">RECRUITMENT CLOSED</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div className="pt-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => showStatus('Recruitment portal settings saved successfully!')}
+                                        className="press px-6 py-2.5 bg-sky-500 hover:bg-sky-400 text-white font-mono font-black text-xs uppercase border-2 border-slate-900 shadow-[2px_2px_0px_#0f172a] cursor-pointer"
+                                    >
+                                        Save Recruitment Settings →
                                     </button>
                                 </div>
                             </div>

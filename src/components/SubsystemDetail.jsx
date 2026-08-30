@@ -189,9 +189,17 @@ export default function SubsystemDetail({ subsystemId, onBack, onSelectSubsystem
                                     </p>
                                 </div>
 
-                                <div className="mt-5 pt-3 border-t border-slate-200 text-[10px] font-mono font-bold text-slate-400 uppercase flex items-center justify-between">
-                                    <span>TEAM ASTERIX</span>
-                                    <span className="text-sky-600 font-black">● ACTIVE CREW</span>
+                                <div className="mt-5 pt-3 border-t border-slate-200 text-[10px] font-mono font-bold uppercase flex items-center justify-between">
+                                    <span className="text-slate-400">TEAM ASTERIX</span>
+                                    {member.status === 'Alumni' ? (
+                                        <span className="px-2 py-0.5 bg-amber-100 text-amber-900 border border-amber-400 font-black flex items-center gap-1 shadow-[1px_1px_0px_#0f172a]">
+                                            ★ ALUMNI
+                                        </span>
+                                    ) : (
+                                        <span className="px-2 py-0.5 bg-sky-100 text-sky-700 border border-sky-400 font-black flex items-center gap-1 shadow-[1px_1px_0px_#0f172a]">
+                                            ● ACTIVE MEMBER
+                                        </span>
+                                    )}
                                 </div>
                             </div>
                         ))}

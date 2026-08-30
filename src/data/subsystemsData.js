@@ -1,7 +1,7 @@
 export const subsystems = [
     {
         id: "software-perception",
-        name: "Software and Perception",
+        name: "Software & Perception",
         tagline: "ROS 2 Jazzy, Classical OpenCV Vision & Advanced Stanley Lateral Control",
         badge: "AUTONOMOUS STACK",
         color: "bg-sky-400",
@@ -30,6 +30,7 @@ export const subsystems = [
                 name: "Ratheeswar",
                 role: "Software & Perception Lead",
                 initials: "RW",
+                status: "Active Member",
                 bio: "Architects the ROS 2 Jazzy node graph, colcon workspace build pipeline, and end-to-end autonomous architecture.",
                 badge: "SUBSYSTEM LEAD"
             },
@@ -37,13 +38,15 @@ export const subsystems = [
                 name: "Autonomous Perception Engineer",
                 role: "Computer Vision & Pipeline Architect",
                 initials: "CV",
+                status: "Active Member",
                 bio: "Develops the C++ OpenCV sliding-window detector, BEV perspective transform, and 1D Kalman filter state estimators.",
                 badge: "PERCEPTION"
             },
             {
-                name: "Controls & Vehicle Dynamics Engineer",
+                name: "Controls & Dynamics Specialist",
                 role: "Lateral & Longitudinal Control",
-                initials: "LC",
+                initials: "CD",
+                status: "Active Member",
                 bio: "Tunes the Advanced Stanley controller, curvature feedforward gains, and 300ms safety watchdog fail-safe routines.",
                 badge: "CONTROLS"
             },
@@ -51,8 +54,9 @@ export const subsystems = [
                 name: "Embedded Systems Engineer",
                 role: "Serial Bridge & Hardware Interface",
                 initials: "ES",
+                status: "Alumni",
                 bio: "Implements the high-reliability Arduino serial communication bridge for steering actuator drive and telemetry feedback.",
-                badge: "FIRMWARE"
+                badge: "ALUMNI LEAD"
             }
         ]
     },
@@ -83,6 +87,7 @@ export const subsystems = [
                 name: "Powertrain Specialist",
                 role: "Transmission & Drivetrain Lead",
                 initials: "PS",
+                status: "Active Member",
                 bio: "Calibrates transmission shift points, dyno-tunes engine curves, and leads drivetrain architecture.",
                 badge: "LEAD"
             },
@@ -90,6 +95,7 @@ export const subsystems = [
                 name: "Gearbox Designer",
                 role: "Transmission CAD & Machining",
                 initials: "GD",
+                status: "Active Member",
                 bio: "Designs structural casing tolerances, bearing journals, and gear tooth profiles.",
                 badge: "MECHANICAL"
             },
@@ -97,100 +103,67 @@ export const subsystems = [
                 name: "Dyno Calibration Tech",
                 role: "Thermodynamics & Fuel Mapping",
                 initials: "DC",
+                status: "Alumni",
                 bio: "Monitors exhaust gas temperatures, AFR ratios, and governor performance.",
-                badge: "TESTING"
+                badge: "ALUMNI"
             }
         ]
     },
     {
-        id: "drive-by-wire",
-        name: "Drive By Wire",
-        tagline: "Zero-Backlash Electronic Steer-by-Wire & Throttle Actuation",
-        badge: "STEER & THROTTLE DBW",
+        id: "mechanical",
+        name: "Mechanical",
+        tagline: "Chassis Spaceframe, Suspension Kinematics, Brakes & FEA Rigidity",
+        badge: "STRUCTURAL & DYNAMICS",
         color: "bg-amber-400",
-        stat: "< 8 MS SERVO LATENCY",
-        shortDesc: "Zero-backlash electronic steer-by-wire system and brushless throttle servo drive with hardware fail-safes and redundant CAN bus integration.",
-        fullDesc: "The Drive By Wire (DBW) subsystem bridges algorithmic autonomy and vehicle dynamics. Eliminating mechanical steering shafts in favor of high-bandwidth brushless torque servos and absolute rotary encoders, the system achieves sub-8ms response with dual redundant CAN-bus channels and physical watchdog fail-safes.",
+        stat: "100% CAD / FEA VALIDATED",
+        shortDesc: "Custom AISI 4130 chromoly roll cage, long-travel double wishbone suspension, precision Ackermann steering, and electro-hydraulic brake systems.",
+        fullDesc: "The Mechanical subsystem forms the structural backbone and dynamic handling soul of the Asterix BAJA vehicle. The unit designs and fabricates the rule-compliant AISI 4130 tubular roll cage, calculates suspension roll center migration, manufactures custom uprights and A-arms, optimizes steering Ackermann geometry, and integrates the high-pressure 4-wheel lockup braking system.",
         specifications: [
-            { label: "Steering Actuator", value: "High-Torque Brushless Servo (45 Nm)" },
-            { label: "Throttle Actuation", value: "Linear Stepper / Micro-Servo (<5ms)" },
-            { label: "Response Latency", value: "< 8 ms Full Lock-to-Lock" },
-            { label: "Encoder Resolution", value: "14-Bit Absolute Magnetic Sensing" },
-            { label: "Bus Protocol", value: "Redundant Dual CAN-FD (1 Mbps)" },
-            { label: "Safety Classification", value: "Dual Hardware Watchdog E-Stop" }
+            { label: "Chassis Material", value: "AISI 4130 Chromoly (Seamless Tubular)" },
+            { label: "Front Suspension", value: "Double A-Arm with FOX Float Air Shocks" },
+            { label: "Rear Suspension", value: "Multi-Link Semi-Trailing Arm Assembly" },
+            { label: "Suspension Travel", value: "10.5 Inches Front / 9.8 Inches Rear" },
+            { label: "Steering Geometry", value: "Rack & Pinion with 100% Ackermann" },
+            { label: "Braking System", value: "Dual Tandem Hydraulic Disc (All 4 Lockup)" }
         ],
         highlights: [
-            "Zero-backlash planetary reduction gearbox delivering rapid high-torque steering response.",
-            "Dual-channel hall effect throttle position feedback ensuring instantaneous fail-safe cutoff.",
-            "Hardware-level e-stop interrupt overriding all actuators to passive safe state in < 2ms."
+            "Torsional rigidity optimized using ANSYS FEA structural crash simulations for maximum driver safety.",
+            "Custom CNC-machined 6061-T6 aluminum uprights engineered for minimum unsprung mass.",
+            "Long-travel progressive shock damping tuned for brutal rock crawl obstacles and high jumps.",
+            "Integrated high-pressure brake proportioning valve enabling instant 4-wheel dynamic lockup."
         ],
         teamMembers: [
             {
-                name: "DBW Systems Lead",
-                role: "Actuation & Embedded Control Lead",
-                initials: "DW",
-                bio: "Designs electronic steering servo loops, PID torque feedback, and actuator integration.",
+                name: "Mechanical Lead",
+                role: "Chassis & Suspension Architect",
+                initials: "ML",
+                status: "Active Member",
+                bio: "Oversees chassis roll cage fabrication, suspension kinematics, and vehicle weight distribution.",
                 badge: "LEAD"
             },
             {
-                name: "Servo Hardware Engineer",
-                role: "Motor Drive & Power Electronics",
-                initials: "SH",
-                bio: "Develops high-current MOSFET drive stages and transient suppression circuits.",
-                badge: "HARDWARE"
+                name: "Suspension Specialist",
+                role: "Geometry & Damper Dynamics",
+                initials: "SS",
+                status: "Active Member",
+                bio: "Calculates camber curves, roll centers, and tunes FOX air shock nitrogen pressures.",
+                badge: "DYNAMICS"
             },
             {
-                name: "Embedded Firmware Dev",
-                role: "Microcontroller & CAN-FD Logic",
-                initials: "EF",
-                bio: "Writes bare-metal C drivers for high-frequency encoder sampling and safety state machines.",
-                badge: "FIRMWARE"
-            }
-        ]
-    },
-    {
-        id: "brake-by-wire",
-        name: "Brake by wire",
-        tagline: "High-Pressure Electro-Hydraulic Deceleration & Redundant Lockup",
-        badge: "ELECTRO-HYDRAULIC BBW",
-        color: "bg-rose-500",
-        stat: "100% REDUNDANT LOCKUP",
-        shortDesc: "Electro-hydraulic brake actuator capable of delivering 100% 4-wheel lockup in milliseconds with redundant pressure circuits and autonomous emergency braking (AEB).",
-        fullDesc: "The Brake by Wire (BBW) subsystem provides safety-critical electronically controlled stopping force. Powered by high-pressure electro-hydraulic actuators and dual proportioning circuits, it delivers instantaneous 4-wheel lockup from top racing speeds, with seamless autonomous emergency braking (AEB) and manual driver override.",
-        specifications: [
-            { label: "Actuator Type", value: "High-Pressure Electro-Hydraulic Pump" },
-            { label: "Peak System Pressure", value: "1,200 PSI (8.2 MPa)" },
-            { label: "Lockup Time", value: "< 95 ms From Signal to Clamp" },
-            { label: "Circuit Architecture", value: "Dual Front/Rear Redundant Tandem" },
-            { label: "Braking Distance", value: "< 4.2 Meters From 40 km/h" },
-            { label: "Brake Fluid", value: "DOT 5.1 High-Boiling Silicone Glyel" }
-        ],
-        highlights: [
-            "Integrated Autonomous Emergency Braking (AEB) watchdog triggers instant lockup on fault.",
-            "Dual piezoresistive hydraulic pressure transducers monitor line pressures at 200 Hz.",
-            "Mechanically isolated dual reservoir with stainless braided PTFE high-pressure lines."
-        ],
-        teamMembers: [
-            {
-                name: "BBW Systems Lead",
-                role: "Hydraulic & Actuator Control Lead",
-                initials: "BL",
-                bio: "Designs electro-hydraulic braking architecture, actuator clamping kinetics, and pressure control.",
-                badge: "LEAD"
+                name: "Brake & Steering Engineer",
+                role: "Hydraulics & Actuation",
+                initials: "BS",
+                status: "Active Member",
+                bio: "Designs dual-circuit hydraulic brake calipers, pedal ratio linkages, and Ackermann geometry.",
+                badge: "BRAKES"
             },
             {
-                name: "Hydraulics Specialist",
-                role: "High-Pressure Valves & Manifolds",
-                initials: "HS",
-                bio: "Fabricates custom aluminum manifolds, proportional valves, and master cylinder mounts.",
-                badge: "HYDRAULICS"
-            },
-            {
-                name: "Safety & AEB Engineer",
-                role: "Fault Detection & Emergency Stopping",
-                initials: "SE",
-                bio: "Implements redundant fault monitoring, slip detection, and emergency stop algorithms.",
-                badge: "SAFETY"
+                name: "FEA Simulation Analyst",
+                role: "Structural Stress & Topology Optimization",
+                initials: "FA",
+                status: "Alumni",
+                bio: "Performs nonlinear impact FEA and topology optimization on custom aluminum bellcranks.",
+                badge: "ALUMNI"
             }
         ]
     },
@@ -221,6 +194,7 @@ export const subsystems = [
                 name: "Team Captain",
                 role: "Overall Project & Team Direction",
                 initials: "TC",
+                status: "Active Member",
                 bio: "Directs team operations, sponsor relations, competition logistics, and cross-team execution.",
                 badge: "CAPTAIN"
             },
@@ -228,6 +202,7 @@ export const subsystems = [
                 name: "Technical Director",
                 role: "Chief Vehicle Architect",
                 initials: "TD",
+                status: "Active Member",
                 bio: "Oversees mechanical, electrical, and autonomous subsystem integration and design reviews.",
                 badge: "DIRECTOR"
             },
@@ -235,6 +210,7 @@ export const subsystems = [
                 name: "Ratheeswar",
                 role: "Technical Co-Lead & Software Architect",
                 initials: "RW",
+                status: "Active Member",
                 bio: "Leads autonomous computing, electronics architecture, and data-driven race strategy.",
                 badge: "LEAD"
             },
@@ -242,8 +218,9 @@ export const subsystems = [
                 name: "Operations & Finance Lead",
                 role: "Sponsorship & Logistics Head",
                 initials: "OF",
+                status: "Alumni",
                 bio: "Manages fabrication budgets, sponsor deliverables, and pit equipment logistics.",
-                badge: "OPERATIONS"
+                badge: "ALUMNI LEAD"
             }
         ]
     }
