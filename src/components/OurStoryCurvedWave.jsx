@@ -75,7 +75,7 @@ export default function OurStoryCurvedWave({ onOpenRecruitment }) {
                     <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 mb-8 border-b-3 border-slate-900 pb-6">
                         <div>
                             <span className="text-xs font-mono font-black text-sky-600 tracking-widest uppercase block mb-1">
-                                // CHRONICLES • HOW IT ALL BEGAN
+                                CHRONICLES • HOW IT ALL BEGAN
                             </span>
                             <h2 className="text-4xl sm:text-5xl md:text-6xl font-black text-slate-900 uppercase leading-none">
                                 OUR STORY

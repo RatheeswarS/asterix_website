@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useWebsiteData } from '../context/WebsiteDataContext';
 import { apiUrl } from '../lib/api';
 import { db, isFirebaseConfigured } from '../lib/firebase';
@@ -7,6 +7,13 @@ import teamLogo from '../assets/Screenshot 2026-08-26 232320.png';
 
 
 export default function SponsorPage({ onBack }) {
+    useEffect(() => {
+        window.scrollTo(0, 0);
+        if (window.lenis) {
+            window.lenis.scrollTo(0, { immediate: true });
+        }
+    }, []);
+
     const { siteData } = useWebsiteData();
     const { contact, sponsorship } = siteData;
 
@@ -128,7 +135,7 @@ Thank you for powering collegiate automotive innovation!
                     <img src={teamLogo} alt="Team Asterix" className="h-9 w-auto object-contain" />
                     <div className="hidden sm:block">
                         <span className="font-mono text-xs font-black uppercase text-sky-600 block leading-tight">
-                            // OFFICIAL PARTNERSHIP PORTAL
+                            OFFICIAL PARTNERSHIP PORTAL
                         </span>
                         <span className="font-black text-sm uppercase text-slate-900 leading-tight">
                             TEAM ASTERIX SPONSORSHIP
@@ -178,7 +185,7 @@ Thank you for powering collegiate automotive innovation!
             <section className="py-16 px-4 sm:px-8 max-w-6xl mx-auto">
                 <div className="mb-10">
                     <span className="text-xs font-mono font-black uppercase text-sky-600 tracking-widest block mb-1">
-                        // OFFICIAL DOCUMENTS & MATERIALS
+                        OFFICIAL DOCUMENTS & MATERIALS
                     </span>
                     <h2 className="text-3xl sm:text-4xl font-black uppercase text-slate-900 tracking-tight">
                         SPONSORSHIP FILES & PROPOSALS
@@ -268,7 +275,7 @@ Thank you for powering collegiate automotive innovation!
                 <div className="max-w-6xl mx-auto">
                     <div className="text-center max-w-2xl mx-auto mb-12">
                         <span className="text-xs font-mono font-black uppercase text-sky-600 tracking-widest block mb-1">
-                            // BRAND VISIBILITY TIERS
+                            BRAND VISIBILITY TIERS
                         </span>
                         <h2 className="text-3xl sm:text-5xl font-black uppercase text-slate-900 tracking-tight">
                             PARTNERSHIP PACKAGES
@@ -353,7 +360,7 @@ Thank you for powering collegiate automotive innovation!
                 <div className="bg-white border-4 border-slate-900 shadow-[10px_10px_0px_#0f172a] p-8 sm:p-12">
                     <div className="mb-8 border-b-3 border-slate-900 pb-4">
                         <span className="text-xs font-mono font-black uppercase text-sky-600 tracking-widest block mb-1">
-                            // CONNECT WITH US
+                            CONNECT WITH US
                         </span>
                         <h2 className="text-3xl sm:text-4xl font-black uppercase text-slate-900 tracking-tight">
                             SUBMIT SPONSORSHIP INQUIRY
@@ -485,7 +492,7 @@ Thank you for powering collegiate automotive innovation!
                 <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
                     <div className="p-6 bg-slate-800 border-3 border-slate-700">
                         <span className="text-xs font-mono font-black text-sky-400 uppercase block mb-1">
-                            // OFFICIAL EMAIL
+                            OFFICIAL EMAIL
                         </span>
                         <h4 className="text-lg font-black uppercase text-white mb-2">Direct Communications</h4>
                         <p className="text-xs font-mono text-slate-300">
@@ -495,7 +502,7 @@ Thank you for powering collegiate automotive innovation!
 
                     <div className="p-6 bg-slate-800 border-3 border-slate-700">
                         <span className="text-xs font-mono font-black text-sky-400 uppercase block mb-1">
-                            // PADDOCK LOCATION
+                            PADDOCK LOCATION
                         </span>
                         <h4 className="text-lg font-black uppercase text-white mb-2">College Campus</h4>
                         <p className="text-xs text-slate-300 font-medium">
@@ -505,7 +512,7 @@ Thank you for powering collegiate automotive innovation!
 
                     <div className="p-6 bg-slate-800 border-3 border-slate-700">
                         <span className="text-xs font-mono font-black text-sky-400 uppercase block mb-1">
-                            // STUDENT & FACULTY LEADS
+                            STUDENT & FACULTY LEADS
                         </span>
                         <h4 className="text-lg font-black uppercase text-white mb-2">Sponsorship Contacts</h4>
                         <p className="text-xs font-mono text-slate-300">

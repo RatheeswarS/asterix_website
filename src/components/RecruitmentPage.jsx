@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useWebsiteData } from '../context/WebsiteDataContext';
 import {
     useRecruitmentCountdown,
@@ -11,6 +11,13 @@ import imgLidar from '../assets/gallery/03_lidar_sensor_tuning.jpg';
 import imgPaddock from '../assets/gallery/01_team_paddock.jpg';
 
 export default function RecruitmentPage({ onBack }) {
+    useEffect(() => {
+        window.scrollTo(0, 0);
+        if (window.lenis) {
+            window.lenis.scrollTo(0, { immediate: true });
+        }
+    }, []);
+
     const { siteData } = useWebsiteData();
     const { recruitment, hero } = siteData;
     const [activeSubsystemTab, setActiveSubsystemTab] = useState('software-perception');
@@ -96,7 +103,7 @@ Good luck, Engineer!
                         <img src={teamLogo} alt="Team Asterix" className="h-9 w-auto object-contain" />
                         <div className="hidden sm:block">
                             <span className="font-mono text-xs font-black uppercase text-amber-600 block leading-tight">
-                                // CREW SELECTION & RECRUITMENT
+                                CREW SELECTION & RECRUITMENT
                             </span>
                             <span className="font-black text-sm uppercase text-slate-900 leading-tight">
                                 TEAM ASTERIX INDUCTION PORTAL
@@ -168,7 +175,7 @@ Good luck, Engineer!
             <section className="py-16 px-4 sm:px-8 max-w-6xl mx-auto">
                 <div className="mb-12">
                     <span className="text-xs font-mono font-black uppercase text-sky-600 tracking-widest block mb-1">
-                        // THE ROADMAP TO THE PADDOCK
+                        THE ROADMAP TO THE PADDOCK
                     </span>
                     <h2 className="text-3xl sm:text-5xl font-black uppercase text-slate-900 tracking-tight">
                         RECRUITMENT PROCESS
@@ -244,7 +251,7 @@ Good luck, Engineer!
                 <div className="max-w-6xl mx-auto">
                     <div className="mb-10">
                         <span className="text-xs font-mono font-black uppercase text-sky-600 tracking-widest block mb-1">
-                            // ENGINEERING EVALUATION BRIEFS
+                            ENGINEERING EVALUATION BRIEFS
                         </span>
                         <h2 className="text-3xl sm:text-5xl font-black uppercase text-slate-900 tracking-tight">
                             PROBLEM STATEMENTS
@@ -294,7 +301,7 @@ Good luck, Engineer!
                         <div className="space-y-6">
                             <div>
                                 <h4 className="text-xs font-mono font-black uppercase text-slate-500 mb-2">
-                                    // Problem Description & Requirements:
+                                    Problem Description & Requirements:
                                 </h4>
                                 <p className="text-sm sm:text-base font-bold text-slate-800 leading-relaxed">
                                     {currentStatement.description}
@@ -332,7 +339,7 @@ Good luck, Engineer!
             <section className="py-16 px-4 sm:px-8 max-w-6xl mx-auto">
                 <div className="mb-10">
                     <span className="text-xs font-mono font-black uppercase text-sky-600 tracking-widest block mb-1">
-                        // LIFE IN THE PADDOCK
+                        LIFE IN THE PADDOCK
                     </span>
                     <h2 className="text-3xl sm:text-5xl font-black uppercase text-slate-900 tracking-tight">
                         POSTERS & WORKSHOP ACTION
@@ -401,7 +408,7 @@ Good luck, Engineer!
                 <div className="max-w-5xl mx-auto">
                     <div className="mb-10 text-center">
                         <span className="text-xs font-mono font-black uppercase text-amber-400 tracking-widest block mb-1">
-                            // OFFICIAL SELECTION UPDATES
+                            OFFICIAL SELECTION UPDATES
                         </span>
                         <h2 className="text-3xl sm:text-5xl font-black uppercase text-white tracking-tight">
                             RESULTS & SHORTLISTS

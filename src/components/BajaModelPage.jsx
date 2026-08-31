@@ -1,7 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import ModelViewer from './ModelViewer';
 
 export default function BajaModelPage({ onBack }) {
+    useEffect(() => {
+        window.scrollTo(0, 0);
+        if (window.lenis) {
+            window.lenis.scrollTo(0, { immediate: true });
+        }
+    }, []);
+
     const [environmentPreset, setEnvironmentPreset] = useState('city');
     const [autoRotate, setAutoRotate] = useState(false);
 

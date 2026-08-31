@@ -266,7 +266,7 @@ export function RecruitmentCountdownBoard({ countdown, applyLink, onDockChange }
                         id="countdown-heading"
                         className="text-xs font-mono font-black uppercase text-sky-400 tracking-widest"
                     >
-                        // NEXT DEADLINE ON THE BOARD
+                        NEXT DEADLINE ON THE BOARD
                     </span>
                     <span
                         className={`px-3 py-1 border-2 border-slate-900 font-mono font-black text-[11px] uppercase ${accent.chip} shadow-[3px_3px_0px_#0284c7] flex items-center gap-2`}

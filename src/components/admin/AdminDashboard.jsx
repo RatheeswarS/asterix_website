@@ -338,11 +338,11 @@ export default function AdminDashboard({ onExit }) {
         reader.readAsText(file);
     };
 
-    // Fetch Alliance Subscribers from database or Firestore
-    const fetchSubscribers = useCallback(async () => {
+    // Fetch Alliance Subscribers from database or Firestore with optional silent refresh
+    const fetchSubscribers = useCallback(async (isSilent = false) => {
         // 1. Cloud Firestore
         if (isFirebaseConfigured && db) {
-            setIsLoadingSubscribers(true);
+            if (!isSilent) setIsLoadingSubscribers(true);
             try {
                 const snap = await getDocs(collection(db, 'subscribers'));
                 const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -351,7 +351,7 @@ export default function AdminDashboard({ onExit }) {
             } catch (err) {
                 console.warn('Failed to fetch subscribers from Firestore:', err);
             } finally {
-                setIsLoadingSubscribers(false);
+                if (!isSilent) setIsLoadingSubscribers(false);
             }
             return;
         }
@@ -360,7 +360,7 @@ export default function AdminDashboard({ onExit }) {
         const token = sessionStorage.getItem(AUTH_TOKEN_KEY);
         if (!token) return;
 
-        setIsLoadingSubscribers(true);
+        if (!isSilent) setIsLoadingSubscribers(true);
         try {
             const res = await fetch(apiUrl('/api/subscribers'), {
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -372,7 +372,7 @@ export default function AdminDashboard({ onExit }) {
         } catch (err) {
             console.warn('Failed to fetch subscribers:', err);
         } finally {
-            setIsLoadingSubscribers(false);
+            if (!isSilent) setIsLoadingSubscribers(false);
         }
     }, []);
 
@@ -424,12 +424,12 @@ export default function AdminDashboard({ onExit }) {
         showStatus('Subscribers CSV exported successfully!');
     };
 
-    // Fetch sponsor inquiries from database
-    const fetchInquiries = useCallback(async () => {
+    // Fetch sponsor inquiries from database with optional silent refresh
+    const fetchInquiries = useCallback(async (isSilent = false) => {
         const token = sessionStorage.getItem(AUTH_TOKEN_KEY);
         if (!token) return;
 
-        setIsLoadingInquiries(true);
+        if (!isSilent) setIsLoadingInquiries(true);
         try {
             const res = await fetch(apiUrl('/api/sponsor-inquiries'), {
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -441,7 +441,7 @@ export default function AdminDashboard({ onExit }) {
         } catch (err) {
             console.warn('Failed to fetch inquiries:', err);
         } finally {
-            setIsLoadingInquiries(false);
+            if (!isSilent) setIsLoadingInquiries(false);
         }
     }, []);
 
@@ -504,17 +504,38 @@ export default function AdminDashboard({ onExit }) {
     }, []);
 
     useEffect(() => {
-        if (currentUser) {
+        if (!currentUser) return;
+
+        const refreshTabContent = (isSilent = false) => {
             if (activeTab === 'subscribers') {
-                fetchSubscribers();
+                fetchSubscribers(isSilent);
             }
             if (activeTab === 'sponsorship') {
-                fetchInquiries();
+                fetchInquiries(isSilent);
             }
             if (activeTab === 'accounts') {
                 fetchAccounts();
             }
-        }
+        };
+
+        // Initial fetch on tab change
+        refreshTabContent(false);
+
+        // Live polling every 4 seconds
+        const pollTimer = setInterval(() => {
+            refreshTabContent(true);
+        }, 4000);
+
+        // Immediate refresh on tab focus / visibility change
+        const handleFocus = () => refreshTabContent(true);
+        window.addEventListener('focus', handleFocus);
+        document.addEventListener('visibilitychange', handleFocus);
+
+        return () => {
+            clearInterval(pollTimer);
+            window.removeEventListener('focus', handleFocus);
+            document.removeEventListener('visibilitychange', handleFocus);
+        };
     }, [currentUser, activeTab, fetchSubscribers, fetchInquiries, fetchAccounts]);
     // If not authenticated, render Login Screen
     if (!currentUser) {
@@ -523,7 +544,7 @@ export default function AdminDashboard({ onExit }) {
                 <div className="w-full max-w-md bg-white border-4 border-slate-900 shadow-[8px_8px_0px_#0f172a] p-8">
                     <div className="text-center mb-6">
                         <span className="text-[11px] font-mono font-black text-sky-600 tracking-wider uppercase block mb-1">
-                            // RESTRICTED ACCESS
+                            RESTRICTED ACCESS
                         </span>
                         <h1 className="text-2xl sm:text-3xl font-black text-slate-900 uppercase">
                             ASTERIX ADMIN PORTAL
@@ -629,6 +650,10 @@ export default function AdminDashboard({ onExit }) {
                                     syncState === 'synced' ? '● Cloud Synced' :
                                         syncState === 'error' ? '⚠️ Local (Cloud Quota Exceeded)' :
                                             isServerConnected ? '● Online' : '○ Local Cache'}
+                            </span>
+                            <span className="px-2 py-0.5 bg-emerald-50 text-emerald-800 border border-emerald-400 font-mono text-[9px] font-bold uppercase tracking-wider flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                LIVE REFRESH ACTIVE
                             </span>
                         </div>
                         <span className="text-[10px] font-mono font-bold text-slate-500">

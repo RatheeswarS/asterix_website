@@ -27,6 +27,13 @@ function MainApp() {
     const [isRecruitmentPage, setIsRecruitmentPage] = useState(() => window.location.hash === '#join' || window.location.hash === '#recruitment');
     const [lenisInstance, setLenisInstance] = useState(null);
 
+    const scrollToTop = () => {
+        window.scrollTo(0, 0);
+        if (window.lenis) {
+            window.lenis.scrollTo(0, { immediate: true });
+        }
+    };
+
     useEffect(() => {
         const handleHashChange = () => {
             const hash = window.location.hash;
@@ -34,10 +41,15 @@ function MainApp() {
             setIsSponsorPage(hash === '#sponsor');
             setIsRecruitmentPage(hash === '#join' || hash === '#recruitment');
             if (hash === '#model') setIsModelPage(true);
+            scrollToTop();
         };
         window.addEventListener('hashchange', handleHashChange);
         return () => window.removeEventListener('hashchange', handleHashChange);
     }, []);
+
+    useEffect(() => {
+        scrollToTop();
+    }, [isSponsorPage, isRecruitmentPage, selectedSubsystem, isModelPage, isAdminOpen]);
 
     useEffect(() => {
         // Readers who ask for reduced motion get the browser's native scroll.
@@ -89,7 +101,7 @@ function MainApp() {
         setIsAdminOpen(false);
         setIsSponsorPage(false);
         setIsRecruitmentPage(false);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        scrollToTop();
     };
 
     const handleOpenModelViewer = () => {
@@ -98,7 +110,7 @@ function MainApp() {
         setIsAdminOpen(false);
         setIsSponsorPage(false);
         setIsRecruitmentPage(false);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        scrollToTop();
     };
 
     const handleOpenSponsor = () => {
@@ -108,7 +120,7 @@ function MainApp() {
         setIsModelPage(false);
         setSelectedSubsystem(null);
         window.location.hash = '#sponsor';
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        scrollToTop();
     };
 
     const handleOpenRecruitment = () => {
@@ -118,7 +130,7 @@ function MainApp() {
         setIsModelPage(false);
         setSelectedSubsystem(null);
         window.location.hash = '#join';
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        scrollToTop();
     };
 
     const handleBackToHome = () => {
@@ -130,6 +142,7 @@ function MainApp() {
         if (['#admin', '#sponsor', '#join', '#recruitment', '#model'].includes(window.location.hash)) {
             window.history.replaceState(null, '', window.location.pathname);
         }
+        scrollToTop();
     };
 
     // Dedicated Full-Screen Admin Management Interface

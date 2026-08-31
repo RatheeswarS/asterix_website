@@ -12,7 +12,10 @@ export default function SubsystemDetail({ subsystemId, onBack, onSelectSubsystem
     const prevSystem = subsystems[(currentIndex - 1 + subsystems.length) % subsystems.length];
 
     useEffect(() => {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        window.scrollTo(0, 0);
+        if (window.lenis) {
+            window.lenis.scrollTo(0, { immediate: true });
+        }
     }, [subsystemId]);
 
     return (

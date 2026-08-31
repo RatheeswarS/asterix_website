@@ -427,8 +427,13 @@ export function WebsiteDataProvider({ children }) {
         return () => unsubscribe();
     }, []);
 
-    // Fetch live website data from database API on load (MongoDB Atlas on Render)
-    const fetchFromDatabase = useCallback(async () => {
+    const [lastRefreshedAt, setLastRefreshedAt] = useState(() => new Date());
+    const [isLiveRefreshing, setIsLiveRefreshing] = useState(false);
+
+    // Fetch live website data from database API (MongoDB Atlas on Render) with background auto-refresh
+    const fetchFromDatabase = useCallback(async (isSilent = false) => {
+        if (!isSilent) setIsLoading(true);
+        setIsLiveRefreshing(true);
         try {
             const res = await fetch(apiUrl('/api/site-data'));
             if (res.ok) {
@@ -461,6 +466,7 @@ export function WebsiteDataProvider({ children }) {
                         return merged;
                     });
                     setIsServerConnected(true);
+                    setLastRefreshedAt(new Date());
                     return true;
                 }
             }
@@ -469,12 +475,33 @@ export function WebsiteDataProvider({ children }) {
             console.warn("Backend database API notice:", err.message);
             return false;
         } finally {
-            setIsLoading(false);
+            if (!isSilent) setIsLoading(false);
+            setIsLiveRefreshing(false);
         }
     }, []);
 
     useEffect(() => {
-        fetchFromDatabase();
+        // Initial fetch
+        fetchFromDatabase(false);
+
+        // Live refresh polling (every 3.5 seconds)
+        const pollInterval = setInterval(() => {
+            fetchFromDatabase(true);
+        }, 3500);
+
+        // Immediate refresh on tab focus / visibility change
+        const handleFocus = () => {
+            fetchFromDatabase(true);
+        };
+
+        window.addEventListener('focus', handleFocus);
+        document.addEventListener('visibilitychange', handleFocus);
+
+        return () => {
+            clearInterval(pollInterval);
+            window.removeEventListener('focus', handleFocus);
+            document.removeEventListener('visibilitychange', handleFocus);
+        };
     }, [fetchFromDatabase]);
 
     // Save to database (Primary: Express API / MongoDB Atlas, Fallback: Firestore)
@@ -809,6 +836,9 @@ export function WebsiteDataProvider({ children }) {
             siteData,
             isServerConnected,
             isLoading,
+            lastRefreshedAt,
+            isLiveRefreshing,
+            forceLiveRefresh: () => fetchFromDatabase(false),
             fetchFromDatabase,
             syncToServer,
             updateHero,

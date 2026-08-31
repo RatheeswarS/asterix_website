@@ -155,7 +155,7 @@ export default function TeamGallery() {
                         <div className="bg-slate-900 text-white px-5 py-3 flex items-center justify-between border-b-3 border-slate-900 font-mono text-xs font-black">
                             <div className="flex items-center gap-3">
                                 <span className="status-dot w-2.5 h-2.5 rounded-full bg-sky-400 text-sky-400" />
-                                <span className="uppercase tracking-wider">TEAM ASTERIX ARCHIVE // {pad(lightboxIndex + 1)} OF {pad(galleryItems.length)}</span>
+                                <span className="uppercase tracking-wider">TEAM ASTERIX ARCHIVE • {pad(lightboxIndex + 1)} OF {pad(galleryItems.length)}</span>
                             </div>
 
                             <button
