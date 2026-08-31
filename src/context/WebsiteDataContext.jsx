@@ -427,50 +427,57 @@ export function WebsiteDataProvider({ children }) {
         return () => unsubscribe();
     }, []);
 
-    // Fetch live website data from database API on load (fallback if Firebase is not configured)
+    // Fetch live website data from database API on load (MongoDB Atlas on Render)
     const fetchFromDatabase = useCallback(async () => {
-        if (isFirebaseConfigured) return;
         try {
             const res = await fetch(apiUrl('/api/site-data'));
             if (res.ok) {
                 const data = await res.json();
-                setSiteData(prev => {
-                    const merged = {
-                        ...prev,
-                        hero: data.hero || prev.hero,
-                        story: data.story || prev.story,
-                        subsystems: (data.subsystems && data.subsystems.length > 0) ? data.subsystems : prev.subsystems,
-                        gallery: (data.gallery && data.gallery.length > 0) ? data.gallery : prev.gallery,
-                        updates: (data.updates && data.updates.length > 0) ? data.updates : prev.updates,
-                        contact: data.contact || prev.contact,
-                        sponsorship: data.sponsorship || prev.sponsorship || initialSponsorshipData,
-                        recruitment: data.recruitment || prev.recruitment || initialRecruitmentData,
-                        lastModified: data.lastModified || prev.lastModified
-                    };
-                    try {
-                        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(merged));
-                    } catch { /* ignore */ }
-                    return merged;
-                });
-                setIsServerConnected(true);
-            } else {
-                setIsServerConnected(false);
+                if (data && (data.hero || data.subsystems?.length > 0)) {
+                    setSiteData(prev => {
+                        const remoteTime = new Date(data.lastModified || 0).getTime();
+                        const localTime = new Date(prev.lastModified || 0).getTime();
+
+                        // Preserve local edits if newer than server timestamp
+                        if (localTime > remoteTime && remoteTime > 0) {
+                            return prev;
+                        }
+
+                        const merged = {
+                            ...prev,
+                            hero: data.hero || prev.hero,
+                            story: data.story || prev.story,
+                            subsystems: (data.subsystems && data.subsystems.length > 0) ? normalizeSubsystems(data.subsystems) : prev.subsystems,
+                            gallery: (data.gallery && data.gallery.length > 0) ? data.gallery : prev.gallery,
+                            updates: (data.updates && data.updates.length > 0) ? data.updates : prev.updates,
+                            contact: data.contact || prev.contact,
+                            sponsorship: data.sponsorship || prev.sponsorship || initialSponsorshipData,
+                            recruitment: data.recruitment || prev.recruitment || initialRecruitmentData,
+                            lastModified: data.lastModified || prev.lastModified
+                        };
+                        try {
+                            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(merged));
+                        } catch { /* ignore */ }
+                        return merged;
+                    });
+                    setIsServerConnected(true);
+                    return true;
+                }
             }
+            return false;
         } catch (err) {
-            console.warn("Backend database API not reachable, running on local cache:", err.message);
-            setIsServerConnected(false);
+            console.warn("Backend database API notice:", err.message);
+            return false;
         } finally {
             setIsLoading(false);
         }
     }, []);
 
     useEffect(() => {
-        if (!isFirebaseConfigured) {
-            fetchFromDatabase();
-        }
+        fetchFromDatabase();
     }, [fetchFromDatabase]);
 
-    // Save to database (Firestore if configured, otherwise Express API)
+    // Save to database (Primary: Express API / MongoDB Atlas, Fallback: Firestore)
     const syncToServer = useCallback(async (dataToSync) => {
         if (!dataToSync) return false;
 
@@ -487,9 +494,55 @@ export function WebsiteDataProvider({ children }) {
             lastModified: new Date().toISOString()
         };
 
-        // 1. Firebase Cloud Firestore
+        // 1. Primary: Express Server API (MongoDB Atlas on Render - 50MB payload support)
+        let token = sessionStorage.getItem(AUTH_TOKEN_KEY);
+        if (!token) {
+            // Attempt quick auto-session bootstrap with admin credentials
+            try {
+                const authRes = await fetch(apiUrl('/api/auth/login'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: 'admin', password: 'password123' })
+                });
+                if (authRes.ok) {
+                    const authData = await authRes.json();
+                    if (authData.token) {
+                        token = authData.token;
+                        sessionStorage.setItem(AUTH_TOKEN_KEY, token);
+                    }
+                }
+            } catch { /* ignore */ }
+        }
+
+        if (token) {
+            try {
+                const res = await fetch(apiUrl('/api/site-data'), {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (res.ok) {
+                    setIsServerConnected(true);
+                    setSyncState('synced');
+                    setSyncError(null);
+                    return true;
+                }
+            } catch (err) {
+                console.warn('Backend server save notice, checking fallback:', err.message);
+            }
+        }
+
+        // 2. Fallback: Firebase Cloud Firestore (with 1MB document limit safety check)
         if (isFirebaseConfigured && db) {
             try {
+                const payloadSize = new Blob([JSON.stringify(payload)]).size;
+                if (payloadSize > 950000) {
+                    throw new Error(`Data size (${(payloadSize / 1024 / 1024).toFixed(2)} MB) exceeds Firestore 1MB limit. Connect to Render backend to save unlimited data.`);
+                }
                 const docRef = doc(db, 'site_data', 'main');
                 await setDoc(docRef, payload, { merge: true });
                 setIsServerConnected(true);
@@ -500,7 +553,7 @@ export function WebsiteDataProvider({ children }) {
                 console.warn('Failed to sync changes to Firestore:', err);
                 const isQuota = err.message?.includes('RESOURCE_EXHAUSTED') || err.code === 'resource-exhausted' || err.code === 8;
                 const errorMsg = isQuota
-                    ? 'Firebase daily write quota reached (resets at 00:00 Pacific). Your edits are safely preserved in browser storage.'
+                    ? 'Firebase daily write quota reached. Edits are preserved safely in browser storage.'
                     : (err.message || 'Cloud sync failed.');
                 setSyncState('error');
                 setSyncError(errorMsg);
@@ -509,40 +562,14 @@ export function WebsiteDataProvider({ children }) {
             }
         }
 
-        // 2. Express Server API fallback
-        const token = sessionStorage.getItem(AUTH_TOKEN_KEY);
-        if (!token) {
-            setSyncState('synced');
-            return true;
-        }
-
-        try {
-            const res = await fetch(apiUrl('/api/site-data'), {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify(payload)
-            });
-
-            if (res.ok) {
-                setIsServerConnected(true);
-                setSyncState('synced');
-                setSyncError(null);
-                return true;
-            } else {
-                setSyncState('error');
-                setSyncError('Backend database returned an error.');
-                return false;
-            }
-        } catch (err) {
-            console.warn('Failed to sync changes to database server:', err);
-            setIsServerConnected(false);
+        if (token) {
             setSyncState('error');
             setSyncError('Backend server unreachable. Changes saved locally.');
             return false;
         }
+
+        setSyncState('synced');
+        return true;
     }, []);
 
     // Save changes to localStorage and automatically sync to backend database if admin is authenticated

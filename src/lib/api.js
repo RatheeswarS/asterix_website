@@ -4,7 +4,10 @@
  * In production, set VITE_API_URL in your environment (e.g. on Vercel) to point to your cloud backend
  * (e.g. 'https://asterix-backend.onrender.com'), or configure vercel.json rewrites.
  */
-export const API_BASE = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '');
+export const API_BASE = (
+    import.meta.env.VITE_API_URL ||
+    (import.meta.env.PROD ? 'https://asterix-backend.onrender.com' : '')
+).replace(/\/+$/, '');
 
 export function apiUrl(path) {
     if (!path) return '';

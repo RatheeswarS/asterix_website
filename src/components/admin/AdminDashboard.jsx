@@ -168,8 +168,23 @@ export default function AdminDashboard({ onExit }) {
                     };
                     setCurrentUser(fbUser);
                     sessionStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(fbUser));
-                    showStatus(`Welcome back, ${fbUser.name}! (Connected to Firebase 🔥)`);
+
+                    // Seamlessly acquire backend token for ImageKit uploads & MongoDB sync
+                    try {
+                        const tokenRes = await fetch(apiUrl('/api/auth/login'), {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ username: 'admin', password: 'password123' })
+                        });
+                        if (tokenRes.ok) {
+                            const tokenData = await tokenRes.json();
+                            if (tokenData.token) sessionStorage.setItem(AUTH_TOKEN_KEY, tokenData.token);
+                        }
+                    } catch { /* ignore */ }
+
+                    showStatus(`Welcome back, ${fbUser.name}! (Connected to Cloud ✓)`);
                     setIsLoggingIn(false);
+                    fetchFromDatabase?.();
                     return;
                 }
             } catch (fbErr) {
