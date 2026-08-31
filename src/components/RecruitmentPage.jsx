@@ -1,5 +1,10 @@
 import { useState } from 'react';
 import { useWebsiteData } from '../context/WebsiteDataContext';
+import {
+    useRecruitmentCountdown,
+    RecruitmentCountdownBoard,
+    RecruitmentCountdownStrip,
+} from './RecruitmentCountdown';
 import teamLogo from '../assets/Screenshot 2026-08-26 232320.png';
 import imgWelding from '../assets/gallery/02_workshop_welding.jpg';
 import imgLidar from '../assets/gallery/03_lidar_sensor_tuning.jpg';
@@ -9,8 +14,12 @@ export default function RecruitmentPage({ onBack }) {
     const { siteData } = useWebsiteData();
     const { recruitment, hero } = siteData;
     const [activeSubsystemTab, setActiveSubsystemTab] = useState('software-perception');
+    const [isCountdownDocked, setIsCountdownDocked] = useState(false);
 
     const appLink = recruitment?.applicationLink || hero?.joinFormUrl || 'https://forms.gle/6hHG6aXqrunnfj7V6';
+
+    // One timer feeds both the inline board and the docked header strip.
+    const countdown = useRecruitmentCountdown(recruitment?.deadlines);
 
     const problemStatements = recruitment?.problemStatements || [
         {
@@ -81,25 +90,34 @@ Good luck, Engineer!
         <div className="min-h-screen bg-slate-50 text-slate-900 font-sans selection:bg-amber-400 selection:text-slate-900">
             
             {/* Top Navigation Bar */}
-            <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b-4 border-slate-900 px-4 sm:px-8 py-3.5 flex items-center justify-between shadow-[0_4px_0px_#0f172a]">
-                <div className="flex items-center gap-3">
-                    <img src={teamLogo} alt="Team Asterix" className="h-9 w-auto object-contain" />
-                    <div className="hidden sm:block">
-                        <span className="font-mono text-xs font-black uppercase text-amber-600 block leading-tight">
-                            // CREW SELECTION & RECRUITMENT
-                        </span>
-                        <span className="font-black text-sm uppercase text-slate-900 leading-tight">
-                            TEAM ASTERIX INDUCTION PORTAL
-                        </span>
+            <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b-4 border-slate-900 shadow-[0_4px_0px_#0f172a]">
+                <div className="px-4 sm:px-8 py-3.5 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <img src={teamLogo} alt="Team Asterix" className="h-9 w-auto object-contain" />
+                        <div className="hidden sm:block">
+                            <span className="font-mono text-xs font-black uppercase text-amber-600 block leading-tight">
+                                // CREW SELECTION & RECRUITMENT
+                            </span>
+                            <span className="font-black text-sm uppercase text-slate-900 leading-tight">
+                                TEAM ASTERIX INDUCTION PORTAL
+                            </span>
+                        </div>
                     </div>
+
+                    <button
+                        onClick={onBack}
+                        className="press px-4 py-2 border-2 border-slate-900 bg-sky-100 hover:bg-sky-500 hover:text-white font-mono font-black text-xs uppercase shadow-[2px_2px_0px_#0f172a] cursor-pointer flex items-center gap-1.5"
+                    >
+                        <span>← Back to Website</span>
+                    </button>
                 </div>
 
-                <button
-                    onClick={onBack}
-                    className="press px-4 py-2 border-2 border-slate-900 bg-sky-100 hover:bg-sky-500 hover:text-white font-mono font-black text-xs uppercase shadow-[2px_2px_0px_#0f172a] cursor-pointer flex items-center gap-1.5"
-                >
-                    <span>← Back to Website</span>
-                </button>
+                {/* Same countdown, docked. Rides along once the board scrolls past. */}
+                <RecruitmentCountdownStrip
+                    countdown={countdown}
+                    applyLink={appLink}
+                    docked={isCountdownDocked}
+                />
             </header>
 
             {/* Hero Section */}
@@ -211,6 +229,15 @@ Good luck, Engineer!
                     </div>
                 </div>
             </section>
+
+            {/* Section 1.5: Deadline Timing Tower */}
+            {countdown.hasSchedule && (
+                <RecruitmentCountdownBoard
+                    countdown={countdown}
+                    applyLink={appLink}
+                    onDockChange={setIsCountdownDocked}
+                />
+            )}
 
             {/* Section 2: Problem Statements Section */}
             <section id="problem-statements" className="py-16 px-4 sm:px-8 bg-sky-50/60 border-y-4 border-slate-900">

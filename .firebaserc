@@ -1,5 +1,9 @@
 {
   "projects": {
+<<<<<<< HEAD
     "default": "team-asterix-portal"
+=======
+    "default": "team-asterix-website"
+>>>>>>> b25ab9ebd69bd1b7ab04babadf5e15e75313218d
   }
 }
