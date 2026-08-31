@@ -552,7 +552,7 @@ export default function AdminDashboard({ onExit }) {
 
                     <div className="mt-6 pt-4 border-t-2 border-slate-200">
                         <div className="text-[10px] font-mono text-slate-500 space-y-1">
-                            <div>• {isServerConnected ? '✓ SQLite database persistent storage' : '• Local browser storage cache'}</div>
+                            <div>• {isFirebaseConfigured ? (isServerConnected ? '✓ Cloud Firestore persistent storage' : '• Local cache (connecting to Cloud...)') : (isServerConnected ? '✓ SQLite database storage' : '• Local browser cache')}</div>
                             <div>• {siteData.subsystems.length} Subsystems active</div>
                             <div>• {siteData.gallery.length} Gallery items</div>
                             <div>• {subscribers.length} Alliance leads captured</div>
