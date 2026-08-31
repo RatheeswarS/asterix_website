@@ -42,6 +42,8 @@ const FRAME_COUNT = 80;
 const SCRUB_END = 0.52;      // the turn finishes here
 const LOGO_START = 0.45;     // slight overlap so the two phases cross-fade
 const LOGO_END = 0.70;       // mark fully resolved
+const SHRINK_START = 0.60;   // shrink starts
+const SHRINK_END = 0.84;     // shrink completes
 const HANDOFF_START = 0.78;  // footage dissolves into the live 3D scene
 
 // Enough of the sequence to start without stalling; the rest streams in behind.
@@ -60,7 +62,10 @@ export default function IntroScrollSequence() {
     const stageRef = useRef(null);
     const canvasRef = useRef(null);
     const logoRef = useRef(null);
-    const captionRef = useRef(null);
+    const boxRef = useRef(null);
+    const contentRef = useRef(null);
+    const subtitleRef = useRef(null);
+    const keepScrollingRef = useRef(null);
     const scrimRef = useRef(null);
 
     const [ready, setReady] = useState(false);
@@ -337,18 +342,85 @@ export default function IntroScrollSequence() {
                     gsap.set(canvasRef.current, { opacity: veil });
                     gsap.set(scrimRef.current, { opacity: eased * 0.82 * veil });
 
-                    // The mark clears before the hero copy arrives, a little
-                    // ahead of the footage, so the two never overlap.
-                    const markVeil = 1 - gsap.utils.clamp(0, 1, rawHandoff * 1.35);
+                    // Calculate shrink progress
+                    const shrinkRaw = gsap.utils.clamp(
+                        0,
+                        1,
+                        (p - SHRINK_START) / (SHRINK_END - SHRINK_START)
+                    );
+                    const shrinkP = gsap.parseEase('power2.inOut')(shrinkRaw);
+
+                    const slot = document.getElementById('hero-card-slot');
+                    const stage = stageRef.current;
+                    const box = boxRef.current;
+
+                    if (stage && box) {
+                        const stageRect = stage.getBoundingClientRect();
+                        let slotRect = slot ? slot.getBoundingClientRect() : null;
+
+                        const isMd = window.matchMedia('(min-width: 768px)').matches;
+                        const isSm = window.matchMedia('(min-width: 640px)').matches;
+                        let fallbackW = 290;
+                        let fallbackH = 140;
+                        if (isMd) {
+                            fallbackW = 380;
+                            fallbackH = 185;
+                        } else if (isSm) {
+                            fallbackW = 340;
+                            fallbackH = 165;
+                        }
+
+                        const targetW = slotRect && slotRect.width > 0 ? slotRect.width : fallbackW;
+                        const targetH = slotRect && slotRect.height > 0 ? slotRect.height : fallbackH;
+
+                        // Lerp width and height
+                        const curW = stageRect.width + (targetW - stageRect.width) * shrinkP;
+                        const curH = stageRect.height + (targetH - stageRect.height) * shrinkP;
+
+                        // Start position: centered in stage
+                        const xStart = (stageRect.width - curW) / 2;
+                        const yStart = (stageRect.height - curH) / 2;
+
+                        // End position: aligned with slot in stage coordinates
+                        const xEnd = slotRect ? (slotRect.left - stageRect.left) : (stageRect.width - targetW) / 2;
+                        const yEnd = slotRect ? (slotRect.top - stageRect.top) : (stageRect.height - targetH) / 2;
+
+                        // Lerp position
+                        const x = xStart + (xEnd - xStart) * shrinkP;
+                        const y = yStart + (yEnd - yStart) * shrinkP;
+
+                        gsap.set(box, {
+                            left: 0,
+                            top: 0,
+                            x: x,
+                            y: y,
+                            width: `${curW}px`,
+                            height: `${curH}px`,
+                            borderWidth: `${shrinkP * 3}px`,
+                            borderStyle: 'solid',
+                            borderColor: '#0f172a',
+                            boxShadow: `${shrinkP * 6}px ${shrinkP * 6}px 0px #0f172a`,
+                            borderRadius: `${shrinkP * 8}px`,
+                        });
+                    }
+
+                    // Content scale and opacity transitions inside the card
+                    const isMobile = window.innerWidth < 768;
+                    const targetScale = isMobile ? 0.44 : 0.52;
+                    const contentScale = (0.82 + eased * 0.18) * (1 - (1 - targetScale) * shrinkP);
 
                     gsap.set(logoRef.current, {
-                        opacity: eased * markVeil,
-                        scale: 0.82 + eased * 0.18,
-                        y: (1 - eased) * 34,
+                        opacity: eased,
                     });
-                    gsap.set(captionRef.current, {
-                        opacity: gsap.utils.clamp(0, 1, (logoP - 0.35) / 0.65) * markVeil,
-                        y: (1 - eased) * 18,
+                    gsap.set(subtitleRef.current, {
+                        opacity: gsap.utils.clamp(0, 1, (logoP - 0.2) / 0.8),
+                    });
+                    gsap.set(keepScrollingRef.current, {
+                        opacity: gsap.utils.clamp(0, 1, (logoP - 0.35) / 0.65) * (1 - shrinkP),
+                    });
+                    gsap.set(contentRef.current, {
+                        scale: contentScale,
+                        y: (1 - eased) * 20,
                     });
 
                     setPinned(p < 1);
@@ -392,9 +464,58 @@ export default function IntroScrollSequence() {
                 displayPos = FRAME_COUNT - 1;
                 resize();
                 setReady(true);
+
+                const slot = document.getElementById('hero-card-slot');
+                const stage = stageRef.current;
+                const box = boxRef.current;
+
+                if (stage && box) {
+                    const stageRect = stage.getBoundingClientRect();
+                    const slotRect = slot ? slot.getBoundingClientRect() : null;
+
+                    const isMd = window.matchMedia('(min-width: 768px)').matches;
+                    const isSm = window.matchMedia('(min-width: 640px)').matches;
+                    let fallbackW = 290;
+                    let fallbackH = 140;
+                    if (isMd) {
+                        fallbackW = 380;
+                        fallbackH = 185;
+                    } else if (isSm) {
+                        fallbackW = 340;
+                        fallbackH = 165;
+                    }
+
+                    const targetW = slotRect && slotRect.width > 0 ? slotRect.width : fallbackW;
+                    const targetH = slotRect && slotRect.height > 0 ? slotRect.height : fallbackH;
+
+                    const x = slotRect ? (slotRect.left - stageRect.left) : (stageRect.width - targetW) / 2;
+                    const y = slotRect ? (slotRect.top - stageRect.top) : (stageRect.height - targetH) / 2;
+
+                    gsap.set(box, {
+                        left: 0,
+                        top: 0,
+                        x: x,
+                        y: y,
+                        width: `${targetW}px`,
+                        height: `${targetH}px`,
+                        borderWidth: '3px',
+                        borderStyle: 'solid',
+                        borderColor: '#0f172a',
+                        boxShadow: '6px 6px 0px #0f172a',
+                        borderRadius: '8px',
+                    });
+                }
+
                 gsap.set(scrimRef.current, { opacity: 0.82 });
-                gsap.set(logoRef.current, { opacity: 1, scale: 1, y: 0 });
-                gsap.set(captionRef.current, { opacity: 1, y: 0 });
+                gsap.set(logoRef.current, { opacity: 1 });
+                gsap.set(subtitleRef.current, { opacity: 1 });
+                gsap.set(keepScrollingRef.current, { opacity: 0 });
+                
+                const isMobile = window.innerWidth < 768;
+                gsap.set(contentRef.current, {
+                    scale: isMobile ? 0.44 : 0.52,
+                    y: 0,
+                });
             });
         };
 
@@ -444,39 +565,46 @@ export default function IntroScrollSequence() {
                 ref={stageRef}
                 className="fixed inset-x-0 top-0 h-screen w-full overflow-hidden pointer-events-none"
             >
-                <canvas
-                    ref={canvasRef}
-                    className="absolute inset-0 w-full h-full block"
-                    aria-hidden="true"
-                />
-
-                {/* Darkens the footage as the mark takes over. */}
                 <div
-                    ref={scrimRef}
-                    className="absolute inset-0 bg-slate-950 opacity-0 pointer-events-none"
-                    aria-hidden="true"
-                />
-
-                {/* Emerging team mark */}
-                {/* Centred on every viewport. The mark used to be pushed into
-                    the lower third to clear a letterboxed band; the footage is
-                    full-bleed now, and the scrim gives it contrast wherever it
-                    lands. */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 sm:gap-10 px-6 pointer-events-none">
-                    {/* The team mark is dark artwork intended for a light
-                        background. Knocked out to solid white so it reads
-                        against the scrim, with a sky glow behind it. */}
-                    <img
-                        ref={logoRef}
-                        src={teamLogo}
-                        alt="Team Asterix"
-                        className="w-56 sm:w-80 md:w-[26rem] h-auto object-contain opacity-0 [filter:brightness(0)_invert(1)_drop-shadow(0_0_28px_rgba(56,189,248,0.65))]"
+                    ref={boxRef}
+                    className="absolute left-0 top-0 overflow-hidden bg-slate-950 flex flex-col items-center justify-center will-change-[width,height,transform,border-radius,box-shadow]"
+                    style={{ width: '100vw', height: '100vh' }}
+                >
+                    <canvas
+                        ref={canvasRef}
+                        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 block max-w-none max-h-none"
+                        style={{ width: '100vw', height: '100vh' }}
+                        aria-hidden="true"
                     />
-                    <div ref={captionRef} className="opacity-0 text-center">
-                        <p className="text-2xl sm:text-4xl md:text-5xl font-black uppercase tracking-tight text-white leading-none">
+
+                    {/* Darkens the footage as the mark takes over. */}
+                    <div
+                        ref={scrimRef}
+                        className="absolute inset-0 bg-slate-950 opacity-0 pointer-events-none"
+                        aria-hidden="true"
+                    />
+
+                    {/* Emerging team mark */}
+                    <div
+                        ref={contentRef}
+                        className="absolute inset-0 flex flex-col items-center justify-center gap-4 sm:gap-6 px-4 pointer-events-none will-change-transform"
+                    >
+                        <img
+                            ref={logoRef}
+                            src={teamLogo}
+                            alt="Team Asterix"
+                            className="w-56 sm:w-80 md:w-[26rem] h-auto object-contain opacity-0 [filter:brightness(0)_invert(1)_drop-shadow(0_0_28px_rgba(56,189,248,0.65))]"
+                        />
+                        <p
+                            ref={subtitleRef}
+                            className="opacity-0 text-center text-2xl sm:text-4xl md:text-5xl font-black uppercase tracking-tight text-white leading-none"
+                        >
                             SAEINDIA a-BAJA 2026
                         </p>
-                        <p className="mt-3 text-[10px] sm:text-xs font-mono font-black uppercase tracking-[0.35em] text-sky-400">
+                        <p
+                            ref={keepScrollingRef}
+                            className="opacity-0 mt-3 text-[10px] sm:text-xs font-mono font-black uppercase tracking-[0.35em] text-sky-400"
+                        >
                             Keep scrolling
                         </p>
                     </div>

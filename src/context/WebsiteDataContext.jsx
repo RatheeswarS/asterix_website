@@ -11,6 +11,8 @@ import imgTrack from '../assets/gallery/04_track_dirt_action.jpg';
 import imgMechanics from '../assets/gallery/05_pitlane_mechanics.jpg';
 import imgCelebration from '../assets/gallery/06_team_celebration.jpg';
 
+export { apiUrl } from '../lib/api';
+
 const LOCAL_STORAGE_KEY = 'asterix_website_data_v1';
 export const AUTH_SESSION_KEY = 'asterix_admin_session_v1';
 export const AUTH_TOKEN_KEY = 'asterix_admin_token_v1';

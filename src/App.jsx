@@ -58,6 +58,7 @@ function MainApp() {
         });
 
         setLenisInstance(lenis);
+        window.lenis = lenis;
 
         // The frame id has to be tracked across every frame. Capturing only
         // the first one meant cleanup cancelled a frame that had already run,
@@ -75,6 +76,7 @@ function MainApp() {
             if (rafId !== null) cancelAnimationFrame(rafId);
             lenis.destroy();
             setLenisInstance(null);
+            window.lenis = null;
         };
     }, []);
 

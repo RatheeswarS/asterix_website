@@ -254,6 +254,36 @@
   animation: anim-pop-in var(--dur-slow) var(--ease-brutal) both;
 }
 
+@keyframes anim-dock-up {
+  from {
+    opacity: 0;
+    transform: translate3d(-50%, 24px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.anim-dock-slide-up {
+  animation: anim-dock-up var(--dur-slow) var(--ease-brutal) both;
+}
+
+@keyframes anim-sheet-up {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 16px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.anim-sheet-slide-up {
+  animation: anim-sheet-up var(--dur-base) var(--ease-brutal) both;
+}
+
 /* Starburst Badge Spin */
 @keyframes spin-slow {
   from { transform: rotate(0deg); }

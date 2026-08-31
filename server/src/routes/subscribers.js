@@ -1,11 +1,11 @@
 import { Router } from 'express';
-import db from '../db/database.js';
+import Subscriber from '../models/Subscriber.js';
 import { authenticateToken } from '../middleware/auth.js';
 
 const router = Router();
 
 // POST /api/subscribers (Public - Join the Alliance)
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
     try {
         const { email, phone } = req.body;
         if (!email || !email.includes('@')) {
@@ -14,17 +14,12 @@ router.post('/', (req, res) => {
 
         const cleanEmail = email.trim().toLowerCase();
         const cleanPhone = phone ? phone.trim() : null;
-        const now = new Date().toISOString();
-        const id = 'sub-' + Date.now();
 
-        const stmt = db.prepare(`
-            INSERT INTO subscribers (id, email, phone, created_at)
-            VALUES (?, ?, ?, ?)
-            ON CONFLICT(email) DO UPDATE SET
-                phone = COALESCE(excluded.phone, subscribers.phone)
-        `);
-
-        stmt.run(id, cleanEmail, cleanPhone, now);
+        await Subscriber.findOneAndUpdate(
+            { email: cleanEmail },
+            { $set: { phone: cleanPhone } },
+            { upsert: true, new: true, setDefaultsOnInsert: true }
+        );
 
         res.status(201).json({
             success: true,
@@ -37,10 +32,15 @@ router.post('/', (req, res) => {
 });
 
 // GET /api/subscribers (Protected - Admin)
-router.get('/', authenticateToken, (req, res) => {
+router.get('/', authenticateToken, async (req, res) => {
     try {
-        const stmt = db.prepare('SELECT id, email, phone, created_at FROM subscribers ORDER BY created_at DESC');
-        const list = stmt.all();
+        const subscribers = await Subscriber.find().sort({ createdAt: -1 });
+        const list = subscribers.map(s => ({
+            id: s._id.toString(),
+            email: s.email,
+            phone: s.phone,
+            created_at: s.createdAt
+        }));
         res.json(list);
     } catch (err) {
         res.status(500).json({ error: 'Failed to retrieve subscribers', details: err.message });
@@ -48,10 +48,11 @@ router.get('/', authenticateToken, (req, res) => {
 });
 
 // DELETE /api/subscribers/:id (Protected - Admin)
-router.delete('/:id', authenticateToken, (req, res) => {
+router.delete('/:id', authenticateToken, async (req, res) => {
     try {
-        const stmt = db.prepare('DELETE FROM subscribers WHERE id = ?');
-        stmt.run(req.params.id);
+        const targetId = req.params.id;
+        const filter = Subscriber.base.isValidObjectId(targetId) ? { _id: targetId } : { email: targetId.toLowerCase() };
+        await Subscriber.findOneAndDelete(filter);
         res.json({ success: true, message: 'Subscriber removed.' });
     } catch (err) {
         res.status(500).json({ error: 'Failed to delete subscriber', details: err.message });

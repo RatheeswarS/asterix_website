@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import DriftWall from './DriftWall';
 import { useWebsiteData } from '../context/WebsiteDataContext';
 import { apiUrl } from '../lib/api';
@@ -22,6 +23,20 @@ export default function TeamGallery() {
         mq.addEventListener('change', onChange);
         return () => mq.removeEventListener('change', onChange);
     }, []);
+
+    // Disable scrolling when lightbox modal is open
+    useEffect(() => {
+        if (lightboxIndex === null) return;
+
+        const prevBodyOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        window.lenis?.stop();
+
+        return () => {
+            document.body.style.overflow = prevBodyOverflow;
+            window.lenis?.start();
+        };
+    }, [lightboxIndex]);
 
     const galleryItems = useMemo(() => {
         return siteData.gallery.map((g, idx) => ({
@@ -126,10 +141,11 @@ export default function TeamGallery() {
             </div>
 
             {/* Lightbox Modal (Detailed High-Res Photo View with Keyboard & Click Navigation) */}
-            {activeItem && (
+            {activeItem && typeof document !== 'undefined' && createPortal(
                 <div
-                    className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4 sm:p-8 anim-fade"
+                    className="fixed inset-0 z-[9999] bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4 sm:p-8 anim-fade"
                     onClick={() => setLightboxIndex(null)}
+                    data-lenis-prevent
                 >
                     <div
                         className="anim-pop-center relative max-w-5xl w-full bg-white border-4 border-slate-900 shadow-[12px_12px_0px_#0284c7] overflow-hidden flex flex-col"
@@ -221,7 +237,8 @@ export default function TeamGallery() {
                         </div>
 
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
         </section>

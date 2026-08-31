@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { useWebsiteData } from '../context/WebsiteDataContext';
+import { apiUrl } from '../lib/api';
 import { db, isFirebaseConfigured } from '../lib/firebase';
 import { doc, setDoc } from 'firebase/firestore';
 import teamLogo from '../assets/Screenshot 2026-08-26 232320.png';
+
 
 export default function SponsorPage({ onBack }) {
     const { siteData } = useWebsiteData();
@@ -45,7 +47,23 @@ export default function SponsorPage({ onBack }) {
             }
         }
 
-        // 2. Local fallback
+        // 2. Server API fallback (MongoDB Atlas)
+        try {
+            const res = await fetch(apiUrl('/api/sponsor-inquiries'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(inquiryData)
+            });
+            if (res.ok) {
+                setSubmitted(true);
+                setIsSubmitting(false);
+                return;
+            }
+        } catch (apiErr) {
+            console.warn('Server API inquiry error, falling back to local storage:', apiErr);
+        }
+
+        // 3. Local fallback
         try {
             const existing = JSON.parse(localStorage.getItem('asterix_sponsor_inquiries') || '[]');
             existing.push(inquiryData);

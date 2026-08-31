@@ -3,11 +3,12 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { initDatabase } from './db/database.js';
+import { connectMongoDB } from './db/mongodb.js';
 
 import siteDataRoutes from './routes/siteData.js';
 import authRoutes from './routes/auth.js';
 import subscriberRoutes from './routes/subscribers.js';
+import sponsorInquiryRoutes from './routes/sponsorInquiries.js';
 import uploadRoutes from './routes/upload.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -18,8 +19,8 @@ dotenv.config({ path: path.resolve(__dirname, '../.env') });
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Initialize database schema and default seeds
-initDatabase();
+// Connect to MongoDB Atlas (or fallback mode if MONGODB_URI is not set yet)
+connectMongoDB();
 
 // Middleware
 const allowedOrigins = process.env.CORS_ORIGIN
@@ -53,7 +54,8 @@ app.use('/uploads', express.static(uploadsPath));
 app.get('/api/health', (req, res) => {
     res.json({
         status: 'online',
-        service: 'Team Asterix API & Database Engine',
+        database: 'MongoDB Atlas',
+        service: 'Team Asterix API Engine',
         timestamp: new Date().toISOString()
     });
 });
@@ -62,6 +64,7 @@ app.get('/api/health', (req, res) => {
 app.use('/api/site-data', siteDataRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/subscribers', subscriberRoutes);
+app.use('/api/sponsor-inquiries', sponsorInquiryRoutes);
 app.use('/api/upload', uploadRoutes);
 
 // Global error handler
@@ -75,7 +78,6 @@ app.use((err, req, res, _next) => {
 const HOST = process.env.HOST || '0.0.0.0';
 
 app.listen(PORT, HOST, () => {
-    console.log(`🚀 Asterix Server & Database running on http://${HOST === '0.0.0.0' ? 'localhost' : HOST}:${PORT}`);
+    console.log(`🚀 Asterix Server & MongoDB API running on http://${HOST === '0.0.0.0' ? 'localhost' : HOST}:${PORT}`);
     console.log(`📁 Uploads available at http://${HOST === '0.0.0.0' ? 'localhost' : HOST}:${PORT}/uploads/`);
 });
-

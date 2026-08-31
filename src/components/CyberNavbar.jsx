@@ -14,16 +14,17 @@ export default function CyberNavbar({ onSelectSubsystem, isDetailPage, onBackToH
     const [isScrolled, setIsScrolled] = useState(false);
 
     useEffect(() => {
+        let lastScrollY = window.scrollY || document.documentElement.scrollTop;
         const handleScroll = () => {
             const currentScrollY = window.scrollY || document.documentElement.scrollTop;
-            const shouldHide = currentScrollY > 20;
-            setIsScrolled(shouldHide);
-            if (shouldHide) {
+            const scrolled = currentScrollY > 30;
+            setIsScrolled(scrolled);
+            if (Math.abs(currentScrollY - lastScrollY) > 60) {
                 setShopOpen(false);
                 setContactOpen(false);
-                setMobileOpen(false);
                 setMobileContactOpen(false);
             }
+            lastScrollY = currentScrollY;
         };
 
         handleScroll();
@@ -92,302 +93,540 @@ export default function CyberNavbar({ onSelectSubsystem, isDetailPage, onBackToH
     };
 
     return (
-        <nav className={`fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b-4 border-slate-900 select-none transition-transform duration-300 ease-in-out ${
-            isScrolled ? '-translate-y-full pointer-events-none' : 'translate-y-0 pointer-events-auto'
-        }`}>
-            <div className="max-w-7xl mx-auto px-4 sm:px-8 py-2.5 flex items-center justify-between relative">
+        <>
+            {/* =========================================================================
+                DESKTOP NAVIGATION: Option 2 — Morphing Floating Cyber Island (>= md)
+                ========================================================================= */}
+            <header
+                className={`hidden md:block fixed z-50 transition-all duration-300 ease-out select-none ${
+                    isScrolled
+                        ? 'top-2.5 left-1/2 -translate-x-1/2 w-max max-w-[95vw] rounded-full border-2 border-slate-900 bg-white/90 backdrop-blur-md shadow-[3px_3px_0px_#0f172a] px-3.5 py-1'
+                        : 'top-0 inset-x-0 w-full rounded-none border-b-4 border-slate-900 bg-white/95 backdrop-blur-md shadow-none px-4 sm:px-8 py-2.5'
+                }`}
+            >
+                <div className="flex items-center justify-between gap-2.5 lg:gap-4 relative">
+                    {/* Brand Logo */}
+                    <button
+                        onClick={onBackToHome}
+                        className="press press-flat flex items-center group cursor-pointer text-left focus:outline-none flex-shrink-0"
+                        aria-label="Asterix Racing Home"
+                    >
+                        <img
+                            src={teamLogo}
+                            alt="Asterix Racing"
+                            className={`w-auto object-contain transition-all duration-200 group-hover:scale-105 ${
+                                isScrolled ? 'h-6 lg:h-6.5' : 'h-8 sm:h-9 md:h-10'
+                            }`}
+                        />
+                    </button>
 
-                {/* Brand Logo */}
+                    {/* React Bits TextDock: Proximity magnification on the actual letters/buttons */}
+                    <div className="flex items-center">
+                        <TextDock className={isScrolled ? 'py-0' : 'py-0.5'}>
+                            {({ mouseX }) => (
+                                <div className={`flex items-center ${isScrolled ? 'gap-1 lg:gap-1.5' : 'gap-1.5 lg:gap-2'}`}>
+                                    {/* The Subsystems Text Item */}
+                                    <div className="relative">
+                                        <DockTextItem
+                                            mouseX={mouseX}
+                                            onClick={() => {
+                                                setShopOpen((prev) => !prev);
+                                                setContactOpen(false);
+                                            }}
+                                            className={`press flex items-center gap-1 border-slate-900 bg-white transition-colors ${
+                                                isScrolled
+                                                    ? 'px-2.5 py-1 text-[11px] rounded-md border font-bold hover:bg-sky-100 hover:shadow-[2px_2px_0px_#0f172a]'
+                                                    : 'px-3 py-1.5 text-xs border-2 shadow-[2px_2px_0px_#0f172a] hover:bg-sky-100 hover:shadow-[3px_3px_0px_#0f172a]'
+                                            } ${shopOpen ? '!bg-sky-200' : ''}`}
+                                        >
+                                            <span>{isScrolled ? 'SUBSYSTEMS' : 'THE SUBSYSTEMS'}</span>
+                                            <span className="text-[9px]">▼</span>
+                                        </DockTextItem>
+
+                                        {/* Mega Dropdown Menu */}
+                                        {shopOpen && (
+                                            <div
+                                                className="absolute top-full left-0 mt-2.5 w-80 bg-white border-3 border-slate-900 shadow-[6px_6px_0px_#0f172a] rounded-xl p-4 z-50 anim-pop"
+                                                onMouseLeave={() => setShopOpen(false)}
+                                            >
+                                                <div className="flex items-center justify-between mb-2.5 border-b-2 border-slate-200 pb-1">
+                                                    <span className="text-[10px] font-mono text-sky-600 uppercase font-black">
+                                                        // SELECT SUBSYSTEM DECK
+                                                    </span>
+                                                    <button
+                                                        onClick={() => setShopOpen(false)}
+                                                        className="press press-flat text-xs font-black text-slate-400 hover:text-slate-900 cursor-pointer"
+                                                    >
+                                                        ✕
+                                                    </button>
+                                                </div>
+                                                <div className="flex flex-col gap-1.5">
+                                                    {subsystems.map((s) => (
+                                                        <button
+                                                            key={s.id}
+                                                            onClick={() => handleSubsystemClick(s.id)}
+                                                            className="press press-flat p-2 border border-slate-900 rounded bg-sky-50 hover:bg-sky-500 hover:text-white transition-colors flex items-center justify-between font-bold text-xs cursor-pointer text-left"
+                                                        >
+                                                            <span>{s.name}</span>
+                                                            <span>→</span>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {isDetailPage ? (
+                                        <DockTextItem
+                                            mouseX={mouseX}
+                                            onClick={onBackToHome}
+                                            className={`border-slate-900 bg-sky-100 text-slate-900 hover:bg-sky-500 hover:text-white ${
+                                                isScrolled
+                                                    ? 'px-2.5 py-1 text-[11px] rounded-md border font-bold'
+                                                    : 'px-3.5 py-1.5 text-xs border-2 shadow-[2px_2px_0px_#0f172a]'
+                                            }`}
+                                        >
+                                            <span>← Overview</span>
+                                        </DockTextItem>
+                                    ) : isScrolled ? (
+                                        /* Scrolled: Compact Merged Explore / Sections Dropdown */
+                                        <div className="relative">
+                                            <DockTextItem
+                                                mouseX={mouseX}
+                                                onClick={() => {
+                                                    setMobileOpen((prev) => !prev);
+                                                    setShopOpen(false);
+                                                    setContactOpen(false);
+                                                }}
+                                                className={`press flex items-center gap-1 border-slate-900 bg-white px-2.5 py-1 text-[11px] rounded-md border font-bold hover:bg-sky-100 hover:shadow-[2px_2px_0px_#0f172a] ${
+                                                    mobileOpen ? '!bg-sky-200' : ''
+                                                }`}
+                                            >
+                                                <span>EXPLORE</span>
+                                                <span className="text-[9px]">▼</span>
+                                            </DockTextItem>
+
+                                            {mobileOpen && (
+                                                <div
+                                                    className="absolute top-full left-1/2 -translate-x-1/2 mt-2.5 w-56 bg-white border-3 border-slate-900 shadow-[6px_6px_0px_#0f172a] rounded-xl p-3 z-50 anim-pop"
+                                                    onMouseLeave={() => setMobileOpen(false)}
+                                                >
+                                                    <div className="flex items-center justify-between mb-2 border-b-2 border-slate-200 pb-1">
+                                                        <span className="text-[10px] font-mono text-sky-600 uppercase font-black">
+                                                            // SECTIONS
+                                                        </span>
+                                                        <button
+                                                            onClick={() => setMobileOpen(false)}
+                                                            className="press press-flat text-xs font-black text-slate-400 hover:text-slate-900 cursor-pointer"
+                                                        >
+                                                            ✕
+                                                        </button>
+                                                    </div>
+                                                    <div className="flex flex-col gap-1.5">
+                                                        <button
+                                                            onClick={() => {
+                                                                setMobileOpen(false);
+                                                                handleNavigate('#gallery');
+                                                            }}
+                                                            className="p-1.5 border border-slate-900 rounded bg-sky-50 hover:bg-sky-500 hover:text-white transition-colors flex items-center justify-between font-bold text-xs text-left cursor-pointer"
+                                                        >
+                                                            <span>Gallery</span>
+                                                            <span>→</span>
+                                                        </button>
+                                                        <button
+                                                            onClick={() => {
+                                                                setMobileOpen(false);
+                                                                handleNavigate('#updates');
+                                                            }}
+                                                            className="p-1.5 border border-slate-900 rounded bg-sky-50 hover:bg-sky-500 hover:text-white transition-colors flex items-center justify-between font-bold text-xs text-left cursor-pointer"
+                                                        >
+                                                            <span>Updates</span>
+                                                            <span>→</span>
+                                                        </button>
+                                                        <button
+                                                            onClick={() => {
+                                                                setMobileOpen(false);
+                                                                handleNavigate('#story');
+                                                            }}
+                                                            className="p-1.5 border border-slate-900 rounded bg-sky-50 hover:bg-sky-500 hover:text-white transition-colors flex items-center justify-between font-bold text-xs text-left cursor-pointer"
+                                                        >
+                                                            <span>Our Story</span>
+                                                            <span>→</span>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        /* Top State: Full Links */
+                                        <>
+                                            {/* Gallery */}
+                                            <DockTextItem
+                                                mouseX={mouseX}
+                                                onClick={() => handleNavigate('#gallery')}
+                                                className="px-3 py-1.5 text-xs border-2 border-slate-900 bg-white shadow-[2px_2px_0px_#0f172a] hover:bg-sky-100 hover:shadow-[3px_3px_0px_#0f172a]"
+                                            >
+                                                <span>Gallery</span>
+                                            </DockTextItem>
+
+                                            {/* Updates */}
+                                            <DockTextItem
+                                                mouseX={mouseX}
+                                                onClick={() => handleNavigate('#updates')}
+                                                className="px-3 py-1.5 text-xs border-2 border-slate-900 bg-white shadow-[2px_2px_0px_#0f172a] hover:bg-sky-100 hover:shadow-[3px_3px_0px_#0f172a]"
+                                            >
+                                                <span>Updates</span>
+                                            </DockTextItem>
+
+                                            {/* Our Story */}
+                                            <DockTextItem
+                                                mouseX={mouseX}
+                                                onClick={() => handleNavigate('#story')}
+                                                className="px-3 py-1.5 text-xs border-2 border-slate-900 bg-white shadow-[2px_2px_0px_#0f172a] hover:bg-sky-100 hover:shadow-[3px_3px_0px_#0f172a]"
+                                            >
+                                                <span>Our Story</span>
+                                            </DockTextItem>
+                                        </>
+                                    )}
+
+                                    {/* Contact Us Button */}
+                                    <div className="relative">
+                                        <DockTextItem
+                                            mouseX={mouseX}
+                                            onClick={() => {
+                                                setContactOpen((prev) => !prev);
+                                                setShopOpen(false);
+                                                setMobileOpen(false);
+                                            }}
+                                            className={`press flex items-center gap-1 border-slate-900 bg-white ${
+                                                isScrolled
+                                                    ? 'px-2.5 py-1 text-[11px] rounded-md border font-bold hover:bg-sky-100 hover:shadow-[2px_2px_0px_#0f172a]'
+                                                    : 'px-3 py-1.5 text-xs border-2 shadow-[2px_2px_0px_#0f172a] hover:bg-sky-100 hover:shadow-[3px_3px_0px_#0f172a]'
+                                            } ${contactOpen ? '!bg-sky-200' : ''}`}
+                                        >
+                                            <span>CONTACT</span>
+                                            <span className="text-[9px]">▼</span>
+                                        </DockTextItem>
+
+                                        {/* Contact Us Dropdown Pop-up Card */}
+                                        {contactOpen && (
+                                            <div
+                                                className="absolute top-full right-0 mt-2.5 w-72 bg-white border-3 border-slate-900 shadow-[6px_6px_0px_#0f172a] rounded-xl p-3.5 z-50 anim-pop"
+                                                onMouseLeave={() => setContactOpen(false)}
+                                            >
+                                                <div className="flex items-center justify-between mb-2.5 border-b-2 border-slate-200 pb-1">
+                                                    <span className="text-[10px] font-mono text-sky-600 uppercase font-black">
+                                                        // COMMS & SOCIALS
+                                                    </span>
+                                                    <button
+                                                        onClick={() => setContactOpen(false)}
+                                                        className="press press-flat text-xs font-black text-slate-400 hover:text-slate-900 cursor-pointer"
+                                                    >
+                                                        ✕
+                                                    </button>
+                                                </div>
+
+                                                <div className="flex flex-col gap-1.5">
+                                                    {socialLinks.map((item) => (
+                                                        <a
+                                                            key={item.name}
+                                                            href={item.url}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            onClick={() => setContactOpen(false)}
+                                                            className={`p-2 border border-slate-900 rounded bg-sky-50 ${item.color} transition-all flex items-center justify-between font-bold text-xs hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_#0f172a] cursor-pointer group`}
+                                                        >
+                                                            <div className="flex items-center gap-2">
+                                                                {item.icon}
+                                                                <div>
+                                                                    <span className="block font-black uppercase text-slate-900 group-hover:text-inherit text-[11px]">
+                                                                        {item.name}
+                                                                    </span>
+                                                                    <span className="block text-[9px] font-mono text-slate-500">
+                                                                        {item.handle}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                            <span className="text-xs font-black text-slate-900 group-hover:text-inherit">↗</span>
+                                                        </a>
+                                                    ))}
+                                                </div>
+
+                                                <div className="mt-2.5 pt-2 border-t border-slate-200">
+                                                    <a
+                                                        href={`mailto:${contact.email || 'asterix.psgitech@gmail.com'}`}
+                                                        className="text-[10px] font-mono font-bold text-slate-600 hover:text-sky-600 flex items-center gap-1.5"
+                                                    >
+                                                        <span>✉</span>
+                                                        <span className="truncate">{contact.email || 'asterix.psgitech@gmail.com'}</span>
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Action Buttons: In scrolled state, show a clean combined or prominent CTA */}
+                                    <DockTextItem
+                                        mouseX={mouseX}
+                                        onClick={() => {
+                                            if (onOpenRecruitment) onOpenRecruitment();
+                                            else window.location.hash = '#join';
+                                        }}
+                                        className={`border-slate-900 bg-amber-300 text-slate-900 hover:bg-amber-400 flex items-center gap-1 cursor-pointer ${
+                                            isScrolled
+                                                ? 'px-2.5 py-1 text-[11px] rounded-md border font-bold hover:shadow-[2px_2px_0px_#0f172a]'
+                                                : 'px-3 py-1.5 text-xs border-2 shadow-[2px_2px_0px_#0f172a] hover:shadow-[3px_3px_0px_#0f172a]'
+                                        }`}
+                                    >
+                                        <span>Join</span>
+                                        <span className="text-[9px]">↗</span>
+                                    </DockTextItem>
+
+                                    {/* Sponsor Team Button */}
+                                    <DockTextItem
+                                        mouseX={mouseX}
+                                        onClick={() => {
+                                            if (onOpenSponsor) onOpenSponsor();
+                                            else window.location.hash = '#sponsor';
+                                        }}
+                                        className={`border-slate-900 bg-sky-500 text-white hover:bg-sky-400 cursor-pointer ${
+                                            isScrolled
+                                                ? 'px-2.5 py-1 text-[11px] rounded-md border font-bold hover:shadow-[2px_2px_0px_#0f172a]'
+                                                : 'px-3.5 py-1.5 text-xs border-2 shadow-[2px_2px_0px_#0f172a] hover:shadow-[3px_3px_0px_#0f172a]'
+                                        }`}
+                                    >
+                                        <span>Sponsor</span>
+                                    </DockTextItem>
+
+                                </div>
+                            )}
+                        </TextDock>
+                    </div>
+                </div>
+            </header>
+
+            {/* =========================================================================
+                MOBILE STATIC TOP BRAND HEADER (< md)
+                Scrolls naturally out of the way to grant 100% full-screen 3D view
+                ========================================================================= */}
+            <div className="md:hidden w-full bg-white/95 border-b-2 border-slate-900 px-4 py-2.5 flex items-center justify-between select-none relative z-30">
                 <button
                     onClick={onBackToHome}
-                    className="press press-flat flex items-center group cursor-pointer text-left focus:outline-none"
+                    className="flex items-center gap-2 cursor-pointer focus:outline-none"
                     aria-label="Asterix Racing Home"
                 >
                     <img
                         src={teamLogo}
                         alt="Asterix Racing"
-                        className="h-8 sm:h-9 md:h-10 w-auto object-contain transition-transform duration-200 group-hover:scale-105"
+                        className="h-8 w-auto object-contain"
                     />
                 </button>
-
-                {/* React Bits TextDock: Proximity magnification on the actual letters/buttons */}
-                <div className="hidden md:flex items-center">
-                    <TextDock className="py-1">
-                        {({ mouseX }) => (
-                            <div className="flex items-center gap-1.5 lg:gap-2.5">
-                                {/* The Subsystems Text Item */}
-                                <div className="relative">
-                                    <DockTextItem
-                                        mouseX={mouseX}
-                                        onClick={() => {
-                                            setShopOpen((prev) => !prev);
-                                            setContactOpen(false);
-                                        }}
-                                        className={`press px-3.5 py-2 border-2 border-slate-900 bg-white shadow-[2px_2px_0px_#0f172a] hover:bg-sky-100 hover:shadow-[3px_3px_0px_#0f172a] flex items-center gap-1.5 ${shopOpen ? '!bg-sky-200' : ''
-                                            }`}
-                                    >
-                                        <span>THE SUBSYSTEMS</span>
-                                        <span className="text-[10px]">▼</span>
-                                    </DockTextItem>
-
-                                    {/* Mega Dropdown Menu */}
-                                    {shopOpen && (
-                                        <div
-                                            className="absolute top-full left-0 mt-3 w-80 bg-white border-4 border-slate-900 shadow-[8px_8px_0px_#0f172a] p-5 z-50 anim-pop"
-                                            onMouseLeave={() => setShopOpen(false)}
-                                        >
-                                            <div className="flex items-center justify-between mb-3 border-b-2 border-slate-200 pb-1">
-                                                <span className="text-[10px] font-mono text-sky-600 uppercase font-black">
-                                                    // SELECT SUBSYSTEM DECK
-                                                </span>
-                                                <button
-                                                    onClick={() => setShopOpen(false)}
-                                                    className="press press-flat text-xs font-black text-slate-400 hover:text-slate-900 cursor-pointer"
-                                                >
-                                                    ✕
-                                                </button>
-                                            </div>
-                                            <div className="flex flex-col gap-2">
-                                                {subsystems.map((s) => (
-                                                    <button
-                                                        key={s.id}
-                                                        onClick={() => handleSubsystemClick(s.id)}
-                                                        className="press press-flat p-2 border-2 border-slate-900 bg-sky-50 hover:bg-sky-500 hover:text-white transition-colors flex items-center justify-between font-bold text-xs cursor-pointer text-left"
-                                                    >
-                                                        <span>{s.name}</span>
-                                                        <span>→</span>
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-
-                                {isDetailPage ? (
-                                    <DockTextItem
-                                        mouseX={mouseX}
-                                        onClick={onBackToHome}
-                                        className="px-4 py-2 border-2 border-slate-900 bg-sky-100 text-slate-900 shadow-[2px_2px_0px_#0f172a] hover:bg-sky-500 hover:text-white"
-                                    >
-                                        <span>← Back to Overview</span>
-                                    </DockTextItem>
-                                ) : (
-                                    <>
-                                        {/* Gallery */}
-                                        <DockTextItem
-                                            mouseX={mouseX}
-                                            onClick={() => handleNavigate('#gallery')}
-                                            className="px-3.5 py-2 border-2 border-slate-900 bg-white shadow-[2px_2px_0px_#0f172a] hover:bg-sky-100 hover:shadow-[3px_3px_0px_#0f172a]"
-                                        >
-                                            <span>Gallery</span>
-                                        </DockTextItem>
-
-                                        {/* Updates */}
-                                        <DockTextItem
-                                            mouseX={mouseX}
-                                            onClick={() => handleNavigate('#updates')}
-                                            className="px-3.5 py-2 border-2 border-slate-900 bg-white shadow-[2px_2px_0px_#0f172a] hover:bg-sky-100 hover:shadow-[3px_3px_0px_#0f172a]"
-                                        >
-                                            <span>Updates</span>
-                                        </DockTextItem>
-
-                                        {/* Our Story */}
-                                        <DockTextItem
-                                            mouseX={mouseX}
-                                            onClick={() => handleNavigate('#story')}
-                                            className="px-3.5 py-2 border-2 border-slate-900 bg-white shadow-[2px_2px_0px_#0f172a] hover:bg-sky-100 hover:shadow-[3px_3px_0px_#0f172a]"
-                                        >
-                                            <span>Our Story</span>
-                                        </DockTextItem>
-                                    </>
-                                )}
-
-                                {/* Contact Us Button with Pop-up list of Instagram, LinkedIn, and GitHub */}
-                                <div className="relative">
-                                    <DockTextItem
-                                        mouseX={mouseX}
-                                        onClick={() => {
-                                            setContactOpen((prev) => !prev);
-                                            setShopOpen(false);
-                                        }}
-                                        className={`press px-3.5 py-2 border-2 border-slate-900 bg-white shadow-[2px_2px_0px_#0f172a] hover:bg-sky-100 hover:shadow-[3px_3px_0px_#0f172a] flex items-center gap-1.5 ${contactOpen ? '!bg-sky-200' : ''
-                                            }`}
-                                    >
-                                        <span>CONTACT US</span>
-                                        <span className="text-[10px]">▼</span>
-                                    </DockTextItem>
-
-                                    {/* Contact Us Dropdown Pop-up Card */}
-                                    {contactOpen && (
-                                        <div
-                                            className="absolute top-full left-0 sm:left-auto sm:right-0 mt-3 w-72 bg-white border-4 border-slate-900 shadow-[8px_8px_0px_#0f172a] p-4 z-50 anim-pop"
-                                            onMouseLeave={() => setContactOpen(false)}
-                                        >
-                                            <div className="flex items-center justify-between mb-3 border-b-2 border-slate-200 pb-1">
-                                                <button
-                                                    onClick={() => setContactOpen(false)}
-                                                    className="press press-flat text-xs font-black text-slate-400 hover:text-slate-900 cursor-pointer"
-                                                >
-                                                    ✕
-                                                </button>
-                                            </div>
-
-                                            <div className="flex flex-col gap-2">
-                                                {socialLinks.map((item) => (
-                                                    <a
-                                                        key={item.name}
-                                                        href={item.url}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        onClick={() => setContactOpen(false)}
-                                                        className={`p-2.5 border-2 border-slate-900 bg-sky-50 ${item.color} transition-all flex items-center justify-between font-bold text-xs shadow-[2px_2px_0px_#0f172a] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[4px_4px_0px_#0f172a] cursor-pointer group`}
-                                                    >
-                                                        <div className="flex items-center gap-2.5">
-                                                            {item.icon}
-                                                            <div>
-                                                                <span className="block font-black uppercase text-slate-900 group-hover:text-inherit">
-                                                                    {item.name}
-                                                                </span>
-                                                                <span className="block text-[10px] font-mono text-slate-500">
-                                                                    {item.handle}
-                                                                </span>
-                                                            </div>
-                                                        </div>
-                                                        <span className="text-sm font-black text-slate-900 group-hover:text-inherit">↗</span>
-                                                    </a>
-                                                ))}
-                                            </div>
-
-                                            <div className="mt-3 pt-2.5 border-t border-slate-200">
-                                                <a
-                                                    href={`mailto:${contact.email || 'asterix.psgitech@gmail.com'}`}
-                                                    className="text-[11px] font-mono font-bold text-slate-600 hover:text-sky-600 flex items-center gap-1.5"
-                                                >
-                                                    <span>✉</span>
-                                                    <span className="truncate">{contact.email || 'asterix.psgitech@gmail.com'}</span>
-                                                </a>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Join Team Text Button with Dock Magnification */}
-                                <DockTextItem
-                                    mouseX={mouseX}
-                                    onClick={() => {
-                                        if (onOpenRecruitment) onOpenRecruitment();
-                                        else window.location.hash = '#join';
-                                    }}
-                                    className="px-3.5 py-2 border-2 border-slate-900 bg-amber-300 text-slate-900 shadow-[2px_2px_0px_#0f172a] hover:bg-amber-400 hover:shadow-[3px_3px_0px_#0f172a] flex items-center gap-1 cursor-pointer"
-                                >
-                                    <span>Join Team</span>
-                                    <span className="text-[10px]">↗</span>
-                                </DockTextItem>
-
-                                {/* Sponsor Team Text Button with Dock Magnification */}
-                                <DockTextItem
-                                    mouseX={mouseX}
-                                    onClick={() => {
-                                        if (onOpenSponsor) onOpenSponsor();
-                                        else window.location.hash = '#sponsor';
-                                    }}
-                                    className="px-4 py-2 border-2 border-slate-900 bg-sky-500 text-white shadow-[2px_2px_0px_#0f172a] hover:bg-sky-400 hover:shadow-[3px_3px_0px_#0f172a] cursor-pointer"
-                                >
-                                    <span>Sponsor Team</span>
-                                </DockTextItem>
-                            </div>
-                        )}
-                    </TextDock>
+                <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 border border-slate-900 bg-sky-100 text-[10px] font-mono font-black uppercase text-sky-950">
+                        BAJA 2026
+                    </span>
                 </div>
-
-                {/* Mobile Hamburger Toggle */}
-                <button
-                    onClick={() => setMobileOpen(!mobileOpen)}
-                    className="press press-flat md:hidden p-2 border-2 border-slate-900 bg-sky-100 cursor-pointer"
-                    aria-label="Toggle Menu"
-                >
-                    <div className="w-5 h-3.5 flex flex-col justify-between">
-                        <span className="h-0.5 w-full bg-slate-900" />
-                        <span className="h-0.5 w-full bg-slate-900" />
-                        <span className="h-0.5 w-full bg-slate-900" />
-                    </div>
-                </button>
-
             </div>
 
-            {/* Mobile Menu Drawer */}
-            {mobileOpen && (
-                <div className="md:hidden bg-white border-t-2 border-slate-900 p-6 flex flex-col gap-3 font-black text-sm uppercase max-h-[85vh] overflow-y-auto">
-                    <span className="text-xs font-mono text-sky-600">-- SUBSYSTEMS --</span>
-                    {subsystems.map((s) => (
-                        <button
-                            key={s.id}
-                            onClick={() => handleSubsystemClick(s.id)}
-                            className="p-2 border-2 border-slate-900 bg-sky-50 text-left font-bold text-xs"
-                        >
-                            {s.name}
-                        </button>
-                    ))}
-                    <div className="border-t-2 border-slate-200 my-2" />
-                    <button onClick={() => { setMobileOpen(false); handleNavigate('#gallery'); }} className="p-2 border-2 border-slate-900 bg-sky-50 text-left">Gallery</button>
-                    <button onClick={() => { setMobileOpen(false); handleNavigate('#updates'); }} className="p-2 border-2 border-slate-900 bg-sky-50 text-left">Updates</button>
-                    <button onClick={() => { setMobileOpen(false); handleNavigate('#story'); }} className="p-2 border-2 border-slate-900 bg-sky-50 text-left">Our Story</button>
+            {/* =========================================================================
+                MOBILE NAVIGATION: Option 3 — Cockpit Telemetry Bottom Dock (< md)
+                Permanently accessible at thumb reach without blocking the top screen
+                ========================================================================= */}
+            <div className="md:hidden fixed bottom-3 inset-x-3 z-50 flex flex-col items-center select-none pointer-events-none">
+                
+                {/* Mobile Slide-Up Cockpit Drawer */}
+                {mobileOpen && (
+                    <div className="w-full max-w-md bg-white border-3 border-slate-900 shadow-[6px_6px_0px_#0f172a] rounded-2xl p-4 mb-2 max-h-[75vh] overflow-y-auto pointer-events-auto anim-sheet-slide-up">
+                        <div className="flex items-center justify-between pb-2 border-b-2 border-slate-900 mb-3">
+                            <div className="flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-sky-500 animate-ping" />
+                                <span className="text-[11px] font-mono font-black text-slate-900 uppercase tracking-wider">
+                                    COCKPIT HUD // MENU
+                                </span>
+                            </div>
+                            <button
+                                onClick={() => setMobileOpen(false)}
+                                className="press press-flat text-xs font-black px-2 py-1 bg-slate-100 hover:bg-slate-900 hover:text-white border border-slate-900 rounded cursor-pointer"
+                            >
+                                ✕ CLOSE
+                            </button>
+                        </div>
 
-                    {/* Mobile Contact Us Accordion */}
-                    <div className="border-2 border-slate-900 bg-sky-50 p-2">
-                        <button
-                            onClick={() => setMobileContactOpen(!mobileContactOpen)}
-                            className="w-full flex items-center justify-between font-black text-xs uppercase text-slate-900"
-                        >
-                            <span>Contact Us</span>
-                            <span>{mobileContactOpen ? '▲' : '▼'}</span>
-                        </button>
+                        {/* Navigation Sections */}
+                        <div className="grid grid-cols-3 gap-2 mb-3">
+                            <button
+                                onClick={() => {
+                                    setMobileOpen(false);
+                                    handleNavigate('#gallery');
+                                }}
+                                className="p-2 border-2 border-slate-900 bg-sky-50 hover:bg-sky-200 text-center font-black text-xs uppercase shadow-[2px_2px_0px_#0f172a] cursor-pointer"
+                            >
+                                Gallery
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setMobileOpen(false);
+                                    handleNavigate('#updates');
+                                }}
+                                className="p-2 border-2 border-slate-900 bg-sky-50 hover:bg-sky-200 text-center font-black text-xs uppercase shadow-[2px_2px_0px_#0f172a] cursor-pointer"
+                            >
+                                Updates
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setMobileOpen(false);
+                                    handleNavigate('#story');
+                                }}
+                                className="p-2 border-2 border-slate-900 bg-sky-50 hover:bg-sky-200 text-center font-black text-xs uppercase shadow-[2px_2px_0px_#0f172a] cursor-pointer"
+                            >
+                                Story
+                            </button>
+                        </div>
 
-                        {mobileContactOpen && (
-                            <div className="mt-3 flex flex-col gap-2 pt-2 border-t border-slate-300">
-                                {socialLinks.map((item) => (
-                                    <a
-                                        key={item.name}
-                                        href={item.url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        onClick={() => setMobileOpen(false)}
-                                        className="p-2 bg-white border border-slate-900 flex items-center justify-between font-bold text-xs"
+                        {/* Subsystems List */}
+                        <div className="mb-3">
+                            <span className="text-[10px] font-mono text-sky-700 uppercase font-black block mb-1.5">
+                                // SUBSYSTEMS ARCHIVE
+                            </span>
+                            <div className="grid grid-cols-2 gap-1.5">
+                                {subsystems.map((s) => (
+                                    <button
+                                        key={s.id}
+                                        onClick={() => handleSubsystemClick(s.id)}
+                                        className="p-2 border border-slate-900 bg-white hover:bg-sky-500 hover:text-white text-left font-bold text-[11px] truncate flex items-center justify-between cursor-pointer"
                                     >
-                                        <div className="flex items-center gap-2">
-                                            {item.icon}
-                                            <span>{item.name}</span>
-                                        </div>
-                                        <span>↗</span>
-                                    </a>
+                                        <span className="truncate">{s.name}</span>
+                                        <span className="text-[10px] ml-1">→</span>
+                                    </button>
                                 ))}
                             </div>
-                        )}
-                    </div>
+                        </div>
 
+                        {/* Contact & Socials Accordion */}
+                        <div className="border-2 border-slate-900 bg-slate-50 p-2.5 rounded mb-3">
+                            <button
+                                onClick={() => setMobileContactOpen(!mobileContactOpen)}
+                                className="w-full flex items-center justify-between font-black text-xs uppercase text-slate-900 cursor-pointer"
+                            >
+                                <span className="flex items-center gap-1.5">
+                                    <span>CONTACT & SOCIALS</span>
+                                </span>
+                                <span className="text-xs">{mobileContactOpen ? '▲' : '▼'}</span>
+                            </button>
+
+                            {mobileContactOpen && (
+                                <div className="mt-2 flex flex-col gap-1.5 pt-2 border-t border-slate-200">
+                                    {socialLinks.map((item) => (
+                                        <a
+                                            key={item.name}
+                                            href={item.url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            onClick={() => setMobileOpen(false)}
+                                            className="p-2 bg-white border border-slate-900 flex items-center justify-between font-bold text-xs hover:bg-sky-100"
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                {item.icon}
+                                                <span className="font-bold">{item.name}</span>
+                                            </div>
+                                            <span className="text-[11px] font-mono text-slate-500">{item.handle} ↗</span>
+                                        </a>
+                                    ))}
+                                    <a
+                                        href={`mailto:${contact.email || 'asterix.psgitech@gmail.com'}`}
+                                        className="p-2 bg-white border border-slate-900 font-mono text-[10px] font-bold text-slate-700 flex items-center gap-1.5 truncate"
+                                    >
+                                        <span>✉</span>
+                                        <span className="truncate">{contact.email || 'asterix.psgitech@gmail.com'}</span>
+                                    </a>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Direct Action Dual Buttons */}
+                        <div className="grid grid-cols-2 gap-2 pt-1">
+                            <button
+                                onClick={() => {
+                                    setMobileOpen(false);
+                                    if (onOpenRecruitment) onOpenRecruitment();
+                                    else window.location.hash = '#join';
+                                }}
+                                className="p-2.5 bg-amber-300 text-slate-900 border-2 border-slate-900 text-center flex items-center justify-center gap-1 shadow-[2px_2px_0px_#0f172a] font-black text-xs uppercase cursor-pointer"
+                            >
+                                <span>Join Team</span>
+                                <span>↗</span>
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setMobileOpen(false);
+                                    if (onOpenSponsor) onOpenSponsor();
+                                    else window.location.hash = '#sponsor';
+                                }}
+                                className="p-2.5 bg-sky-500 text-white border-2 border-slate-900 text-center font-black text-xs uppercase shadow-[2px_2px_0px_#0f172a] cursor-pointer"
+                            >
+                                Sponsor Team
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Main Floating Bottom Cockpit Dock Bar */}
+                <nav
+                    aria-label="Mobile Navigation Cockpit"
+                    className="pointer-events-auto w-full max-w-sm bg-white/95 backdrop-blur-md border-3 border-slate-900 rounded-2xl shadow-[4px_4px_0px_#0f172a] px-2.5 py-1.5 flex items-center justify-between gap-1.5"
+                >
+                    {/* Home / Logo Anchor */}
+                    <button
+                        onClick={isDetailPage ? onBackToHome : () => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                        className="press press-flat p-1.5 bg-slate-900 text-white rounded-lg flex items-center justify-center font-black text-[11px] cursor-pointer"
+                        title={isDetailPage ? "Back to Home" : "Scroll to Top"}
+                    >
+                        {isDetailPage ? '← HOME' : '▲ TOP'}
+                    </button>
+
+                    {/* Subsystems Trigger */}
                     <button
                         onClick={() => {
-                            setMobileOpen(false);
+                            setMobileOpen(true);
+                            setMobileContactOpen(false);
+                        }}
+                        className={`press p-1.5 border-2 border-slate-900 rounded-lg text-xs font-black uppercase flex items-center gap-1 ${
+                            shopOpen ? 'bg-sky-200' : 'bg-sky-50'
+                        }`}
+                    >
+                        <span>SPECS</span>
+                        <span className="text-[9px] bg-slate-900 text-white px-1 py-0.2 rounded font-mono">
+                            {subsystems.length}
+                        </span>
+                    </button>
+
+                    {/* Cockpit HUD Menu Toggle */}
+                    <button
+                        onClick={() => setMobileOpen(!mobileOpen)}
+                        className={`press px-2.5 py-1.5 border-2 border-slate-900 rounded-lg text-xs font-black uppercase flex items-center gap-1.5 ${
+                            mobileOpen ? 'bg-slate-900 text-white' : 'bg-white text-slate-900 shadow-[2px_2px_0px_#0f172a]'
+                        }`}
+                        aria-expanded={mobileOpen}
+                        aria-label="Toggle navigation HUD menu"
+                    >
+                        <span>{mobileOpen ? '✕' : '☰'}</span>
+                        <span>MENU</span>
+                    </button>
+
+                    {/* Quick CTA Pill: Join or Sponsor */}
+                    <button
+                        onClick={() => {
                             if (onOpenRecruitment) onOpenRecruitment();
                             else window.location.hash = '#join';
-                        }} 
-                        className="p-2 bg-amber-300 text-slate-900 border-2 border-slate-900 text-center flex items-center justify-center gap-1.5 shadow-[2px_2px_0px_#0f172a] font-bold cursor-pointer"
+                        }}
+                        className="press px-2.5 py-1.5 border-2 border-slate-900 bg-amber-300 text-slate-900 rounded-lg text-xs font-black uppercase shadow-[2px_2px_0px_#0f172a] cursor-pointer flex items-center gap-0.5"
                     >
-                        <span>Join Team</span>
-                        <span>↗</span>
+                        <span>JOIN</span>
+                        <span className="text-[10px]">↗</span>
                     </button>
-                    <button 
-                        onClick={() => {
-                            setMobileOpen(false);
-                            if (onOpenSponsor) onOpenSponsor();
-                            else window.location.hash = '#sponsor';
-                        }} 
-                        className="p-2 bg-sky-500 text-white border-2 border-slate-900 text-center font-bold cursor-pointer"
-                    >
-                        Sponsor Team
-                    </button>
-                </div>
-            )}
-        </nav>
+                </nav>
+            </div>
+        </>
     );
+
 }

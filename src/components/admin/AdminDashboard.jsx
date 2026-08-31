@@ -103,9 +103,11 @@ export default function AdminDashboard({ onExit }) {
     const [newUpdateItem, setNewUpdateItem] = useState({ label: '', tag: 'PROVING GROUNDS', image: '', link: '#' });
     const [newAccount, setNewAccount] = useState({ username: '', password: '', name: '', role: 'Team Member', accessLevel: 'Lead' });
 
-    // Alliance Leads & Database Accounts State
+    // Alliance Leads, Sponsor Inquiries & Database Accounts State
     const [subscribers, setSubscribers] = useState([]);
     const [isLoadingSubscribers, setIsLoadingSubscribers] = useState(false);
+    const [sponsorInquiries, setSponsorInquiries] = useState([]);
+    const [isLoadingInquiries, setIsLoadingInquiries] = useState(false);
     const [dbAccounts, setDbAccounts] = useState([]);
 
     const showStatus = (msg) => {
@@ -225,8 +227,8 @@ export default function AdminDashboard({ onExit }) {
         setLoginForm({ username: '', password: '' });
     };
 
-    // Handle image file upload with client-side WebP compression (stored directly in Firestore & siteData)
-    const handleImageUpload = async (e, callback) => {
+    // Handle image file upload with ImageKit cloud upload & client-side fallback
+    const handleImageUpload = async (e, callback, folder = '/asterix') => {
         const file = e.target.files?.[0];
         if (!file) return;
 
@@ -235,12 +237,42 @@ export default function AdminDashboard({ onExit }) {
             return;
         }
 
-        showStatus('Optimizing & compressing image... ⚡');
+        showStatus('Processing & uploading image... ⚡');
+
+        // 1. Try server API upload (ImageKit CDN)
+        const token = sessionStorage.getItem(AUTH_TOKEN_KEY);
+        if (token) {
+            try {
+                const formData = new FormData();
+                formData.append('image', file);
+                formData.append('folder', folder);
+                formData.append('tags', 'admin_upload,asterix');
+
+                const res = await fetch(apiUrl('/api/upload'), {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: formData
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.url) {
+                        callback(data.url);
+                        showStatus(data.provider === 'imagekit' ? 'Uploaded to ImageKit CDN! 🍃' : 'Image uploaded successfully! ✓');
+                        e.target.value = '';
+                        return;
+                    }
+                }
+            } catch (uploadErr) {
+                console.warn('Server ImageKit upload notice, falling back to client-side storage:', uploadErr);
+            }
+        }
+
+        // 2. Client-side WebP compression fallback
         try {
-            // Compress raw camera/paddock photo down to lightweight WebP (~40-80KB)
             const compressedDataUrl = await compressImage(file, 1280, 1280, 0.82);
             callback(compressedDataUrl);
-            showStatus('Image compressed & saved! (Syncs to Firestore ✓)');
+            showStatus('Image compressed & saved locally! ✓');
             e.target.value = '';
         } catch (err) {
             console.warn('Compression notice, loading file directly:', err);
@@ -377,6 +409,67 @@ export default function AdminDashboard({ onExit }) {
         showStatus('Subscribers CSV exported successfully!');
     };
 
+    // Fetch sponsor inquiries from database
+    const fetchInquiries = useCallback(async () => {
+        const token = sessionStorage.getItem(AUTH_TOKEN_KEY);
+        if (!token) return;
+
+        setIsLoadingInquiries(true);
+        try {
+            const res = await fetch(apiUrl('/api/sponsor-inquiries'), {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const list = await res.json();
+                setSponsorInquiries(list);
+            }
+        } catch (err) {
+            console.warn('Failed to fetch inquiries:', err);
+        } finally {
+            setIsLoadingInquiries(false);
+        }
+    }, []);
+
+    const handleUpdateInquiryStatus = async (id, status) => {
+        const token = sessionStorage.getItem(AUTH_TOKEN_KEY);
+        if (!token) return;
+
+        try {
+            const res = await fetch(apiUrl(`/api/sponsor-inquiries/${id}`), {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ status })
+            });
+            if (res.ok) {
+                setSponsorInquiries(prev => prev.map(item => item.id === id ? { ...item, status } : item));
+                showStatus(`Inquiry marked as ${status}`);
+            }
+        } catch (err) {
+            console.error('Failed to update inquiry status:', err);
+        }
+    };
+
+    const handleDeleteInquiry = async (id) => {
+        const token = sessionStorage.getItem(AUTH_TOKEN_KEY);
+        if (!token) return;
+
+        try {
+            const res = await fetch(apiUrl(`/api/sponsor-inquiries/${id}`), {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                setSponsorInquiries(prev => prev.filter(i => i.id !== id));
+                showStatus('Inquiry removed.');
+            }
+        } catch (err) {
+            console.error('Failed to delete inquiry:', err);
+        }
+    };
+
     // Fetch accounts from database
     const fetchAccounts = useCallback(async () => {
         const token = sessionStorage.getItem(AUTH_TOKEN_KEY);
@@ -400,11 +493,14 @@ export default function AdminDashboard({ onExit }) {
             if (activeTab === 'subscribers') {
                 fetchSubscribers();
             }
+            if (activeTab === 'sponsorship') {
+                fetchInquiries();
+            }
             if (activeTab === 'accounts') {
                 fetchAccounts();
             }
         }
-    }, [currentUser, activeTab, fetchSubscribers, fetchAccounts]);
+    }, [currentUser, activeTab, fetchSubscribers, fetchInquiries, fetchAccounts]);
     // If not authenticated, render Login Screen
     if (!currentUser) {
         return (
@@ -981,7 +1077,7 @@ export default function AdminDashboard({ onExit }) {
                                                                     type="file"
                                                                     accept="image/*"
                                                                     className="hidden"
-                                                                    onChange={e => handleImageUpload(e, (dataUrl) => updateTeamMember(currentSubsystem.id, idx, { photo: dataUrl }))}
+                                                                    onChange={e => handleImageUpload(e, (dataUrl) => updateTeamMember(currentSubsystem.id, idx, { photo: dataUrl }), '/asterix/squad')}
                                                                 />
                                                             </label>
                                                             {m.photo && (
@@ -1103,7 +1199,7 @@ export default function AdminDashboard({ onExit }) {
                                                     type="file"
                                                     accept="image/*"
                                                     className="hidden"
-                                                    onChange={e => handleImageUpload(e, (dataUrl) => setNewMember(prev => ({ ...prev, photo: dataUrl })))}
+                                                    onChange={e => handleImageUpload(e, (dataUrl) => setNewMember(prev => ({ ...prev, photo: dataUrl })), '/asterix/squad')}
                                                 />
                                             </label>
                                         </div>
@@ -1192,6 +1288,96 @@ export default function AdminDashboard({ onExit }) {
                                         Save Sponsorship Settings →
                                     </button>
                                 </div>
+                            </div>
+
+                            {/* Incoming Corporate Sponsor Inquiries */}
+                            <div className="border-t-4 border-slate-900 pt-6 space-y-4">
+                                <div className="flex flex-wrap items-center justify-between gap-4">
+                                    <div>
+                                        <h3 className="text-lg font-black uppercase text-slate-900 flex items-center gap-2">
+                                            <span>Corporate Sponsor Inquiries</span>
+                                            <span className="text-xs px-2 py-0.5 bg-sky-500 text-white font-mono font-bold">
+                                                {sponsorInquiries.length}
+                                            </span>
+                                        </h3>
+                                        <p className="text-xs font-bold text-slate-500 font-mono">
+                                            Inquiries submitted via the partnership proposal form on #sponsor.
+                                        </p>
+                                    </div>
+                                    <button
+                                        onClick={fetchInquiries}
+                                        className="press press-flat px-3 py-1.5 bg-slate-100 hover:bg-slate-200 border-2 border-slate-900 text-xs font-mono font-bold cursor-pointer"
+                                    >
+                                        ↻ Refresh Inquiries
+                                    </button>
+                                </div>
+
+                                {isLoadingInquiries ? (
+                                    <div className="p-8 text-center font-mono text-sm text-slate-500 bg-white border-2 border-slate-900">
+                                        Loading inquiries from MongoDB Atlas...
+                                    </div>
+                                ) : sponsorInquiries.length === 0 ? (
+                                    <div className="p-8 text-center border-2 border-dashed border-slate-300 font-mono text-xs text-slate-500 bg-white">
+                                        No sponsor inquiries recorded yet. Submissions from the Sponsorship form will appear here.
+                                    </div>
+                                ) : (
+                                    <div className="overflow-x-auto border-2 border-slate-900 bg-white shadow-[4px_4px_0px_#0f172a]">
+                                        <table className="w-full text-left font-mono text-xs">
+                                            <thead className="bg-slate-900 text-white font-black uppercase text-[10px]">
+                                                <tr>
+                                                    <th className="p-2.5">Company & Contact</th>
+                                                    <th className="p-2.5">Email / Phone</th>
+                                                    <th className="p-2.5">Tier</th>
+                                                    <th className="p-2.5">Message</th>
+                                                    <th className="p-2.5">Status</th>
+                                                    <th className="p-2.5 text-right">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-200">
+                                                {sponsorInquiries.map(inq => (
+                                                    <tr key={inq.id} className="hover:bg-slate-50">
+                                                        <td className="p-2.5">
+                                                            <div className="font-bold text-slate-900">{inq.companyName}</div>
+                                                            <div className="text-[11px] text-slate-500">{inq.contactPerson || '—'}</div>
+                                                        </td>
+                                                        <td className="p-2.5">
+                                                            <div className="text-slate-800">{inq.email}</div>
+                                                            <div className="text-[11px] text-slate-500">{inq.phone || '—'}</div>
+                                                        </td>
+                                                        <td className="p-2.5">
+                                                            <span className="px-2 py-0.5 border border-slate-900 text-[10px] font-bold bg-amber-200 text-slate-900">
+                                                                {inq.tier}
+                                                            </span>
+                                                        </td>
+                                                        <td className="p-2.5 max-w-xs text-slate-600 truncate" title={inq.message}>
+                                                            {inq.message || '—'}
+                                                        </td>
+                                                        <td className="p-2.5">
+                                                            <select
+                                                                value={inq.status}
+                                                                onChange={e => handleUpdateInquiryStatus(inq.id, e.target.value)}
+                                                                className="px-1.5 py-0.5 border border-slate-900 text-[10px] font-bold bg-white focus:outline-none"
+                                                            >
+                                                                <option value="NEW">NEW</option>
+                                                                <option value="REVIEWED">REVIEWED</option>
+                                                                <option value="CONTACTED">CONTACTED</option>
+                                                                <option value="ARCHIVED">ARCHIVED</option>
+                                                            </select>
+                                                        </td>
+                                                        <td className="p-2.5 text-right">
+                                                            <button
+                                                                onClick={() => handleDeleteInquiry(inq.id)}
+                                                                className="press press-flat text-rose-600 hover:text-rose-900 font-black cursor-pointer text-xs"
+                                                            >
+                                                                Delete ✕
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}
@@ -1410,7 +1596,7 @@ export default function AdminDashboard({ onExit }) {
                                                 type="file"
                                                 accept="image/*"
                                                 className="hidden"
-                                                onChange={e => handleImageUpload(e, (url) => setNewGallery(prev => ({ ...prev, src: url })))}
+                                                onChange={e => handleImageUpload(e, (url) => setNewGallery(prev => ({ ...prev, src: url })), '/asterix/gallery')}
                                             />
                                         </label>
                                     </div>
@@ -1529,7 +1715,7 @@ export default function AdminDashboard({ onExit }) {
                                                 type="file"
                                                 accept="image/*"
                                                 className="hidden"
-                                                onChange={e => handleImageUpload(e, (url) => setNewUpdateItem(prev => ({ ...prev, image: url })))}
+                                                onChange={e => handleImageUpload(e, (url) => setNewUpdateItem(prev => ({ ...prev, image: url })), '/asterix/updates')}
                                             />
                                         </label>
                                     </div>

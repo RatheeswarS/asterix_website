@@ -26,7 +26,7 @@ This document provides a comprehensive, deep-dive explanation of the backend arc
 
 ## 1. Architecture Overview
 
-The backend is built as a lightweight, high-performance Node.js service using **Express.js** and Node's built-in **`node:sqlite`** (`DatabaseSync`) engine. It serves REST API endpoints for dynamic content management, administrator authentication, member account provisioning, public fan subscriptions, and media uploads.
+The backend is built as a lightweight, high-performance Node.js service using **Express.js** and **MongoDB Atlas** (via **Mongoose**). It serves REST API endpoints for dynamic content management, administrator authentication, member account provisioning, public fan subscriptions, corporate sponsorship inquiries, and media uploads.
 
 ```
 +-----------------------------------------------------------------------------------+
@@ -35,6 +35,7 @@ The backend is built as a lightweight, high-performance Node.js service using **
 |   React 19 + Vite SPA (Port 5173)                                                |
 |   - WebsiteDataContext (Content cache, debounced sync, offline fallback)         |
 |   - Admin Dashboard (`#admin`)                                                    |
+|   - Sponsor Page (`#sponsor` corporate partnership inquiries)                     |
 |   - CyberNewsletterCTA ("Join the Alliance" subscriber form)                      |
 +-------------------------+---------------------------------------------------------+
                           |
@@ -50,11 +51,12 @@ The backend is built as a lightweight, high-performance Node.js service using **
 |   | Security: JWT Verification, Role-Based Access Control (SuperAdmin / Lead)  |   |
 |   +---------------------------------------------------------------------------+   |
 |   | Routes:                                                                   |   |
-|   |   - `/api/health`       -> Service health status                          |   |
-|   |   - `/api/site-data`    -> Dynamic section JSON content (GET/PUT)         |   |
-|   |   - `/api/auth`         -> Login, profile session, account CRUD           |   |
-|   |   - `/api/subscribers`  -> Newsletter subscription capture & management   |   |
-|   |   - `/api/upload`       -> Multer multipart image processing              |   |
+|   |   - `/api/health`            -> Service health status                     |   |
+|   |   - `/api/site-data`         -> Dynamic section JSON content (GET/PUT)    |   |
+|   |   - `/api/auth`              -> Login, profile session, account CRUD      |   |
+|   |   - `/api/subscribers`       -> Newsletter subscription capture           |   |
+|   |   - `/api/sponsor-inquiries` -> Corporate partner proposal inquiries     |   |
+|   |   - `/api/upload`            -> Multer multipart image processing         |   |
 |   +---------------------------------------------------------------------------+   |
 +-------------------------+-----------------------------------+---------------------+
                           |                                   |
@@ -62,13 +64,13 @@ The backend is built as a lightweight, high-performance Node.js service using **
 +------------------------------------+  +-------------------------------------------+
 |          DATABASE LAYER            |  |             PERSISTENT STORAGE            |
 |                                    |  |                                           |
-|  Node.js 24 Native `node:sqlite`   |  |  `server/uploads/`                        |
-|  - File: `server/data/asterix.db`  |  |  - High-res images, paddock photos        |
-|  - Mode: PRAGMA journal_mode = WAL |  |  - Max 15MB/file, MIME filtered           |
-|  - Tables:                         |  |  - Served publicly via `/uploads/:file`   |
-|    * `site_data`                   |  +-------------------------------------------+
-|    * `users`                       |
+|  MongoDB Atlas (Cloud Cluster)     |  |  `server/uploads/`                        |
+|  - Mongoose 9 Models               |  |  - High-res images, paddock photos        |
+|  - Collections:                    |  |  - Max 15MB/file, MIME filtered           |
+|    * `sitedatas` (Single Doc Key)  |  |  - Served publicly via `/uploads/:file`   |
+|    * `users`                       |  +-------------------------------------------+
 |    * `subscribers`                 |
+|    * `sponsorinquiries`            |
 +------------------------------------+
 ```
 
@@ -127,73 +129,55 @@ server/
 
 ## 4. Database Engine & Schema Design
 
-The application utilizes **SQLite in WAL (Write-Ahead Logging) mode**, ensuring high concurrency, non-blocking reads while writing, and atomic transactions.
+The backend connects to a **MongoDB Atlas Cloud Database Cluster** using **Mongoose 9**:
+* Auto-reconnecting connection pool with TLS certificate resilience.
+* Automatic data migration utility from legacy SQLite `asterix.db` databases (`npm run migrate:mongo`).
 
-### Database Connection (`server/src/db/database.js`)
+### Database Connection (`server/src/db/mongodb.js`)
 ```javascript
-import { DatabaseSync } from 'node:sqlite';
-const dbPath = path.join(dataDir, 'asterix.db');
-const db = new DatabaseSync(dbPath);
-db.exec('PRAGMA journal_mode = WAL;');
+import mongoose from 'mongoose';
+await mongoose.connect(process.env.MONGODB_URI, {
+    serverSelectionTimeoutMS: 8000,
+});
 ```
 
-### Table 1: `site_data`
-Stores serialized sections of the website. Each section is stored as a distinct row with an upsert mechanism.
+### Model 1: `SiteData` (`sitedatas` Collection)
+Stores all dynamic sections of the website in a single structured document (`{ key: 'main' }`):
+* `hero`: Headlines, badges, CTA button link, Google Forms application link.
+* `story`: Full team heritage and endurance development journey markdown/text.
+* `subsystems`: Array of 5 engineering domains (Software, Sensors, Powertrain, Steer-by-Wire, Brake & Throttle) with specs, subsystem leads, and roster members.
+* `gallery`: Paddock and track action photos with title, category, year, and description.
+* `updates`: Team bulletins, race logs, and milestone articles.
+* `contact`: Email, address, social media URLs (Instagram, LinkedIn, GitHub).
+* `sponsorship`: Downloadable pitch deck PDF links, brochures, and institution endorsement letter links.
+* `recruitment`: Recruitment cycle status (`Open`/`Closed`), countdown deadlines with ISO timestamps, and subsystem problem statements.
+* `lastModified`: ISO-8601 timestamp tracking when content was last updated.
 
-```sql
-CREATE TABLE IF NOT EXISTS site_data (
-    section TEXT PRIMARY KEY,
-    content TEXT NOT NULL,
-    updated_at TEXT NOT NULL
-);
-```
-
-- **`section`**: Key identifier (`hero`, `story`, `subsystems`, `gallery`, `updates`, `contact`).
-- **`content`**: Stringified JSON representing the section's contents (or raw text for `story`).
-- **`updated_at`**: ISO 8601 timestamp string (`YYYY-MM-DDTHH:mm:ss.sssZ`).
-
-### Table 2: `users`
+### Model 2: `User` (`users` Collection)
 Maintains user credentials and access privileges for team leads and administrators.
-
-```sql
-CREATE TABLE IF NOT EXISTS users (
-    id TEXT PRIMARY KEY,
-    username TEXT UNIQUE NOT NULL,
-    password_hash TEXT NOT NULL,
-    name TEXT NOT NULL,
-    role TEXT NOT NULL,
-    access_level TEXT NOT NULL,
-    created_at TEXT NOT NULL,
-    updated_at TEXT NOT NULL
-);
-```
-
-- **`id`**: Unique user identifier (`acc-1`, `acc-<timestamp>`).
-- **`username`**: Unique username (stored lowercase, case-insensitive match on login).
-- **`password_hash`**: Salting and hashing via `bcryptjs` (salt rounds: 10).
-- **`name`**: Full display name (e.g., `"Ratheeswar"`).
-- **`role`**: Official team designation (e.g., `"System Administrator & Software Lead"`, `"Subsystem Lead"`).
-- **`access_level`**: RBAC permissions enum:
+* `username`: Unique username (stored lowercase, case-insensitive match on login).
+* `passwordHash`: Salting and hashing via `bcryptjs` (salt rounds: 10).
+* `name`: Full display name (e.g., `"Ratheeswar"`).
+* `role`: Official team designation (e.g., `"System Administrator & Software Lead"`).
+* `accessLevel`: RBAC permissions enum:
   - `'SuperAdmin'`: Full read/write access + account provisioning/deletion.
   - `'Lead'`: Content read/write access + self-profile updates.
-- **`created_at` / `updated_at`**: ISO 8601 timestamps.
 
-### Table 3: `subscribers`
+### Model 3: `Subscriber` (`subscribers` Collection)
 Collects contact details from the "Join the Asterix Racing Alliance" public CTA.
+* `email`: Normalized lowercase unique subscriber email.
+* `phone`: Optional phone number string.
+* `createdAt` / `updatedAt`: Automatic Mongoose timestamps.
 
-```sql
-CREATE TABLE IF NOT EXISTS subscribers (
-    id TEXT PRIMARY KEY,
-    email TEXT UNIQUE NOT NULL,
-    phone TEXT,
-    created_at TEXT NOT NULL
-);
-```
-
-- **`id`**: Unique subscriber ID (`sub-<timestamp>`).
-- **`email`**: Normalized lowercase subscriber email (Primary unique key for updates).
-- **`phone`**: Optional phone number string.
-- **`created_at`**: ISO 8601 timestamp.
+### Model 4: `SponsorInquiry` (`sponsorinquiries` Collection)
+Collects corporate partnership proposals submitted via the `#sponsor` modal:
+* `companyName`: Name of sponsoring enterprise.
+* `contactPerson`: Representative name.
+* `email`: Corporate email.
+* `phone`: Contact phone number.
+* `tier`: Desired sponsorship package (`TITLE`, `GOLD`, `SILVER`, `BRONZE`, `TECHNICAL`).
+* `message`: Proposed collaboration details.
+* `status`: Lead workflow status (`NEW`, `REVIEWED`, `CONTACTED`, `ARCHIVED`).
 
 ---
 
@@ -423,36 +407,41 @@ Authentication is implemented via stateless **JSON Web Tokens (JWT)**:
 #### `POST /api/upload`
 - **Access**: Protected (`authenticateToken`)
 - **Content-Type**: `multipart/form-data`
-- **Body**: `image` (binary file)
+- **Body**:
+  - `image` (binary file)
+  - `folder` (optional, e.g. `/asterix/gallery`, `/asterix/squad`, `/asterix/updates`)
+  - `tags` (optional comma-separated tags)
 - **Validation**: Up to 15MB. Permitted types: JPEG, JPG, PNG, WEBP, SVG, GIF.
-- **Response**: `201 Created`
+- **Response (ImageKit)**: `201 Created`
 ```json
 {
   "success": true,
-  "url": "/uploads/asterix-1740845000000-84729104.webp",
-  "filename": "asterix-1740845000000-84729104.webp",
-  "size": 1048576
+  "provider": "imagekit",
+  "url": "https://ik.imagekit.io/teamasterix/asterix/gallery/paddock-action.jpg",
+  "thumbnailUrl": "https://ik.imagekit.io/teamasterix/asterix/gallery/tr:n-media_library_thumbnail/paddock-action.jpg",
+  "fileId": "65e0123...",
+  "filename": "paddock-action.jpg",
+  "size": 1048576,
+  "width": 1920,
+  "height": 1080
 }
 ```
 
+#### `GET /api/upload/auth`
+- **Access**: Protected (`authenticateToken`)
+- **Description**: Generates client-side authentication parameters (`token`, `expire`, `signature`) for direct client uploads to ImageKit.
+
 ---
 
-## 8. Media Storage & Static Assets Pipeline
+## 8. Media Storage & ImageKit CDN Pipeline
 
-1. **Storage Location**: Files are saved to `server/uploads/`.
-2. **File Sanitization**:
-   ```javascript
-   const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-   const cleanName = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
-   cb(null, `asterix-${uniqueSuffix}${path.extname(cleanName)}`);
-   ```
-3. **Public Exposure**:
-   Mounted via Express static middleware:
-   ```javascript
-   app.use('/uploads', express.static(path.resolve(__dirname, '../uploads')));
-   ```
-4. **Vite Development Proxy**:
-   In `vite.config.js`, requests matching `/uploads` are proxied to `http://localhost:5000/uploads`, ensuring that image URLs returned by the upload route load seamlessly in the React front end.
+1. **Cloud CDN (Primary)**:
+   - When `IMAGEKIT_PUBLIC_KEY`, `IMAGEKIT_PRIVATE_KEY`, and `IMAGEKIT_URL_ENDPOINT` are set in `.env`, uploaded images are streamed directly to **ImageKit.io** media library.
+   - Global CDN delivery with on-the-fly transformations (WebP/AVIF format auto-detection, responsive resizing, quality compression).
+2. **Local Storage Fallback**:
+   - If ImageKit is not configured, files are securely saved to `server/uploads/` and served via `/uploads/:filename`.
+3. **Frontend Integration**:
+   - `AdminDashboard.jsx` uploads squad members, gallery photos, and update banners through `/api/upload`, storing optimized CDN URLs in the database.
 
 ---
 

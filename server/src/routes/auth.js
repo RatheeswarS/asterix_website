@@ -1,33 +1,29 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import db from '../db/database.js';
+import User from '../models/User.js';
 import { authenticateToken, requireSuperAdmin } from '../middleware/auth.js';
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'asterix_super_secret_jwt_key_sae_baja_2026';
 
 // POST /api/auth/login
-router.post('/login', (req, res) => {
+router.post('/login', async (req, res) => {
     try {
         const { username, password } = req.body;
         if (!username || !password) {
             return res.status(400).json({ error: 'Username and password are required.' });
         }
 
-        const stmt = db.prepare(`
-            SELECT id, username, password_hash, name, role, access_level
-            FROM users
-            WHERE LOWER(username) = LOWER(?)
-        `);
-        const user = stmt.get(username.trim());
+        const cleanUsername = username.trim().toLowerCase();
+        const user = await User.findOne({ username: cleanUsername });
 
         if (!user) {
             return res.status(401).json({ error: 'Invalid username or password.' });
         }
 
         const trimmedPass = (password || '').trim();
-        let match = bcrypt.compareSync(trimmedPass, user.password_hash);
+        let match = bcrypt.compareSync(trimmedPass, user.passwordHash);
         if (!match && user.username === 'admin' && (trimmedPass === 'asterix2026' || trimmedPass === 'password123')) {
             match = true;
         }
@@ -36,11 +32,11 @@ router.post('/login', (req, res) => {
         }
 
         const tokenPayload = {
-            id: user.id,
+            id: user._id.toString(),
             username: user.username,
             name: user.name,
             role: user.role,
-            accessLevel: user.access_level
+            accessLevel: user.accessLevel
         };
 
         const token = jwt.sign(tokenPayload, JWT_SECRET, { expiresIn: '7d' });
@@ -57,19 +53,24 @@ router.post('/login', (req, res) => {
 });
 
 // GET /api/auth/me (Protected)
-router.get('/me', authenticateToken, (req, res) => {
+router.get('/me', authenticateToken, async (req, res) => {
     try {
-        const stmt = db.prepare('SELECT id, username, name, role, access_level FROM users WHERE id = ?');
-        const user = stmt.get(req.user.id);
+        let user = null;
+        if (User.base.isValidObjectId(req.user.id)) {
+            user = await User.findById(req.user.id).select('-passwordHash');
+        }
+        if (!user && req.user.username) {
+            user = await User.findOne({ username: req.user.username.toLowerCase() }).select('-passwordHash');
+        }
         if (!user) {
             return res.status(404).json({ error: 'User not found.' });
         }
         res.json({
-            id: user.id,
+            id: user._id.toString(),
             username: user.username,
             name: user.name,
             role: user.role,
-            accessLevel: user.access_level
+            accessLevel: user.accessLevel
         });
     } catch (err) {
         res.status(500).json({ error: 'Failed to verify session', details: err.message });
@@ -77,16 +78,16 @@ router.get('/me', authenticateToken, (req, res) => {
 });
 
 // GET /api/auth/accounts (Protected - Admin)
-router.get('/accounts', authenticateToken, (req, res) => {
+router.get('/accounts', authenticateToken, async (req, res) => {
     try {
-        const stmt = db.prepare('SELECT id, username, name, role, access_level, created_at FROM users ORDER BY created_at ASC');
-        const accounts = stmt.all().map(a => ({
-            id: a.id,
-            username: a.username,
-            name: a.name,
-            role: a.role,
-            accessLevel: a.access_level,
-            createdAt: a.created_at
+        const users = await User.find().sort({ createdAt: 1 }).select('-passwordHash');
+        const accounts = users.map(u => ({
+            id: u._id.toString(),
+            username: u.username,
+            name: u.name,
+            role: u.role,
+            accessLevel: u.accessLevel,
+            createdAt: u.createdAt
         }));
         res.json(accounts);
     } catch (err) {
@@ -95,102 +96,68 @@ router.get('/accounts', authenticateToken, (req, res) => {
 });
 
 // POST /api/auth/accounts (Protected - SuperAdmin)
-router.post('/accounts', authenticateToken, requireSuperAdmin, (req, res) => {
+router.post('/accounts', authenticateToken, requireSuperAdmin, async (req, res) => {
     try {
         const { username, password, name, role, accessLevel } = req.body;
         if (!username || !password || !name) {
             return res.status(400).json({ error: 'Username, password, and name are required.' });
         }
 
-        const id = 'acc-' + Date.now();
-        const now = new Date().toISOString();
+        const cleanUsername = username.trim().toLowerCase();
+        const existing = await User.findOne({ username: cleanUsername });
+        if (existing) {
+            return res.status(409).json({ error: 'A user with that username already exists.' });
+        }
+
         const passwordHash = bcrypt.hashSync(password, 10);
-
-        const stmt = db.prepare(`
-            INSERT INTO users (id, username, password_hash, name, role, access_level, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        `);
-
-        stmt.run(
-            id,
-            username.trim().toLowerCase(),
+        const user = await User.create({
+            username: cleanUsername,
             passwordHash,
-            name.trim(),
-            role || 'Team Member',
-            accessLevel || 'Lead',
-            now,
-            now
-        );
+            name: name.trim(),
+            role: role || 'Team Member',
+            accessLevel: accessLevel || 'Lead'
+        });
 
         res.status(201).json({
             success: true,
             account: {
-                id,
-                username: username.trim().toLowerCase(),
-                name: name.trim(),
-                role: role || 'Team Member',
-                accessLevel: accessLevel || 'Lead'
+                id: user._id.toString(),
+                username: user.username,
+                name: user.name,
+                role: user.role,
+                accessLevel: user.accessLevel
             }
         });
     } catch (err) {
-        if (err.message && err.message.includes('UNIQUE constraint failed')) {
-            return res.status(409).json({ error: 'A user with that username already exists.' });
-        }
         res.status(500).json({ error: 'Failed to create account', details: err.message });
     }
 });
 
 // PUT /api/auth/accounts/:id (Protected - SuperAdmin or self)
-router.put('/accounts/:id', authenticateToken, (req, res) => {
+router.put('/accounts/:id', authenticateToken, async (req, res) => {
     try {
         const targetId = req.params.id;
         const { name, role, accessLevel, password } = req.body;
 
-        // Only SuperAdmin can modify other accounts or change roles
-        const isSelf = req.user.id === targetId;
+        const isSelf = req.user.id === targetId || req.user.username === targetId;
         const isSuperAdmin = req.user.accessLevel === 'SuperAdmin';
 
         if (!isSelf && !isSuperAdmin) {
             return res.status(403).json({ error: 'Permission denied.' });
         }
 
-        const now = new Date().toISOString();
-
+        const updateData = {};
+        if (name) updateData.name = name.trim();
+        if (isSuperAdmin && role) updateData.role = role;
+        if (isSuperAdmin && accessLevel) updateData.accessLevel = accessLevel;
         if (password) {
-            const passwordHash = bcrypt.hashSync(password, 10);
-            const stmt = db.prepare(`
-                UPDATE users
-                SET name = COALESCE(?, name),
-                    role = COALESCE(?, role),
-                    access_level = COALESCE(?, access_level),
-                    password_hash = ?,
-                    updated_at = ?
-                WHERE id = ?
-            `);
-            stmt.run(
-                name || null,
-                isSuperAdmin ? (role || null) : null,
-                isSuperAdmin ? (accessLevel || null) : null,
-                passwordHash,
-                now,
-                targetId
-            );
-        } else {
-            const stmt = db.prepare(`
-                UPDATE users
-                SET name = COALESCE(?, name),
-                    role = COALESCE(?, role),
-                    access_level = COALESCE(?, access_level),
-                    updated_at = ?
-                WHERE id = ?
-            `);
-            stmt.run(
-                name || null,
-                isSuperAdmin ? (role || null) : null,
-                isSuperAdmin ? (accessLevel || null) : null,
-                now,
-                targetId
-            );
+            updateData.passwordHash = bcrypt.hashSync(password, 10);
+        }
+
+        const filter = User.base.isValidObjectId(targetId) ? { _id: targetId } : { username: targetId.toLowerCase() };
+        const user = await User.findOneAndUpdate(filter, { $set: updateData }, { returnDocument: 'after' });
+        if (!user) {
+            return res.status(404).json({ error: 'Account not found.' });
         }
 
         res.json({ success: true, message: 'Account updated successfully.' });
@@ -200,16 +167,15 @@ router.put('/accounts/:id', authenticateToken, (req, res) => {
 });
 
 // DELETE /api/auth/accounts/:id (Protected - SuperAdmin)
-router.delete('/accounts/:id', authenticateToken, requireSuperAdmin, (req, res) => {
+router.delete('/accounts/:id', authenticateToken, requireSuperAdmin, async (req, res) => {
     try {
         const targetId = req.params.id;
-        if (targetId === req.user.id) {
+        if (targetId === req.user.id || targetId === req.user.username) {
             return res.status(400).json({ error: 'You cannot delete your own active SuperAdmin account.' });
         }
 
-        const stmt = db.prepare('DELETE FROM users WHERE id = ?');
-        stmt.run(targetId);
-
+        const filter = User.base.isValidObjectId(targetId) ? { _id: targetId } : { username: targetId.toLowerCase() };
+        await User.findOneAndDelete(filter);
         res.json({ success: true, message: 'Account removed successfully.' });
     } catch (err) {
         res.status(500).json({ error: 'Failed to delete account', details: err.message });

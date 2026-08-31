@@ -111,8 +111,8 @@ export default function useScrollAssembly(lenis, dependency) {
             };
 
             sections.forEach((section) => {
-                // Intro canvas sequence drives its own scrubbed turntable
-                if (section.id === 'intro') return;
+                // Intro canvas sequence drives its own scrubbed turntable and hero assembly
+                if (section.id === 'intro' || section.closest('#intro')) return;
 
                 const isHero = section.id === 'hero' || section.classList.contains('hero-section');
 

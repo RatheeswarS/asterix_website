@@ -1,43 +1,39 @@
 import { Router } from 'express';
-import db from '../db/database.js';
+import SiteData from '../models/SiteData.js';
 import { authenticateToken } from '../middleware/auth.js';
 
 const router = Router();
 
 // GET /api/site-data (Public)
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
     try {
-        const stmt = db.prepare('SELECT section, content, updated_at FROM site_data');
-        const rows = stmt.all();
+        let site = await SiteData.findOne({ key: 'main' }).lean();
 
-        const result = {
-            hero: null,
-            story: '',
-            subsystems: [],
-            gallery: [],
-            updates: [],
-            contact: null,
-            lastModified: new Date().toISOString()
-        };
-
-        let latestUpdate = '';
-
-        for (const row of rows) {
-            try {
-                result[row.section] = JSON.parse(row.content);
-            } catch {
-                result[row.section] = row.content;
-            }
-            if (!latestUpdate || row.updated_at > latestUpdate) {
-                latestUpdate = row.updated_at;
-            }
+        if (!site) {
+            return res.json({
+                hero: null,
+                story: '',
+                subsystems: [],
+                gallery: [],
+                updates: [],
+                contact: null,
+                sponsorship: null,
+                recruitment: null,
+                lastModified: new Date().toISOString()
+            });
         }
 
-        if (latestUpdate) {
-            result.lastModified = latestUpdate;
-        }
-
-        res.json(result);
+        res.json({
+            hero: site.hero || null,
+            story: site.story || '',
+            subsystems: site.subsystems || [],
+            gallery: site.gallery || [],
+            updates: site.updates || [],
+            contact: site.contact || null,
+            sponsorship: site.sponsorship || null,
+            recruitment: site.recruitment || null,
+            lastModified: site.lastModified || site.updatedAt?.toISOString() || new Date().toISOString()
+        });
     } catch (err) {
         console.error('Error fetching site data:', err);
         res.status(500).json({ error: 'Failed to retrieve site data', details: err.message });
@@ -45,33 +41,36 @@ router.get('/', (req, res) => {
 });
 
 // PUT /api/site-data (Protected - Admin)
-router.put('/', authenticateToken, (req, res) => {
+router.put('/', authenticateToken, async (req, res) => {
     try {
         const payload = req.body;
         const now = new Date().toISOString();
-        const allowedSections = ['hero', 'story', 'subsystems', 'gallery', 'updates', 'contact'];
 
-        const upsertStmt = db.prepare(`
-            INSERT INTO site_data (section, content, updated_at)
-            VALUES (?, ?, ?)
-            ON CONFLICT(section) DO UPDATE SET
-                content = excluded.content,
-                updated_at = excluded.updated_at
-        `);
+        const updateFields = {
+            lastModified: now
+        };
 
-        for (const section of allowedSections) {
-            if (payload[section] !== undefined) {
-                const serialized = typeof payload[section] === 'string'
-                    ? payload[section]
-                    : JSON.stringify(payload[section]);
-                upsertStmt.run(section, serialized, now);
+        const allowedFields = [
+            'hero', 'story', 'subsystems', 'gallery', 'updates', 
+            'contact', 'sponsorship', 'recruitment'
+        ];
+
+        for (const field of allowedFields) {
+            if (payload[field] !== undefined) {
+                updateFields[field] = payload[field];
             }
         }
 
+        const site = await SiteData.findOneAndUpdate(
+            { key: 'main' },
+            { $set: updateFields },
+            { new: true, upsert: true, setDefaultsOnInsert: true }
+        );
+
         res.json({
             success: true,
-            message: 'Website data saved successfully to database',
-            lastModified: now
+            message: 'Website data saved successfully to MongoDB Atlas!',
+            lastModified: site.lastModified
         });
     } catch (err) {
         console.error('Error updating site data:', err);
