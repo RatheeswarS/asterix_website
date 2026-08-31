@@ -7,6 +7,21 @@ import { collection, getDocs, deleteDoc, doc } from 'firebase/firestore';
 import { compressImage } from '../../lib/imageOptimizer';
 import Icon from '../Icon';
 
+/* Recruitment deadlines are stored with an explicit +05:30 offset so the
+   countdown on #join reads the same instant for every visitor. `datetime-local`
+   inputs speak the editor's own local time, so both directions are converted
+   through Indian Standard Time rather than through the browser's zone. */
+const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
+
+const istInputValue = (iso) => {
+    if (!iso) return '';
+    const ms = new Date(iso).getTime();
+    if (Number.isNaN(ms)) return '';
+    return new Date(ms + IST_OFFSET_MS).toISOString().slice(0, 16);
+};
+
+const istInputToIso = (value) => (value ? `${value}:00+05:30` : '');
+
 export default function AdminDashboard({ onExit }) {
     const {
         siteData,
@@ -54,6 +69,33 @@ export default function AdminDashboard({ onExit }) {
 
     // Active subsystem selection for squad editor
     const [selectedSubsystemId, setSelectedSubsystemId] = useState(siteData.subsystems[0]?.id || 'software-perception');
+
+    // Countdown stage deadlines shown on the recruitment portal
+    const recruitmentDeadlines = siteData.recruitment?.deadlines || [];
+
+    const writeDeadlines = (next) => updateRecruitment({ deadlines: next });
+
+    const addDeadline = () => {
+        writeDeadlines([
+            ...recruitmentDeadlines,
+            {
+                id: `stage-${Date.now()}`,
+                stage: String(recruitmentDeadlines.length + 1).padStart(2, '0'),
+                label: 'New Stage Deadline',
+                detail: '',
+                date: '',
+                opensAt: ''
+            }
+        ]);
+    };
+
+    const updateDeadline = (idx, fields) => {
+        writeDeadlines(recruitmentDeadlines.map((d, i) => (i === idx ? { ...d, ...fields } : d)));
+    };
+
+    const removeDeadline = (idx) => {
+        writeDeadlines(recruitmentDeadlines.filter((_, i) => i !== idx));
+    };
 
     // Forms state
     const [newMember, setNewMember] = useState({ name: '', role: '', initials: '', bio: '', badge: 'SPECIALIST', photo: '', status: 'Active Member' });
@@ -1194,6 +1236,99 @@ export default function AdminDashboard({ onExit }) {
                                             <option value="RESULTS PUBLISHED">RESULTS PUBLISHED</option>
                                             <option value="RECRUITMENT CLOSED">RECRUITMENT CLOSED</option>
                                         </select>
+                                    </div>
+                                </div>
+
+                                {/* Stage deadlines -- these drive the countdown board on #join. */}
+                                <div className="pt-4 border-t-2 border-slate-200">
+                                    <div className="flex items-center justify-between gap-3 mb-1">
+                                        <span className="text-xs font-mono font-black uppercase text-slate-900">
+                                            Stage Deadlines (Countdown Board)
+                                        </span>
+                                        <button
+                                            type="button"
+                                            onClick={addDeadline}
+                                            className="press px-3 py-1.5 bg-emerald-400 hover:bg-emerald-300 text-slate-900 font-mono font-black text-[11px] uppercase border-2 border-slate-900 shadow-[2px_2px_0px_#0f172a] cursor-pointer"
+                                        >
+                                            + Add Stage
+                                        </button>
+                                    </div>
+                                    <p className="text-[11px] font-mono font-bold text-slate-500 mb-4">
+                                        Times are Indian Standard Time. The soonest stage that has not closed goes
+                                        on the board; the rest stay listed as upcoming.
+                                    </p>
+
+                                    <div className="space-y-3">
+                                        {recruitmentDeadlines.length === 0 && (
+                                            <p className="p-4 bg-slate-100 border-2 border-dashed border-slate-400 text-xs font-mono font-bold text-slate-500">
+                                                No stages yet. Add one to put a deadline on the board.
+                                            </p>
+                                        )}
+                                        {recruitmentDeadlines.map((d, idx) => (
+                                            <div
+                                                key={d.id || idx}
+                                                className="p-4 bg-sky-50 border-2 border-slate-900 grid grid-cols-1 sm:grid-cols-[4rem_1fr_1fr_auto] gap-3 items-start"
+                                            >
+                                                <div>
+                                                    <label className="block text-[10px] font-mono font-black uppercase text-slate-600 mb-1">
+                                                        Stage
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        value={d.stage || ''}
+                                                        onChange={e => updateDeadline(idx, { stage: e.target.value })}
+                                                        placeholder="01"
+                                                        className="w-full px-2 py-1.5 border-2 border-slate-900 bg-white font-mono text-xs font-black"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-[10px] font-mono font-black uppercase text-slate-600 mb-1">
+                                                        Deadline Label
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        value={d.label || ''}
+                                                        onChange={e => updateDeadline(idx, { label: e.target.value })}
+                                                        placeholder="Problem Statement Submission"
+                                                        className="w-full px-2 py-1.5 border-2 border-slate-900 bg-white text-xs font-bold"
+                                                    />
+                                                    <input
+                                                        type="text"
+                                                        value={d.detail || ''}
+                                                        onChange={e => updateDeadline(idx, { detail: e.target.value })}
+                                                        placeholder="One line shown under the label"
+                                                        className="mt-2 w-full px-2 py-1.5 border-2 border-slate-900 bg-white text-xs"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-[10px] font-mono font-black uppercase text-slate-600 mb-1">
+                                                        Closes (IST)
+                                                    </label>
+                                                    <input
+                                                        type="datetime-local"
+                                                        value={istInputValue(d.date)}
+                                                        onChange={e => updateDeadline(idx, { date: istInputToIso(e.target.value) })}
+                                                        className="w-full px-2 py-1.5 border-2 border-slate-900 bg-white font-mono text-xs font-bold"
+                                                    />
+                                                    <label className="block text-[10px] font-mono font-black uppercase text-slate-600 mt-2 mb-1">
+                                                        Opens (IST, optional)
+                                                    </label>
+                                                    <input
+                                                        type="datetime-local"
+                                                        value={istInputValue(d.opensAt)}
+                                                        onChange={e => updateDeadline(idx, { opensAt: istInputToIso(e.target.value) })}
+                                                        className="w-full px-2 py-1.5 border-2 border-slate-900 bg-white font-mono text-xs"
+                                                    />
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeDeadline(idx)}
+                                                    className="press px-3 py-1.5 bg-rose-400 hover:bg-rose-300 text-slate-900 font-mono font-black text-[11px] uppercase border-2 border-slate-900 shadow-[2px_2px_0px_#0f172a] cursor-pointer sm:mt-5"
+                                                >
+                                                    Remove
+                                                </button>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
 

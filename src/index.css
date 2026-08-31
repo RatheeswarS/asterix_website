@@ -355,3 +355,55 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* =========================================================
+   RECRUITMENT COUNTDOWN — TIMING TOWER
+   The board sits inline in the page; the same numbers dock into the sticky
+   header once it scrolls past. `max-height` rather than `display` so the
+   dock slides rather than snapping the page content down.
+========================================================= */
+.countdown-dock {
+  max-height: 0;
+  opacity: 0;
+  visibility: hidden;
+  border-top: 2px solid #1e293b;
+  transition: max-height var(--dur-base) var(--ease-brutal),
+              opacity var(--dur-fast) var(--ease-brutal),
+              visibility 0s linear var(--dur-base);
+}
+
+.countdown-dock-open {
+  max-height: 6rem;
+  opacity: 1;
+  visibility: visible;
+  transition: max-height var(--dur-base) var(--ease-brutal),
+              opacity var(--dur-base) var(--ease-brutal),
+              visibility 0s;
+}
+
+/* The rail advances once a second, so a linear width transition of exactly
+   that period reads as a continuous creep rather than a stutter. */
+.countdown-rail {
+  transition: width 1s linear;
+}
+
+/* Only the seconds tile pulses. One moving element is the point. */
+@keyframes countdown-tick {
+  0% { opacity: 0.5; }
+  15% { opacity: 1; }
+  100% { opacity: 1; }
+}
+
+.countdown-tick {
+  animation: countdown-tick 1s var(--ease-brutal) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .countdown-tick {
+    animation: none !important;
+  }
+
+  .countdown-rail {
+    transition: none !important;
+  }
+}

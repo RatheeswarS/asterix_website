@@ -207,6 +207,39 @@ const initialRecruitmentData = {
     title: 'SAEINDIA BAJA 2026-27 CREW RECRUITMENT',
     description: 'Join Team Asterix and build next-generation off-road and autonomous racing machines. Open for 1st, 2nd, and 3rd year engineering students.',
     applicationLink: 'https://forms.gle/6hHG6aXqrunnfj7V6',
+    // Stage deadlines drive the countdown board on #join. Dates carry an
+    // explicit +05:30 offset so a visitor's own timezone cannot shift them.
+    deadlines: [
+        {
+            id: 'stage-01',
+            stage: '01',
+            label: 'Applications Close',
+            detail: 'Submit the crew application form with your subsystem preference.',
+            date: '2026-09-07T23:59:00+05:30',
+            opensAt: '2026-08-24T09:00:00+05:30'
+        },
+        {
+            id: 'stage-02',
+            stage: '02',
+            label: 'Problem Statement Submission',
+            detail: 'Upload code, CAD, FEA or deck for your chosen subsystem brief.',
+            date: '2026-09-21T23:59:00+05:30'
+        },
+        {
+            id: 'stage-03',
+            stage: '03',
+            label: 'Technical Review Slots',
+            detail: 'In-person design defence with the subsystem leads.',
+            date: '2026-10-05T18:00:00+05:30'
+        },
+        {
+            id: 'stage-04',
+            stage: '04',
+            label: 'Workshop Trial & Induction',
+            detail: 'Tool safety briefing and hands-on fabrication induction.',
+            date: '2026-10-19T18:00:00+05:30'
+        }
+    ],
     problemStatements: [
         {
             id: 'ps-software',
