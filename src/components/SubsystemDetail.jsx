@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useWebsiteData } from '../context/WebsiteDataContext';
+import { apiUrl } from '../lib/api';
 import Icon from './Icon';
 
 export default function SubsystemDetail({ subsystemId, onBack, onSelectSubsystem }) {
@@ -157,7 +158,7 @@ export default function SubsystemDetail({ subsystemId, onBack, onSelectSubsystem
                                     <div className="w-full h-56 sm:h-60 overflow-hidden border-2 border-slate-900 bg-slate-100 relative mb-4 shadow-[3px_3px_0px_#0f172a]">
                                         {member.photo ? (
                                             <img
-                                                src={member.photo}
+                                                src={apiUrl(member.photo)}
                                                 alt={member.name}
                                                 className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300"
                                             />

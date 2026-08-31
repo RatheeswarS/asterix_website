@@ -1,5 +1,6 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { gsap } from 'gsap';
+import { apiUrl } from '../lib/api';
 
 const DEFAULT_ITEMS = [
   { image: 'https://picsum.photos/id/1015/900/1200', label: 'Canyon', link: '#' },
@@ -221,7 +222,7 @@ const AccordionGallery = ({
                 }}
               >
                 <img
-                  src={item.image}
+                  src={apiUrl(item.image)}
                   alt={item.alt || item.label || ''}
                   draggable="false"
                   className="block h-full w-full select-none object-cover [-webkit-user-drag:none]"

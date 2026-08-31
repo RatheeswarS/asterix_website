@@ -170,7 +170,7 @@ export default function TeamGallery() {
                         {/* Image Viewer Frame */}
                         <div className="relative aspect-[16/10] sm:aspect-[16/9] max-h-[60vh] w-full bg-slate-950 flex items-center justify-center overflow-hidden">
                             <img
-                                src={activeItem.image}
+                                src={apiUrl(activeItem.image)}
                                 alt={activeItem.title}
                                 className="max-w-full max-h-full object-contain select-none"
                             />

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { apiUrl } from '../lib/api';
 
 const DEFAULT_ITEMS = Array.from({ length: 15 }, (_, i) => {
   const ids = [1015, 1025, 1039, 1043, 1044, 1050, 1062, 1069, 1074, 1080, 1084, 106, 110, 133, 164];
@@ -301,7 +302,7 @@ const DriftWall = ({
     const inner = (
       <span className={innerClass}>
         <img
-          src={item.image}
+          src={apiUrl(item.image)}
           alt={item.title ?? ''}
           loading="lazy"
           decoding="async"

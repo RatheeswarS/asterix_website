@@ -272,7 +272,7 @@ export default function AdminDashboard({ onExit }) {
                 if (res.ok) {
                     const data = await res.json();
                     if (data.url) {
-                        callback(data.url);
+                        callback(apiUrl(data.url));
                         showStatus(data.provider === 'imagekit' ? 'Uploaded to ImageKit CDN! 🍃' : 'Image uploaded successfully! ✓');
                         e.target.value = '';
                         return;
@@ -1070,7 +1070,7 @@ export default function AdminDashboard({ onExit }) {
                                                 <div className="flex items-center gap-3 bg-slate-50 p-2 border border-slate-300">
                                                     <div className="w-14 h-14 border-2 border-slate-900 bg-white flex items-center justify-center overflow-hidden flex-shrink-0 relative">
                                                         {m.photo ? (
-                                                            <img src={m.photo} alt={m.name} className="w-full h-full object-cover" />
+                                                            <img src={apiUrl(m.photo)} alt={m.name} className="w-full h-full object-cover" />
                                                         ) : (
                                                             <span className="font-mono text-[9px] font-black text-slate-400 text-center uppercase leading-tight">
                                                                 NO<br />PHOTO
@@ -1193,7 +1193,7 @@ export default function AdminDashboard({ onExit }) {
                                     <div className="flex items-center gap-3 bg-white p-2.5 border-2 border-slate-900">
                                         <div className="w-14 h-14 border-2 border-slate-900 bg-slate-100 flex items-center justify-center overflow-hidden flex-shrink-0 relative">
                                             {newMember.photo ? (
-                                                <img src={newMember.photo} alt="Preview" className="w-full h-full object-cover" />
+                                                <img src={apiUrl(newMember.photo)} alt="Preview" className="w-full h-full object-cover" />
                                             ) : (
                                                 <span className="font-mono text-[9px] font-black text-slate-400 text-center uppercase leading-tight">
                                                     PHOTO<br />PREVIEW
@@ -1589,7 +1589,7 @@ export default function AdminDashboard({ onExit }) {
                                     <div className="flex gap-2 items-center">
                                         {newGallery.src ? (
                                             <div className="w-14 h-14 border-2 border-slate-900 overflow-hidden bg-slate-100 flex-shrink-0">
-                                                <img src={newGallery.src} alt="Preview" className="w-full h-full object-cover" />
+                                                <img src={apiUrl(newGallery.src)} alt="Preview" className="w-full h-full object-cover" />
                                             </div>
                                         ) : (
                                             <div className="w-14 h-14 border-2 border-dashed border-slate-400 bg-slate-100 flex items-center justify-center text-[9px] font-mono text-slate-500 font-bold text-center flex-shrink-0">
@@ -1644,7 +1644,7 @@ export default function AdminDashboard({ onExit }) {
                                     <div key={item.id} className="bg-white border-2 border-slate-900 shadow-[3px_3px_0px_#0f172a] p-3 flex flex-col justify-between">
                                         <div>
                                             <div className="h-32 w-full overflow-hidden border border-slate-900 mb-2 bg-slate-200">
-                                                <img src={item.src} alt={item.title} className="w-full h-full object-cover" />
+                                                <img src={apiUrl(item.src)} alt={item.title} className="w-full h-full object-cover" />
                                             </div>
                                             <input
                                                 type="text"
@@ -1754,7 +1754,7 @@ export default function AdminDashboard({ onExit }) {
                                     <div key={upd.id} className="p-3 bg-white border-2 border-slate-900 shadow-[2px_2px_0px_#0f172a] flex items-center justify-between gap-4">
                                         <div className="flex items-center gap-3">
                                             {upd.image && (
-                                                <img src={upd.image} alt={upd.label} className="w-14 h-10 object-cover border border-slate-900" />
+                                                <img src={apiUrl(upd.image)} alt={upd.label} className="w-14 h-10 object-cover border border-slate-900" />
                                             )}
                                             <div>
                                                 <input
