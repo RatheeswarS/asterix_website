@@ -13,6 +13,10 @@ export function apiUrl(path) {
     if (!path || typeof path !== 'string') return '';
     const trimmed = path.trim();
     if (!trimmed) return '';
+    // Filter out legacy non-existent local disk upload links pointing to render
+    if (trimmed.includes('onrender.com/uploads/')) {
+        return '';
+    }
     if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:') || trimmed.startsWith('blob:')) {
         return trimmed;
     }

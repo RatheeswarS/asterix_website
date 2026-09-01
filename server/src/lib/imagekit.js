@@ -2,15 +2,21 @@ import ImageKit from 'imagekit';
 
 let imagekitClient = null;
 
+const cleanEnv = (key) => {
+    const val = process.env[key];
+    if (!val) return '';
+    return val.trim().replace(/^["']|["']$/g, '');
+};
+
 /**
  * Returns the ImageKit SDK client instance if credentials are configured.
  */
 export function getImageKitClient() {
     if (imagekitClient) return imagekitClient;
 
-    const publicKey = process.env.IMAGEKIT_PUBLIC_KEY;
-    const privateKey = process.env.IMAGEKIT_PRIVATE_KEY;
-    const urlEndpoint = process.env.IMAGEKIT_URL_ENDPOINT;
+    const publicKey = cleanEnv('IMAGEKIT_PUBLIC_KEY');
+    const privateKey = cleanEnv('IMAGEKIT_PRIVATE_KEY');
+    const urlEndpoint = cleanEnv('IMAGEKIT_URL_ENDPOINT');
 
     if (!publicKey || !privateKey || !urlEndpoint) {
         return null;
@@ -30,9 +36,9 @@ export function getImageKitClient() {
  */
 export function isImageKitConfigured() {
     return Boolean(
-        process.env.IMAGEKIT_PUBLIC_KEY &&
-        process.env.IMAGEKIT_PRIVATE_KEY &&
-        process.env.IMAGEKIT_URL_ENDPOINT
+        cleanEnv('IMAGEKIT_PUBLIC_KEY') &&
+        cleanEnv('IMAGEKIT_PRIVATE_KEY') &&
+        cleanEnv('IMAGEKIT_URL_ENDPOINT')
     );
 }
 

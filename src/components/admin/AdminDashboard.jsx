@@ -335,46 +335,20 @@ export default function AdminDashboard({ onExit }) {
 
                 if (res.ok) {
                     const data = await res.json();
-                    if (data.url) {
-                        const finalUrl = data.url.startsWith('http') ? data.url : apiUrl(data.url);
-                        callback(finalUrl);
-                        showStatus(data.provider === 'imagekit' ? 'Uploaded to ImageKit CDN! 🍃' : 'Image uploaded successfully! ✓');
+                    // Require a valid CDN URL (ImageKit) or absolute HTTP/HTTPS URL
+                    if (data.url && (data.url.startsWith('http://') || data.url.startsWith('https://') || data.provider === 'imagekit')) {
+                        callback(data.url);
+                        showStatus('Uploaded to ImageKit Cloud CDN! 🍃');
                         e.target.value = '';
                         return;
                     }
                 }
             } catch (uploadErr) {
-                console.warn('Server ImageKit upload notice, checking direct fallback:', uploadErr);
+                console.warn('Server ImageKit upload notice, using compact WebP fallback:', uploadErr);
             }
         }
 
-        // 2. Direct ImageKit Upload Fallback (Client-side REST API)
-        try {
-            const formData = new FormData();
-            formData.append('file', file);
-            formData.append('fileName', `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`);
-            formData.append('publicKey', 'public_JWRwXXxKuG9IWA/a+HLXkQEfYtY=');
-            formData.append('folder', folder);
-
-            const ikRes = await fetch('https://upload.imagekit.io/api/v1/files/upload', {
-                method: 'POST',
-                body: formData
-            });
-
-            if (ikRes.ok) {
-                const ikData = await ikRes.json();
-                if (ikData.url) {
-                    callback(ikData.url);
-                    showStatus('Uploaded directly to ImageKit CDN! 🍃');
-                    e.target.value = '';
-                    return;
-                }
-            }
-        } catch (ikDirectErr) {
-            console.warn('Direct ImageKit upload notice, compressing locally:', ikDirectErr);
-        }
-
-        // 3. Compact WebP compression fallback (max 600px, 0.70 quality to fit safely in DB)
+        // 2. Compact WebP compression fallback (max 600px, 0.70 quality to fit safely in DB)
         try {
             const compressedDataUrl = await compressImage(file, 600, 600, 0.70);
             callback(compressedDataUrl);
