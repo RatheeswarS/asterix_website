@@ -315,6 +315,13 @@ export function WebsiteDataProvider({ children }) {
     const [syncState, setSyncState] = useState('idle'); // 'idle' | 'saving' | 'synced' | 'error'
     const [syncError, setSyncError] = useState(null);
     const isInitialMount = useRef(true);
+    /* The `lastModified` of the last payload the server handed us. Anything
+       different on `siteData` is therefore a local edit that has not been
+       acknowledged yet. */
+    const lastServerStamp = useRef(null);
+    /* True from the moment an admin edit lands until the server confirms it.
+       While it is set, a poll must not overwrite state -- see the merge below. */
+    const hasPendingEdit = useRef(false);
 
     // Initial state from localStorage or defaults
     const [siteData, setSiteData] = useState(() => {
@@ -365,6 +372,21 @@ export function WebsiteDataProvider({ children }) {
                 const data = await res.json();
                 if (data && (data.hero || data.subsystems?.length > 0)) {
                     setSiteData(prev => {
+                        /* An edit of ours is still on its way to the server, so
+                           nothing the server says right now can be newer than what
+                           is on screen. Checked before the timestamps because the
+                           timestamps cannot settle this: `localTime` comes from
+                           this browser's clock and `remoteTime` from whichever
+                           machine wrote last, so a device running a few seconds
+                           fast made every other admin's poll discard their own
+                           unsaved work. That is what made an uploaded photo appear
+                           and then vanish on the next refresh -- the picture had
+                           reached the CDN, but the record naming it was overwritten
+                           in the second between the edit and the debounced save. */
+                        if (hasPendingEdit.current) {
+                            return prev;
+                        }
+
                         const remoteTime = new Date(data.lastModified || 0).getTime();
                         const localTime = new Date(prev.lastModified || 0).getTime();
 
@@ -388,6 +410,7 @@ export function WebsiteDataProvider({ children }) {
                         try {
                             localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(merged));
                         } catch { /* ignore */ }
+                        lastServerStamp.current = merged.lastModified;
                         return merged;
                     });
                     setIsServerConnected(true);
@@ -517,9 +540,26 @@ export function WebsiteDataProvider({ children }) {
             return;
         }
 
+        /* A change that matches the last thing the server sent is that payload
+           arriving, not somebody typing. Only a real edit blocks the poll, or a
+           reader would freeze their own page simply by receiving an update. */
+        if (siteData.lastModified === lastServerStamp.current) {
+            return undefined;
+        }
+        hasPendingEdit.current = true;
+
         // Debounce syncing manual admin edits to database
         const timer = setTimeout(() => {
-            syncToServer(siteData);
+            syncToServer(siteData).then((ok) => {
+                if (ok) {
+                    /* Cleared only on success. A failed save keeps the poll
+                       locked out, which is the right way round: the edit is the
+                       only copy that exists and must not be silently replaced by
+                       the stale server one. `syncError` tells the admin. */
+                    lastServerStamp.current = siteData.lastModified;
+                    hasPendingEdit.current = false;
+                }
+            });
         }, 1000);
 
         return () => clearTimeout(timer);
