@@ -308,6 +308,10 @@ const DriftWall = ({
           decoding="async"
           draggable={false}
           className={imgClass}
+          onError={(e) => {
+            e.currentTarget.onerror = null;
+            e.currentTarget.src = 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=600&q=80';
+          }}
         />
         <span className={overlayClass} aria-hidden="true" />
       </span>

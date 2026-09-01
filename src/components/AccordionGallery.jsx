@@ -226,6 +226,10 @@ const AccordionGallery = ({
                   alt={item.alt || item.label || ''}
                   draggable="false"
                   className="block h-full w-full select-none object-cover [-webkit-user-drag:none]"
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=800&q=80';
+                  }}
                 />
               </span>
               <span

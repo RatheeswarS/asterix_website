@@ -173,6 +173,10 @@ export default function TeamGallery() {
                                 src={apiUrl(activeItem.image)}
                                 alt={activeItem.title}
                                 className="max-w-full max-h-full object-contain select-none"
+                                onError={(e) => {
+                                    e.currentTarget.onerror = null;
+                                    e.currentTarget.src = 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=1000&q=80';
+                                }}
                             />
 
                             {/* Prev Navigation Button */}

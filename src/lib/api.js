@@ -10,10 +10,13 @@ export const API_BASE = (
 ).replace(/\/+$/, '');
 
 export function apiUrl(path) {
-    if (!path) return '';
-    if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('data:') || path.startsWith('blob:')) {
-        return path;
+    if (!path || typeof path !== 'string') return '';
+    const trimmed = path.trim();
+    if (!trimmed) return '';
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:') || trimmed.startsWith('blob:')) {
+        return trimmed;
     }
-    const cleanPath = path.startsWith('/') ? path : `/${path}`;
+    const cleanPath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
     return API_BASE ? `${API_BASE}${cleanPath}` : cleanPath;
 }
+

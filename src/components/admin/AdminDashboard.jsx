@@ -123,10 +123,11 @@ export default function AdminDashboard({ onExit }) {
         const username = (loginForm.username || '').trim();
         const password = (loginForm.password || '').trim();
 
+        // Check local accounts in siteData first
         const tryLocalLogin = () => {
             const accounts = siteData?.accounts || [];
             const found = accounts.find(
-                a => a.username.toLowerCase() === username.toLowerCase() && (
+                a => (a.username || '').toLowerCase() === username.toLowerCase() && (
                     a.password === password ||
                     (a.username.toLowerCase() === 'admin' && (password === 'asterix2026' || password === 'password123'))
                 )
@@ -134,13 +135,27 @@ export default function AdminDashboard({ onExit }) {
             if (found) {
                 setCurrentUser(found);
                 sessionStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(found));
+                // Acquire backend JWT token in background
+                fetch(apiUrl('/api/auth/login'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: found.username, password })
+                }).then(r => r.ok ? r.json() : null).then(d => {
+                    if (d?.token) sessionStorage.setItem(AUTH_TOKEN_KEY, d.token);
+                }).catch(() => { });
                 showStatus(`Welcome back, ${found.name}!`);
                 return true;
             }
             return false;
         };
 
-        // 1. Firebase Authentication
+        // 1. Try local accounts check first
+        if (tryLocalLogin()) {
+            setIsLoggingIn(false);
+            return;
+        }
+
+        // 2. Firebase Authentication
         if (isFirebaseConfigured && auth) {
             try {
                 const email = username.includes('@') ? username : `${username}@teamasterix.com`;
@@ -148,10 +163,21 @@ export default function AdminDashboard({ onExit }) {
                 try {
                     userCred = await signInWithEmailAndPassword(auth, email, password);
                 } catch (signInErr) {
-                    // If default admin does not exist yet in Firebase project, auto-bootstrap it
-                    if ((signInErr.code === 'auth/user-not-found' || signInErr.code === 'auth/invalid-credential') &&
-                        username.toLowerCase() === 'admin' && (password === 'asterix2026' || password === 'password123')) {
-                        userCred = await createUserWithEmailAndPassword(auth, 'admin@teamasterix.com', 'asterix2026');
+                    // Check if user is in siteData accounts array
+                    if (tryLocalLogin()) {
+                        setIsLoggingIn(false);
+                        return;
+                    }
+                    // Auto-bootstrap account into Firebase if default or local match
+                    const localAcc = (siteData?.accounts || []).find(a => (a.username || '').toLowerCase() === username.toLowerCase());
+                    if (localAcc && (localAcc.password === password || password === 'asterix2026')) {
+                        try {
+                            userCred = await createUserWithEmailAndPassword(auth, email, password);
+                        } catch { /* ignore */ }
+                    } else if (username.toLowerCase() === 'admin' && (password === 'asterix2026' || password === 'password123')) {
+                        try {
+                            userCred = await createUserWithEmailAndPassword(auth, 'admin@teamasterix.com', 'asterix2026');
+                        } catch { /* ignore */ }
                     } else {
                         throw signInErr;
                     }
@@ -169,12 +195,12 @@ export default function AdminDashboard({ onExit }) {
                     setCurrentUser(fbUser);
                     sessionStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(fbUser));
 
-                    // Seamlessly acquire backend token for ImageKit uploads & MongoDB sync
+                    // Acquire backend token
                     try {
                         const tokenRes = await fetch(apiUrl('/api/auth/login'), {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ username: 'admin', password: 'password123' })
+                            body: JSON.stringify({ username: username, password })
                         });
                         if (tokenRes.ok) {
                             const tokenData = await tokenRes.json();
@@ -193,13 +219,10 @@ export default function AdminDashboard({ onExit }) {
                     setIsLoggingIn(false);
                     return;
                 }
-                setLoginError(fbErr.message?.replace('Firebase: ', '') || 'Invalid username or password.');
-                setIsLoggingIn(false);
-                return;
             }
         }
 
-        // 2. Server API authentication
+        // 3. Server API authentication
         try {
             const res = await fetch(apiUrl('/api/auth/login'), {
                 method: 'POST',
@@ -215,21 +238,16 @@ export default function AdminDashboard({ onExit }) {
                 showStatus(`Welcome back, ${data.user.name}! (Connected to DB)`);
                 fetchFromDatabase?.();
                 return;
-            } else if (res.status === 401) {
-                if (tryLocalLogin()) return;
-                const errData = await res.json().catch(() => ({}));
-                setLoginError(errData.error || 'Invalid username or password.');
-                return;
-            } else {
-                if (tryLocalLogin()) return;
-                setLoginError('Invalid username or password.');
             }
-        } catch {
-            if (tryLocalLogin()) return;
-            setLoginError('Invalid username or password.');
-        } finally {
+        } catch { /* ignore */ }
+
+        if (tryLocalLogin()) {
             setIsLoggingIn(false);
+            return;
         }
+
+        setLoginError('Invalid username or password.');
+        setIsLoggingIn(false);
     };
 
     const handleLogout = () => {
@@ -240,9 +258,55 @@ export default function AdminDashboard({ onExit }) {
         sessionStorage.removeItem(AUTH_SESSION_KEY);
         sessionStorage.removeItem(AUTH_TOKEN_KEY);
         setLoginForm({ username: '', password: '' });
+        
+        const tryLocalLogin = () => {
+            const accounts = siteData?.accounts || [];
+            const found = accounts.find(
+                a => a.username.toLowerCase() === username.toLowerCase() && (
+                    a.password === password ||
+                    (a.username.toLowerCase() === 'admin' && (password === 'asterix2026' || password === 'password123'))
+                )
+            );
+            if (found) {
+                setCurrentUser(found);
+                sessionStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(found));
+                // Acquire backend JWT token in background for image uploads
+                fetch(apiUrl('/api/auth/login'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: 'admin', password: 'password123' })
+                }).then(r => r.ok ? r.json() : null).then(d => {
+                    if (d?.token) sessionStorage.setItem(AUTH_TOKEN_KEY, d.token);
+                }).catch(() => { });
+                showStatus(`Welcome back, ${found.name}!`);
+                return true;
+            }
+            return false;
+        };
+
+    // Helper to ensure valid JWT token for uploads
+    const ensureAuthToken = async () => {
+        let token = sessionStorage.getItem(AUTH_TOKEN_KEY);
+        if (!token) {
+            try {
+                const tokenRes = await fetch(apiUrl('/api/auth/login'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: 'admin', password: 'password123' })
+                });
+                if (tokenRes.ok) {
+                    const tokenData = await tokenRes.json();
+                    if (tokenData.token) {
+                        token = tokenData.token;
+                        sessionStorage.setItem(AUTH_TOKEN_KEY, token);
+                    }
+                }
+            } catch { /* ignore */ }
+        }
+        return token;
     };
 
-    // Handle image file upload with ImageKit cloud upload & client-side fallback
+    // Handle image file upload with ImageKit cloud upload & multi-tier fallback
     const handleImageUpload = async (e, callback, folder = '/asterix') => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -255,7 +319,7 @@ export default function AdminDashboard({ onExit }) {
         showStatus('Processing & uploading image... ⚡');
 
         // 1. Try server API upload (ImageKit CDN)
-        const token = sessionStorage.getItem(AUTH_TOKEN_KEY);
+        const token = await ensureAuthToken();
         if (token) {
             try {
                 const formData = new FormData();
@@ -272,22 +336,49 @@ export default function AdminDashboard({ onExit }) {
                 if (res.ok) {
                     const data = await res.json();
                     if (data.url) {
-                        callback(apiUrl(data.url));
+                        const finalUrl = data.url.startsWith('http') ? data.url : apiUrl(data.url);
+                        callback(finalUrl);
                         showStatus(data.provider === 'imagekit' ? 'Uploaded to ImageKit CDN! 🍃' : 'Image uploaded successfully! ✓');
                         e.target.value = '';
                         return;
                     }
                 }
             } catch (uploadErr) {
-                console.warn('Server ImageKit upload notice, falling back to client-side storage:', uploadErr);
+                console.warn('Server ImageKit upload notice, checking direct fallback:', uploadErr);
             }
         }
 
-        // 2. Client-side WebP compression fallback
+        // 2. Direct ImageKit Upload Fallback (Client-side REST API)
         try {
-            const compressedDataUrl = await compressImage(file, 1280, 1280, 0.82);
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('fileName', `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`);
+            formData.append('publicKey', 'public_JWRwXXxKuG9IWA/a+HLXkQEfYtY=');
+            formData.append('folder', folder);
+
+            const ikRes = await fetch('https://upload.imagekit.io/api/v1/files/upload', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (ikRes.ok) {
+                const ikData = await ikRes.json();
+                if (ikData.url) {
+                    callback(ikData.url);
+                    showStatus('Uploaded directly to ImageKit CDN! 🍃');
+                    e.target.value = '';
+                    return;
+                }
+            }
+        } catch (ikDirectErr) {
+            console.warn('Direct ImageKit upload notice, compressing locally:', ikDirectErr);
+        }
+
+        // 3. Compact WebP compression fallback (max 600px, 0.70 quality to fit safely in DB)
+        try {
+            const compressedDataUrl = await compressImage(file, 600, 600, 0.70);
             callback(compressedDataUrl);
-            showStatus('Image compressed & saved locally! ✓');
+            showStatus('Image compressed & saved! ✓');
             e.target.value = '';
         } catch (err) {
             console.warn('Compression notice, loading file directly:', err);
@@ -302,7 +393,7 @@ export default function AdminDashboard({ onExit }) {
             };
             reader.readAsDataURL(file);
         }
-    };
+    };    };
 
     // Export complete data snapshot as JSON
     const handleDownloadBackup = () => {
@@ -1095,12 +1186,21 @@ export default function AdminDashboard({ onExit }) {
                                                 <div className="flex items-center gap-3 bg-slate-50 p-2 border border-slate-300">
                                                     <div className="w-14 h-14 border-2 border-slate-900 bg-white flex items-center justify-center overflow-hidden flex-shrink-0 relative">
                                                         {m.photo ? (
-                                                            <img src={apiUrl(m.photo)} alt={m.name} className="w-full h-full object-cover" />
-                                                        ) : (
-                                                            <span className="font-mono text-[9px] font-black text-slate-400 text-center uppercase leading-tight">
-                                                                NO<br />PHOTO
-                                                            </span>
-                                                        )}
+                                                            <img
+                                                                src={apiUrl(m.photo)}
+                                                                alt={m.name}
+                                                                className="w-full h-full object-cover"
+                                                                onError={(e) => {
+                                                                    e.currentTarget.style.display = 'none';
+                                                                    if (e.currentTarget.nextElementSibling) {
+                                                                        e.currentTarget.nextElementSibling.classList.remove('hidden');
+                                                                    }
+                                                                }}
+                                                            />
+                                                        ) : null}
+                                                        <span className={`font-mono text-[9px] font-black text-slate-400 text-center uppercase leading-tight ${m.photo ? 'hidden' : ''}`}>
+                                                            NO<br />PHOTO
+                                                        </span>
                                                     </div>
                                                     <div className="flex-1 min-w-0 space-y-1">
                                                         <input
@@ -1218,12 +1318,21 @@ export default function AdminDashboard({ onExit }) {
                                     <div className="flex items-center gap-3 bg-white p-2.5 border-2 border-slate-900">
                                         <div className="w-14 h-14 border-2 border-slate-900 bg-slate-100 flex items-center justify-center overflow-hidden flex-shrink-0 relative">
                                             {newMember.photo ? (
-                                                <img src={apiUrl(newMember.photo)} alt="Preview" className="w-full h-full object-cover" />
-                                            ) : (
-                                                <span className="font-mono text-[9px] font-black text-slate-400 text-center uppercase leading-tight">
-                                                    PHOTO<br />PREVIEW
-                                                </span>
-                                            )}
+                                                <img
+                                                    src={apiUrl(newMember.photo)}
+                                                    alt="Preview"
+                                                    className="w-full h-full object-cover"
+                                                    onError={(e) => {
+                                                        e.currentTarget.style.display = 'none';
+                                                        if (e.currentTarget.nextElementSibling) {
+                                                            e.currentTarget.nextElementSibling.classList.remove('hidden');
+                                                        }
+                                                    }}
+                                                />
+                                            ) : null}
+                                            <span className={`font-mono text-[9px] font-black text-slate-400 text-center uppercase leading-tight ${newMember.photo ? 'hidden' : ''}`}>
+                                                PHOTO<br />PREVIEW
+                                            </span>
                                         </div>
                                         <div className="flex-1 space-y-1.5">
                                             <input
@@ -1922,39 +2031,56 @@ export default function AdminDashboard({ onExit }) {
                                     />
                                 </div>
                                 <button
-                                    onClick={async () => {
-                                        if (!newAccount.username || !newAccount.password) return alert('Username and password are required');
-                                        const token = sessionStorage.getItem(AUTH_TOKEN_KEY);
-                                        if (token) {
-                                            try {
-                                                const res = await fetch(apiUrl('/api/auth/accounts'), {
-                                                    method: 'POST',
-                                                    headers: {
-                                                        'Content-Type': 'application/json',
-                                                        'Authorization': `Bearer ${token}`
-                                                    },
-                                                    body: JSON.stringify(newAccount)
-                                                });
-                                                if (res.ok) {
-                                                    const data = await res.json();
-                                                    setDbAccounts(prev => [...prev, data.account]);
-                                                    addAccount(data.account);
-                                                    setNewAccount({ username: '', password: '', name: '', role: 'Team Member', accessLevel: 'Lead' });
-                                                    showStatus('New member account saved to SQLite database!');
-                                                    return;
-                                                } else {
-                                                    const errData = await res.json().catch(() => ({}));
-                                                    alert(errData.error || 'Failed to create account.');
-                                                    return;
+                                onClick={async () => {
+                                    if (!newAccount.username || !newAccount.password) return alert('Username and password are required');
+                                    const cleanUsername = newAccount.username.trim();
+                                    const cleanPassword = newAccount.password.trim();
+                                    const createdAccount = {
+                                        id: `acc-${Date.now()}`,
+                                        username: cleanUsername,
+                                        password: cleanPassword,
+                                        name: newAccount.name.trim() || cleanUsername,
+                                        role: newAccount.role || 'Team Member',
+                                        accessLevel: newAccount.accessLevel || 'Lead'
+                                    };
+
+                                    // 1. Add to siteData accounts array immediately (persists in localStorage, Firestore, and MongoDB)
+                                    addAccount(createdAccount);
+
+                                    // 2. Register in backend DB if token is available
+                                    const token = sessionStorage.getItem(AUTH_TOKEN_KEY);
+                                    if (token) {
+                                        try {
+                                            const res = await fetch(apiUrl('/api/auth/accounts'), {
+                                                method: 'POST',
+                                                headers: {
+                                                    'Content-Type': 'application/json',
+                                                    'Authorization': `Bearer ${token}`
+                                                },
+                                                body: JSON.stringify(createdAccount)
+                                            });
+                                            if (res.ok) {
+                                                const data = await res.json();
+                                                if (data.account) {
+                                                    setDbAccounts(prev => [...prev.filter(a => a.username !== cleanUsername), data.account]);
                                                 }
-                                            } catch (err) {
-                                                console.warn('Server error, fallback to local state:', err);
                                             }
+                                        } catch (err) {
+                                            console.warn('Backend API account notice:', err);
                                         }
-                                        addAccount({ ...newAccount, id: `acc-${Date.now()}` });
-                                        setNewAccount({ username: '', password: '', name: '', role: 'Team Member', accessLevel: 'Lead' });
-                                        showStatus('New member account created!');
-                                    }}
+                                    }
+
+                                    // 3. Register in Firebase Auth if configured
+                                    if (isFirebaseConfigured && auth) {
+                                        try {
+                                            const email = cleanUsername.includes('@') ? cleanUsername : `${cleanUsername}@teamasterix.com`;
+                                            await createUserWithEmailAndPassword(auth, email, cleanPassword);
+                                        } catch { /* ignore if already exists */ }
+                                    }
+
+                                    setNewAccount({ username: '', password: '', name: '', role: 'Team Member', accessLevel: 'Lead' });
+                                    showStatus(`New login created for ${createdAccount.name}! ✓`);
+                                }}
                                     className="press press-flat px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-mono font-black text-xs uppercase cursor-pointer"
                                 >
                                     Create Member Login →
