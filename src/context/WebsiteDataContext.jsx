@@ -168,12 +168,15 @@ const initialContactInfo = {
     githubUrl: "https://github.com/Team-Asterix264016/"
 };
 
-// Initial default team member accounts
+/* Roster of admin accounts, for display in the Team Accounts tab only.
+   Passwords used to be listed here in plaintext, which shipped them inside the
+   production JavaScript bundle for anyone to read. Authentication now happens
+   solely against the server, which stores bcrypt hashes, so nothing here is a
+   credential. */
 const initialAccounts = [
     {
         id: "acc-1",
         username: "admin",
-        password: "asterix2026",
         name: "Ratheeswar",
         role: "System Administrator & Software Lead",
         accessLevel: "SuperAdmin"
@@ -181,7 +184,6 @@ const initialAccounts = [
     {
         id: "acc-2",
         username: "powertrain_lead",
-        password: "baja2026powertrain",
         name: "Powertrain Lead",
         role: "Subsystem Lead",
         accessLevel: "Lead"
@@ -189,7 +191,6 @@ const initialAccounts = [
     {
         id: "acc-3",
         username: "chassis_lead",
-        password: "baja2026chassis",
         name: "Chassis Lead",
         role: "Subsystem Lead",
         accessLevel: "Lead"
@@ -522,24 +523,13 @@ export function WebsiteDataProvider({ children }) {
         };
 
         // 1. Primary: Express Server API (MongoDB Atlas on Render - 50MB payload support)
-        let token = sessionStorage.getItem(AUTH_TOKEN_KEY);
-        if (!token) {
-            // Attempt quick auto-session bootstrap with admin credentials
-            try {
-                const authRes = await fetch(apiUrl('/api/auth/login'), {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username: 'admin', password: 'password123' })
-                });
-                if (authRes.ok) {
-                    const authData = await authRes.json();
-                    if (authData.token) {
-                        token = authData.token;
-                        sessionStorage.setItem(AUTH_TOKEN_KEY, token);
-                    }
-                }
-            } catch { /* ignore */ }
-        }
+        //
+        // If there is no token, there is no save. This used to silently log in
+        // as `admin` with a password written a few lines below, which meant that
+        // password shipped inside the production bundle -- anyone who opened
+        // devtools could read it, mint a SuperAdmin token, and rewrite the site.
+        // An unauthenticated visitor now simply keeps their local copy.
+        const token = sessionStorage.getItem(AUTH_TOKEN_KEY);
 
         if (token) {
             try {

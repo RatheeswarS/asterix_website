@@ -204,6 +204,17 @@ const URGENCY_NOTE = {
     closed: 'All published stages have closed.',
 };
 
+/**
+ * `applyLink` used to be an external Google Form URL, so both apply buttons
+ * hardcoded `target="_blank"`. It is now an in-page anchor, and opening `#apply`
+ * in a new tab lands the reader on a blank page. These props keep working for
+ * either kind of destination.
+ */
+const linkProps = (href) =>
+    href?.startsWith('#')
+        ? { href, arrow: '↓' }
+        : { href, target: '_blank', rel: 'noopener noreferrer', arrow: '↗' };
+
 const Tile = ({ value, unit, accent, pulse }) => (
     <div className="flex flex-col items-center">
         <div
@@ -374,18 +385,19 @@ export function RecruitmentCountdownBoard({ countdown, applyLink, onDockChange }
                     </ul>
                 </div>
 
-                {active && (
-                    <div className="mt-8">
-                        <a
-                            href={applyLink}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="press inline-flex items-center gap-2 px-6 py-3.5 bg-amber-300 hover:bg-amber-400 text-slate-900 border-3 border-slate-900 font-mono font-black text-xs uppercase shadow-[4px_4px_0px_#0284c7] cursor-pointer"
-                        >
-                            <span>Apply before the flag drops ↗</span>
-                        </a>
-                    </div>
-                )}
+                {active && (() => {
+                    const { arrow, ...anchor } = linkProps(applyLink);
+                    return (
+                        <div className="mt-8">
+                            <a
+                                {...anchor}
+                                className="press inline-flex items-center gap-2 px-6 py-3.5 bg-amber-300 hover:bg-amber-400 text-slate-900 border-3 border-slate-900 font-mono font-black text-xs uppercase shadow-[4px_4px_0px_#0284c7] cursor-pointer"
+                            >
+                                <span>Apply before the flag drops {arrow}</span>
+                            </a>
+                        </div>
+                    );
+                })()}
             </div>
         </section>
     );
@@ -399,6 +411,7 @@ export function RecruitmentCountdownStrip({ countdown, applyLink, docked }) {
     const { active, parts, elapsedPct, urgency } = countdown;
     const accent = ACCENT[urgency];
     const show = docked && Boolean(active);
+    const { arrow: applyArrow, ...apply } = linkProps(applyLink);
 
     return (
         <div
@@ -424,13 +437,11 @@ export function RecruitmentCountdownStrip({ countdown, applyLink, docked }) {
                     {pad(parts.seconds)}<span className="text-slate-500">s</span>
                 </span>
                 <a
-                    href={applyLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    {...apply}
                     tabIndex={show ? 0 : -1}
                     className="press press-flat hidden sm:inline-block shrink-0 font-mono font-black text-[11px] uppercase text-amber-300 hover:text-amber-200 underline underline-offset-4 cursor-pointer"
                 >
-                    Apply ↗
+                    Apply {applyArrow}
                 </a>
             </div>
             <div className="h-0.5 w-full bg-slate-800">

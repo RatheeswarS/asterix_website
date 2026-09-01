@@ -6,21 +6,7 @@ import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } f
 import { collection, getDocs, deleteDoc, doc } from 'firebase/firestore';
 import { compressImage } from '../../lib/imageOptimizer';
 import Icon from '../Icon';
-
-/* Recruitment deadlines are stored with an explicit +05:30 offset so the
-   countdown on #join reads the same instant for every visitor. `datetime-local`
-   inputs speak the editor's own local time, so both directions are converted
-   through Indian Standard Time rather than through the browser's zone. */
-const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
-
-const istInputValue = (iso) => {
-    if (!iso) return '';
-    const ms = new Date(iso).getTime();
-    if (Number.isNaN(ms)) return '';
-    return new Date(ms + IST_OFFSET_MS).toISOString().slice(0, 16);
-};
-
-const istInputToIso = (value) => (value ? `${value}:00+05:30` : '');
+import RecruitmentAdmin from './RecruitmentAdmin';
 
 export default function AdminDashboard({ onExit }) {
     const {
@@ -41,7 +27,6 @@ export default function AdminDashboard({ onExit }) {
         addAccount,
         deleteAccount,
         updateSponsorship,
-        updateRecruitment,
         syncState,
         syncError,
         syncToServer,
@@ -70,33 +55,6 @@ export default function AdminDashboard({ onExit }) {
     // Active subsystem selection for squad editor
     const [selectedSubsystemId, setSelectedSubsystemId] = useState(siteData.subsystems[0]?.id || 'software-perception');
 
-    // Countdown stage deadlines shown on the recruitment portal
-    const recruitmentDeadlines = siteData.recruitment?.deadlines || [];
-
-    const writeDeadlines = (next) => updateRecruitment({ deadlines: next });
-
-    const addDeadline = () => {
-        writeDeadlines([
-            ...recruitmentDeadlines,
-            {
-                id: `stage-${Date.now()}`,
-                stage: String(recruitmentDeadlines.length + 1).padStart(2, '0'),
-                label: 'New Stage Deadline',
-                detail: '',
-                date: '',
-                opensAt: ''
-            }
-        ]);
-    };
-
-    const updateDeadline = (idx, fields) => {
-        writeDeadlines(recruitmentDeadlines.map((d, i) => (i === idx ? { ...d, ...fields } : d)));
-    };
-
-    const removeDeadline = (idx) => {
-        writeDeadlines(recruitmentDeadlines.filter((_, i) => i !== idx));
-    };
-
     // Forms state
     const [newMember, setNewMember] = useState({ name: '', role: '', initials: '', bio: '', badge: 'SPECIALIST', photo: '', status: 'Active Member' });
     const [newGallery, setNewGallery] = useState({ title: '', category: 'PIT LANE', year: '2026', src: '', desc: '' });
@@ -115,6 +73,15 @@ export default function AdminDashboard({ onExit }) {
         setTimeout(() => setStatusMessage(''), 3500);
     };
 
+    /**
+     * Sign-in goes to the server and nowhere else.
+     *
+     * This was previously a three-tier cascade that, before it ever reached the
+     * server, compared the typed password against a plaintext list held in
+     * `siteData.accounts` and accepted two hardcoded passwords for `admin`.
+     * Both shipped inside the production bundle. The server now holds bcrypt
+     * hashes and is the only thing that decides whether a login succeeds.
+     */
     const handleLogin = async (e) => {
         e.preventDefault();
         setLoginError('');
@@ -123,106 +90,6 @@ export default function AdminDashboard({ onExit }) {
         const username = (loginForm.username || '').trim();
         const password = (loginForm.password || '').trim();
 
-        // Check local accounts in siteData first
-        const tryLocalLogin = () => {
-            const accounts = siteData?.accounts || [];
-            const found = accounts.find(
-                a => (a.username || '').toLowerCase() === username.toLowerCase() && (
-                    a.password === password ||
-                    (a.username.toLowerCase() === 'admin' && (password === 'asterix2026' || password === 'password123'))
-                )
-            );
-            if (found) {
-                setCurrentUser(found);
-                sessionStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(found));
-                // Acquire backend JWT token in background
-                fetch(apiUrl('/api/auth/login'), {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username: found.username, password })
-                }).then(r => r.ok ? r.json() : null).then(d => {
-                    if (d?.token) sessionStorage.setItem(AUTH_TOKEN_KEY, d.token);
-                }).catch(() => { });
-                showStatus(`Welcome back, ${found.name}!`);
-                return true;
-            }
-            return false;
-        };
-
-        // 1. Try local accounts check first
-        if (tryLocalLogin()) {
-            setIsLoggingIn(false);
-            return;
-        }
-
-        // 2. Firebase Authentication
-        if (isFirebaseConfigured && auth) {
-            try {
-                const email = username.includes('@') ? username : `${username}@teamasterix.com`;
-                let userCred;
-                try {
-                    userCred = await signInWithEmailAndPassword(auth, email, password);
-                } catch (signInErr) {
-                    // Check if user is in siteData accounts array
-                    if (tryLocalLogin()) {
-                        setIsLoggingIn(false);
-                        return;
-                    }
-                    // Auto-bootstrap account into Firebase if default or local match
-                    const localAcc = (siteData?.accounts || []).find(a => (a.username || '').toLowerCase() === username.toLowerCase());
-                    if (localAcc && (localAcc.password === password || password === 'asterix2026')) {
-                        try {
-                            userCred = await createUserWithEmailAndPassword(auth, email, password);
-                        } catch { /* ignore */ }
-                    } else if (username.toLowerCase() === 'admin' && (password === 'asterix2026' || password === 'password123')) {
-                        try {
-                            userCred = await createUserWithEmailAndPassword(auth, 'admin@teamasterix.com', 'asterix2026');
-                        } catch { /* ignore */ }
-                    } else {
-                        throw signInErr;
-                    }
-                }
-
-                if (userCred?.user) {
-                    const fbUser = {
-                        id: userCred.user.uid,
-                        username: username,
-                        name: userCred.user.displayName || (username.toLowerCase() === 'admin' ? 'Ratheeswar' : username),
-                        role: username.toLowerCase() === 'admin' ? 'System Administrator & Software Lead' : 'Team Member',
-                        accessLevel: username.toLowerCase() === 'admin' ? 'SuperAdmin' : 'Lead',
-                        email: userCred.user.email
-                    };
-                    setCurrentUser(fbUser);
-                    sessionStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(fbUser));
-
-                    // Acquire backend token
-                    try {
-                        const tokenRes = await fetch(apiUrl('/api/auth/login'), {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ username: username, password })
-                        });
-                        if (tokenRes.ok) {
-                            const tokenData = await tokenRes.json();
-                            if (tokenData.token) sessionStorage.setItem(AUTH_TOKEN_KEY, tokenData.token);
-                        }
-                    } catch { /* ignore */ }
-
-                    showStatus(`Welcome back, ${fbUser.name}! (Connected to Cloud ✓)`);
-                    setIsLoggingIn(false);
-                    fetchFromDatabase?.();
-                    return;
-                }
-            } catch (fbErr) {
-                console.warn('Firebase login check:', fbErr.message);
-                if (tryLocalLogin()) {
-                    setIsLoggingIn(false);
-                    return;
-                }
-            }
-        }
-
-        // 3. Server API authentication
         try {
             const res = await fetch(apiUrl('/api/auth/login'), {
                 method: 'POST',
@@ -230,24 +97,34 @@ export default function AdminDashboard({ onExit }) {
                 body: JSON.stringify({ username, password })
             });
 
-            if (res.ok) {
-                const data = await res.json();
-                setCurrentUser(data.user);
-                sessionStorage.setItem(AUTH_TOKEN_KEY, data.token);
-                sessionStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(data.user));
-                showStatus(`Welcome back, ${data.user.name}! (Connected to DB)`);
-                fetchFromDatabase?.();
+            if (!res.ok) {
+                const body = await res.json().catch(() => ({}));
+                setLoginError(body.error || 'Invalid username or password.');
+                setIsLoggingIn(false);
                 return;
             }
-        } catch { /* ignore */ }
 
-        if (tryLocalLogin()) {
+            const data = await res.json();
+            setCurrentUser(data.user);
+            sessionStorage.setItem(AUTH_TOKEN_KEY, data.token);
+            sessionStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(data.user));
+
+            // Best effort only: signing into Firebase keeps the Firestore
+            // fallback sync usable, since those rules now require an
+            // authenticated session. Never creates an account, and a failure
+            // here does not affect the login that already succeeded.
+            if (isFirebaseConfigured && auth) {
+                const email = username.includes('@') ? username : `${username}@teamasterix.com`;
+                signInWithEmailAndPassword(auth, email, password).catch(() => { });
+            }
+
+            showStatus(`Welcome back, ${data.user.name}!`);
+            fetchFromDatabase?.();
+        } catch {
+            setLoginError('Could not reach the server. Check your connection and try again.');
+        } finally {
             setIsLoggingIn(false);
-            return;
         }
-
-        setLoginError('Invalid username or password.');
-        setIsLoggingIn(false);
     };
 
     const handleLogout = () => {
@@ -260,27 +137,11 @@ export default function AdminDashboard({ onExit }) {
         setLoginForm({ username: '', password: '' });
     };
 
-    // Helper to ensure valid JWT token for uploads
-    const ensureAuthToken = async () => {
-        let token = sessionStorage.getItem(AUTH_TOKEN_KEY);
-        if (!token) {
-            try {
-                const tokenRes = await fetch(apiUrl('/api/auth/login'), {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username: 'admin', password: 'password123' })
-                });
-                if (tokenRes.ok) {
-                    const tokenData = await tokenRes.json();
-                    if (tokenData.token) {
-                        token = tokenData.token;
-                        sessionStorage.setItem(AUTH_TOKEN_KEY, token);
-                    }
-                }
-            } catch { /* ignore */ }
-        }
-        return token;
-    };
+    // The JWT from this session's login, or null. It used to fall back to
+    // logging in as `admin` with a hardcoded password when no token was
+    // present, which put that password in the shipped bundle. Uploads now
+    // simply require a real signed-in session.
+    const ensureAuthToken = async () => sessionStorage.getItem(AUTH_TOKEN_KEY);
 
     // Handle image file upload with ImageKit cloud upload & multi-tier fallback
     const handleImageUpload = async (e, callback, folder = '/asterix') => {
@@ -1483,153 +1344,14 @@ export default function AdminDashboard({ onExit }) {
                         </div>
                     )}
 
-                    {/* TAB: RECRUITMENT PORTAL */}
+                    {/* TAB: RECRUITMENT PORTAL
+                        Extracted into its own component and pointed at
+                        /api/recruitment/*. The schedule and briefs used to be
+                        edited as part of the site-data blob, which the server
+                        cannot treat as authoritative -- any general content save
+                        could overwrite a deadline. */}
                     {activeTab === 'recruitment' && (
-                        <div className="space-y-6">
-                            <div className="border-b-2 border-slate-200 pb-4">
-                                <h2 className="text-2xl font-black uppercase text-slate-900">Recruitment & Results Portal</h2>
-                                <p className="text-xs font-bold text-slate-500 font-mono mt-1">
-                                    Manage recruitment cycles, application links, and live selection results on #join.
-                                </p>
-                            </div>
-
-                            <div className="p-6 bg-white border-4 border-slate-900 shadow-[6px_6px_0px_#0f172a] space-y-4">
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-xs font-mono font-black uppercase text-slate-700 mb-1">
-                                            Recruitment Application Form URL
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={siteData.recruitment?.applicationLink || siteData.hero?.joinFormUrl || ''}
-                                            onChange={e => updateRecruitment({ applicationLink: e.target.value })}
-                                            placeholder="https://forms.gle/..."
-                                            className="w-full px-3 py-2 border-2 border-slate-900 font-mono text-xs focus:outline-none"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-mono font-black uppercase text-slate-700 mb-1">
-                                            Recruitment Stage Status Badge
-                                        </label>
-                                        <select
-                                            value={siteData.recruitment?.status || 'APPLICATIONS OPEN'}
-                                            onChange={e => updateRecruitment({ status: e.target.value })}
-                                            className="w-full px-3 py-2 border-2 border-slate-900 font-mono text-xs font-bold bg-white cursor-pointer focus:outline-none"
-                                        >
-                                            <option value="APPLICATIONS OPEN">APPLICATIONS OPEN</option>
-                                            <option value="SCREENING ONGOING">SCREENING ONGOING</option>
-                                            <option value="PROBLEM STATEMENTS ACTIVE">PROBLEM STATEMENTS ACTIVE</option>
-                                            <option value="INTERVIEWS SCHEDULED">INTERVIEWS SCHEDULED</option>
-                                            <option value="RESULTS PUBLISHED">RESULTS PUBLISHED</option>
-                                            <option value="RECRUITMENT CLOSED">RECRUITMENT CLOSED</option>
-                                        </select>
-                                    </div>
-                                </div>
-
-                                {/* Stage deadlines -- these drive the countdown board on #join. */}
-                                <div className="pt-4 border-t-2 border-slate-200">
-                                    <div className="flex items-center justify-between gap-3 mb-1">
-                                        <span className="text-xs font-mono font-black uppercase text-slate-900">
-                                            Stage Deadlines (Countdown Board)
-                                        </span>
-                                        <button
-                                            type="button"
-                                            onClick={addDeadline}
-                                            className="press px-3 py-1.5 bg-emerald-400 hover:bg-emerald-300 text-slate-900 font-mono font-black text-[11px] uppercase border-2 border-slate-900 shadow-[2px_2px_0px_#0f172a] cursor-pointer"
-                                        >
-                                            + Add Stage
-                                        </button>
-                                    </div>
-                                    <p className="text-[11px] font-mono font-bold text-slate-500 mb-4">
-                                        Times are Indian Standard Time. The soonest stage that has not closed goes
-                                        on the board; the rest stay listed as upcoming.
-                                    </p>
-
-                                    <div className="space-y-3">
-                                        {recruitmentDeadlines.length === 0 && (
-                                            <p className="p-4 bg-slate-100 border-2 border-dashed border-slate-400 text-xs font-mono font-bold text-slate-500">
-                                                No stages yet. Add one to put a deadline on the board.
-                                            </p>
-                                        )}
-                                        {recruitmentDeadlines.map((d, idx) => (
-                                            <div
-                                                key={d.id || idx}
-                                                className="p-4 bg-sky-50 border-2 border-slate-900 grid grid-cols-1 sm:grid-cols-[4rem_1fr_1fr_auto] gap-3 items-start"
-                                            >
-                                                <div>
-                                                    <label className="block text-[10px] font-mono font-black uppercase text-slate-600 mb-1">
-                                                        Stage
-                                                    </label>
-                                                    <input
-                                                        type="text"
-                                                        value={d.stage || ''}
-                                                        onChange={e => updateDeadline(idx, { stage: e.target.value })}
-                                                        placeholder="01"
-                                                        className="w-full px-2 py-1.5 border-2 border-slate-900 bg-white font-mono text-xs font-black"
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-[10px] font-mono font-black uppercase text-slate-600 mb-1">
-                                                        Deadline Label
-                                                    </label>
-                                                    <input
-                                                        type="text"
-                                                        value={d.label || ''}
-                                                        onChange={e => updateDeadline(idx, { label: e.target.value })}
-                                                        placeholder="Problem Statement Submission"
-                                                        className="w-full px-2 py-1.5 border-2 border-slate-900 bg-white text-xs font-bold"
-                                                    />
-                                                    <input
-                                                        type="text"
-                                                        value={d.detail || ''}
-                                                        onChange={e => updateDeadline(idx, { detail: e.target.value })}
-                                                        placeholder="One line shown under the label"
-                                                        className="mt-2 w-full px-2 py-1.5 border-2 border-slate-900 bg-white text-xs"
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-[10px] font-mono font-black uppercase text-slate-600 mb-1">
-                                                        Closes (IST)
-                                                    </label>
-                                                    <input
-                                                        type="datetime-local"
-                                                        value={istInputValue(d.date)}
-                                                        onChange={e => updateDeadline(idx, { date: istInputToIso(e.target.value) })}
-                                                        className="w-full px-2 py-1.5 border-2 border-slate-900 bg-white font-mono text-xs font-bold"
-                                                    />
-                                                    <label className="block text-[10px] font-mono font-black uppercase text-slate-600 mt-2 mb-1">
-                                                        Opens (IST, optional)
-                                                    </label>
-                                                    <input
-                                                        type="datetime-local"
-                                                        value={istInputValue(d.opensAt)}
-                                                        onChange={e => updateDeadline(idx, { opensAt: istInputToIso(e.target.value) })}
-                                                        className="w-full px-2 py-1.5 border-2 border-slate-900 bg-white font-mono text-xs"
-                                                    />
-                                                </div>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => removeDeadline(idx)}
-                                                    className="press px-3 py-1.5 bg-rose-400 hover:bg-rose-300 text-slate-900 font-mono font-black text-[11px] uppercase border-2 border-slate-900 shadow-[2px_2px_0px_#0f172a] cursor-pointer sm:mt-5"
-                                                >
-                                                    Remove
-                                                </button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                <div className="pt-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => showStatus('Recruitment portal settings saved successfully!')}
-                                        className="press px-6 py-2.5 bg-sky-500 hover:bg-sky-400 text-white font-mono font-black text-xs uppercase border-2 border-slate-900 shadow-[2px_2px_0px_#0f172a] cursor-pointer"
-                                    >
-                                        Save Recruitment Settings →
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
+                        <RecruitmentAdmin showStatus={showStatus} />
                     )}
 
                     {/* TAB 5: GALLERY & MEDIA */}

@@ -1,13 +1,14 @@
 import { Router } from 'express';
 import SiteData from '../models/SiteData.js';
 import { authenticateToken } from '../middleware/auth.js';
+import { isMongoConnected } from '../db/mongodb.js';
 
 const router = Router();
 
 // GET /api/site-data (Public)
 router.get('/', async (req, res) => {
     try {
-        let site = await SiteData.findOne({ key: 'main' }).lean();
+        let site = isMongoConnected() ? await SiteData.findOne({ key: 'main' }).lean() : null;
 
         if (!site) {
             return res.json({

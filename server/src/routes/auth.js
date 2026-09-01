@@ -2,67 +2,69 @@ import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
-import SiteData from '../models/SiteData.js';
-import { authenticateToken } from '../middleware/auth.js';
+import { authenticateToken, requireSuperAdmin, JWT_SECRET } from '../middleware/auth.js';
 
 const router = Router();
-const JWT_SECRET = process.env.JWT_SECRET || 'asterix_super_secret_jwt_key_sae_baja_2026';
+
+/**
+ * One-time bootstrap for the first administrator.
+ *
+ * This replaces the hardcoded credentials that used to live in this file. They
+ * were accepted even when the password hash did not match, which meant anyone
+ * who read the repository -- or the production JavaScript bundle, where the same
+ * pair was shipped -- could obtain a SuperAdmin token.
+ *
+ * Set `ADMIN_BOOTSTRAP_PASSWORD` in the host environment to let the named
+ * account be created on its first successful login, then unset it. There is no
+ * other fallback: with the variable unset, only accounts that already exist with
+ * a matching bcrypt hash can sign in. `src/scripts/setAdminPassword.js` is the
+ * other way in.
+ */
+const BOOTSTRAP_USERNAME = (process.env.ADMIN_BOOTSTRAP_USERNAME || 'admin').trim().toLowerCase();
+
+async function tryBootstrap(username, password) {
+    const configured = process.env.ADMIN_BOOTSTRAP_PASSWORD;
+    if (!configured || username !== BOOTSTRAP_USERNAME) return null;
+    if (password !== configured) return null;
+
+    const existing = await User.findOne({ username });
+    if (existing) return null;
+
+    console.warn(
+        `Bootstrapped administrator "${username}" from ADMIN_BOOTSTRAP_PASSWORD. ` +
+        'Unset that variable now that the account exists.'
+    );
+    return User.create({
+        username,
+        passwordHash: bcrypt.hashSync(password, 10),
+        name: 'Team Asterix Administrator',
+        role: 'System Administrator',
+        accessLevel: 'SuperAdmin'
+    });
+}
+
+// A constant-cost comparison target, so an unknown username and a wrong password
+// cost the same and the timing cannot be used to enumerate accounts.
+const DUMMY_HASH = bcrypt.hashSync('not-a-real-password', 10);
 
 // POST /api/auth/login
 router.post('/login', async (req, res) => {
     try {
-        const { username, password } = req.body;
+        const { username, password } = req.body || {};
         if (!username || !password) {
             return res.status(400).json({ error: 'Username and password are required.' });
         }
 
-        const cleanUsername = username.trim().toLowerCase();
-        const trimmedPass = (password || '').trim();
+        const cleanUsername = String(username).trim().toLowerCase();
+        const trimmedPass = String(password).trim();
+
         let user = await User.findOne({ username: cleanUsername });
-
-        // If user is not found in MongoDB User collection, check SiteData.accounts snapshot
         if (!user) {
-            const siteDoc = await SiteData.findOne({ key: 'main' });
-            const accounts = siteDoc?.accounts || [];
-            const foundAcc = accounts.find(
-                a => (a.username || '').toLowerCase() === cleanUsername && (
-                    a.password === trimmedPass ||
-                    (cleanUsername === 'admin' && (trimmedPass === 'asterix2026' || trimmedPass === 'password123'))
-                )
-            );
-
-            if (foundAcc) {
-                // Auto-bootstrap user into MongoDB Users collection
-                user = await User.create({
-                    username: cleanUsername,
-                    passwordHash: bcrypt.hashSync(trimmedPass || 'asterix2026', 10),
-                    name: foundAcc.name || cleanUsername,
-                    role: foundAcc.role || 'Team Member',
-                    accessLevel: foundAcc.accessLevel || 'Lead'
-                });
-            }
+            user = await tryBootstrap(cleanUsername, trimmedPass);
         }
 
-        if (!user) {
-            // Admin fallback check
-            if (cleanUsername === 'admin' && (trimmedPass === 'asterix2026' || trimmedPass === 'password123')) {
-                user = await User.create({
-                    username: 'admin',
-                    passwordHash: bcrypt.hashSync('asterix2026', 10),
-                    name: 'Ratheeswar',
-                    role: 'System Administrator & Software Lead',
-                    accessLevel: 'SuperAdmin'
-                });
-            } else {
-                return res.status(401).json({ error: 'Invalid username or password.' });
-            }
-        }
-
-        let match = bcrypt.compareSync(trimmedPass, user.passwordHash);
-        if (!match && user.username === 'admin' && (trimmedPass === 'asterix2026' || trimmedPass === 'password123')) {
-            match = true;
-        }
-        if (!match) {
+        const matched = bcrypt.compareSync(trimmedPass, user?.passwordHash || DUMMY_HASH);
+        if (!user || !matched) {
             return res.status(401).json({ error: 'Invalid username or password.' });
         }
 
@@ -137,6 +139,9 @@ router.post('/accounts', authenticateToken, async (req, res) => {
         if (!username || !password || !name) {
             return res.status(400).json({ error: 'Username, password, and name are required.' });
         }
+        if (String(password).length < 8) {
+            return res.status(400).json({ error: 'Password must be at least 8 characters.' });
+        }
 
         const cleanUsername = username.trim().toLowerCase();
         const existing = await User.findOne({ username: cleanUsername });
@@ -186,6 +191,9 @@ router.put('/accounts/:id', authenticateToken, async (req, res) => {
         if (isSuperAdmin && role) updateData.role = role;
         if (isSuperAdmin && accessLevel) updateData.accessLevel = accessLevel;
         if (password) {
+            if (String(password).length < 8) {
+                return res.status(400).json({ error: 'Password must be at least 8 characters.' });
+            }
             updateData.passwordHash = bcrypt.hashSync(password, 10);
         }
 

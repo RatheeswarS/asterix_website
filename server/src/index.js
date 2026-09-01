@@ -20,6 +20,7 @@ import authRoutes from './routes/auth.js';
 import subscriberRoutes from './routes/subscribers.js';
 import sponsorInquiryRoutes from './routes/sponsorInquiries.js';
 import uploadRoutes from './routes/upload.js';
+import recruitmentRoutes from './routes/recruitment.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -32,16 +33,25 @@ const allowedOrigins = process.env.CORS_ORIGIN
     ? process.env.CORS_ORIGIN.split(',').map(s => s.trim())
     : ['http://localhost:5173', 'http://localhost:3000', 'https://asterix-website.vercel.app'];
 
+// The allowlist is now enforced. This callback previously ended in an
+// unconditional `callback(null, true)`, which accepted every origin and made
+// CORS_ORIGIN decorative -- any site could drive this API from a visitor's
+// browser using their session.
+const PREVIEW_ORIGIN = /^https:\/\/[a-z0-9-]*asterix[a-z0-9-]*\.vercel\.app$/i;
+
 app.use(cors({
     origin: (origin, callback) => {
+        // No Origin header means same-origin, curl, or a server-to-server call.
+        // Those are not what CORS defends against, so they pass.
         if (!origin) return callback(null, true);
         if (allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
             return callback(null, true);
         }
-        if (origin.endsWith('.vercel.app') && origin.includes('asterix')) {
+        // Vercel preview deployments of this project.
+        if (PREVIEW_ORIGIN.test(origin)) {
             return callback(null, true);
         }
-        return callback(null, true);
+        return callback(new Error(`Origin ${origin} is not permitted by CORS_ORIGIN.`));
     },
     credentials: true
 }));
@@ -71,6 +81,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/subscribers', subscriberRoutes);
 app.use('/api/sponsor-inquiries', sponsorInquiryRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/recruitment', recruitmentRoutes);
 
 // Global error handler
 app.use((err, req, res, _next) => {

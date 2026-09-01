@@ -1,6 +1,37 @@
+import crypto from 'node:crypto';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'asterix_super_secret_jwt_key_sae_baja_2026';
+/**
+ * Resolves the token signing key.
+ *
+ * There is deliberately no hardcoded production key. A committed default is
+ * worse than no key at all: it is public, so anyone reading the repository can
+ * mint an administrator token and rewrite deadlines, briefs and results.
+ *
+ * If `JWT_SECRET` is missing in production the server still starts -- taking the
+ * site down would be a worse outcome -- but it signs with a random key generated
+ * at boot. Existing sessions stop validating and admins have to sign in again
+ * after each restart, which is annoying enough to get noticed and fixed, while
+ * leaving nothing forgeable in the meantime.
+ */
+function resolveSecret() {
+    const configured = process.env.JWT_SECRET?.trim();
+    if (configured) return configured;
+
+    if (process.env.NODE_ENV === 'production') {
+        console.error(
+            '\n!!  JWT_SECRET is not set in this production environment.\n' +
+            '!!  Signing with a random key generated at boot, so every admin session\n' +
+            '!!  ends when this process restarts. Set JWT_SECRET in the host environment.\n'
+        );
+        return crypto.randomBytes(48).toString('hex');
+    }
+
+    console.warn('JWT_SECRET is not set. Using a development-only key; never run this in production.');
+    return 'asterix-development-only-insecure-key';
+}
+
+export const JWT_SECRET = resolveSecret();
 
 export function authenticateToken(req, res, next) {
     const authHeader = req.headers['authorization'];

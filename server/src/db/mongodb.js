@@ -1,5 +1,4 @@
 import mongoose from 'mongoose';
-import bcrypt from 'bcryptjs';
 import SiteData from '../models/SiteData.js';
 import User from '../models/User.js';
 
@@ -16,6 +15,7 @@ export async function connectMongoDB() {
 
     if (!uri) {
         console.warn('⚠️ MONGODB_URI is not set in environment variables. Database requests will return 503 or offline defaults.');
+        mongoose.set('bufferCommands', false);
         return false;
     }
 
@@ -43,6 +43,7 @@ export async function connectMongoDB() {
             return true;
         } catch (retryErr) {
             console.error('❌ Failed to connect to MongoDB Atlas:', retryErr.message);
+            mongoose.set('bufferCommands', false);
             isConnected = false;
             return false;
         }
@@ -513,33 +514,22 @@ It was the reason a training program turned into a family of engineers who learn
             console.log('✓ SiteData successfully seeded in MongoDB.');
         }
 
+        // Administrator accounts are deliberately NOT seeded here any more.
+        //
+        // This block used to create `admin`, `powertrain_lead` and `chassis_lead`
+        // with passwords written in this file. Anyone who read the repository
+        // could sign in as a subsystem lead, which is not a footing to run a
+        // recruitment cycle on.
+        //
+        // Create the first administrator instead by either setting
+        // ADMIN_BOOTSTRAP_PASSWORD in the host environment (see routes/auth.js)
+        // or running `node src/scripts/setAdminPassword.js '<password>'`.
         const userCount = await User.countDocuments();
         if (userCount === 0) {
-            console.log('⚡ Seeding initial administrator accounts into MongoDB Atlas...');
-            await User.create([
-                {
-                    username: 'admin',
-                    passwordHash: bcrypt.hashSync('asterix2026', 10),
-                    name: 'Ratheeswar',
-                    role: 'System Administrator & Software Lead',
-                    accessLevel: 'SuperAdmin'
-                },
-                {
-                    username: 'powertrain_lead',
-                    passwordHash: bcrypt.hashSync('baja2026powertrain', 10),
-                    name: 'Powertrain Lead',
-                    role: 'Subsystem Lead',
-                    accessLevel: 'Lead'
-                },
-                {
-                    username: 'chassis_lead',
-                    passwordHash: bcrypt.hashSync('baja2026chassis', 10),
-                    name: 'Chassis Lead',
-                    role: 'Subsystem Lead',
-                    accessLevel: 'Lead'
-                }
-            ]);
-            console.log('✓ Administrator accounts seeded in MongoDB.');
+            console.warn(
+                'No administrator accounts exist. Set ADMIN_BOOTSTRAP_PASSWORD and sign in once, ' +
+                'or run: node src/scripts/setAdminPassword.js \'<password>\''
+            );
         }
     } catch (seedErr) {
         console.error('Database seeding error:', seedErr);

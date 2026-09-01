@@ -8,9 +8,11 @@ const cleanEnv = (key, fallback = '') => {
     return val.trim().replace(/^["']|["']$/g, '');
 };
 
-const DEFAULT_PUBLIC_KEY = 'public_JWRwXXxKuG9IWA/a+HLXkQEfYtY=';
-const DEFAULT_PRIVATE_KEY = 'private_54jgYqaxVsvN0KtHcJC+iJFMdQM=';
-const DEFAULT_URL_ENDPOINT = 'https://ik.imagekit.io/kitzwb4be/';
+/* The public key, the private key and the endpoint used to be hardcoded here as
+   fallbacks. A private key in a public repository is a live credential anyone
+   can use, so they are gone and the values now come only from the environment.
+   Rotate the old key in the ImageKit dashboard if that has not been done yet --
+   it remains readable in this repository's git history. */
 
 /**
  * Returns the ImageKit SDK client instance if credentials are configured.
@@ -18,9 +20,9 @@ const DEFAULT_URL_ENDPOINT = 'https://ik.imagekit.io/kitzwb4be/';
 export function getImageKitClient() {
     if (imagekitClient) return imagekitClient;
 
-    const publicKey = cleanEnv('IMAGEKIT_PUBLIC_KEY', DEFAULT_PUBLIC_KEY);
-    const privateKey = cleanEnv('IMAGEKIT_PRIVATE_KEY', DEFAULT_PRIVATE_KEY);
-    const urlEndpoint = cleanEnv('IMAGEKIT_URL_ENDPOINT', DEFAULT_URL_ENDPOINT);
+    const publicKey = cleanEnv('IMAGEKIT_PUBLIC_KEY');
+    const privateKey = cleanEnv('IMAGEKIT_PRIVATE_KEY');
+    const urlEndpoint = cleanEnv('IMAGEKIT_URL_ENDPOINT');
 
     if (!publicKey || !privateKey || !urlEndpoint) {
         return null;
@@ -40,9 +42,9 @@ export function getImageKitClient() {
  */
 export function isImageKitConfigured() {
     return Boolean(
-        cleanEnv('IMAGEKIT_PUBLIC_KEY', DEFAULT_PUBLIC_KEY) &&
-        cleanEnv('IMAGEKIT_PRIVATE_KEY', DEFAULT_PRIVATE_KEY) &&
-        cleanEnv('IMAGEKIT_URL_ENDPOINT', DEFAULT_URL_ENDPOINT)
+        cleanEnv('IMAGEKIT_PUBLIC_KEY') &&
+        cleanEnv('IMAGEKIT_PRIVATE_KEY') &&
+        cleanEnv('IMAGEKIT_URL_ENDPOINT')
     );
 }
 
