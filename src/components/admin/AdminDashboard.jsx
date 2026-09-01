@@ -258,31 +258,7 @@ export default function AdminDashboard({ onExit }) {
         sessionStorage.removeItem(AUTH_SESSION_KEY);
         sessionStorage.removeItem(AUTH_TOKEN_KEY);
         setLoginForm({ username: '', password: '' });
-        
-        const tryLocalLogin = () => {
-            const accounts = siteData?.accounts || [];
-            const found = accounts.find(
-                a => a.username.toLowerCase() === username.toLowerCase() && (
-                    a.password === password ||
-                    (a.username.toLowerCase() === 'admin' && (password === 'asterix2026' || password === 'password123'))
-                )
-            );
-            if (found) {
-                setCurrentUser(found);
-                sessionStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(found));
-                // Acquire backend JWT token in background for image uploads
-                fetch(apiUrl('/api/auth/login'), {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username: 'admin', password: 'password123' })
-                }).then(r => r.ok ? r.json() : null).then(d => {
-                    if (d?.token) sessionStorage.setItem(AUTH_TOKEN_KEY, d.token);
-                }).catch(() => { });
-                showStatus(`Welcome back, ${found.name}!`);
-                return true;
-            }
-            return false;
-        };
+    };
 
     // Helper to ensure valid JWT token for uploads
     const ensureAuthToken = async () => {
@@ -335,10 +311,10 @@ export default function AdminDashboard({ onExit }) {
 
                 if (res.ok) {
                     const data = await res.json();
-                    // Require a valid CDN URL (ImageKit) or absolute HTTP/HTTPS URL
-                    if (data.url && (data.url.startsWith('http://') || data.url.startsWith('https://') || data.provider === 'imagekit')) {
-                        callback(data.url);
-                        showStatus('Uploaded to ImageKit Cloud CDN! 🍃');
+                    if (data.url) {
+                        const finalUrl = data.url.startsWith('http') ? data.url : apiUrl(data.url);
+                        callback(finalUrl);
+                        showStatus(data.provider === 'imagekit' ? 'Uploaded to ImageKit Cloud CDN! 🍃' : 'Image uploaded successfully! ✓');
                         e.target.value = '';
                         return;
                     }
@@ -348,18 +324,20 @@ export default function AdminDashboard({ onExit }) {
             }
         }
 
-        // 2. Compact WebP compression fallback (max 600px, 0.70 quality to fit safely in DB)
+        // 2. Ultra-compact WebP compression fallback (max 400px, 0.60 quality < 15 KB to fit safely in DB)
         try {
-            const compressedDataUrl = await compressImage(file, 600, 600, 0.70);
+            const compressedDataUrl = await compressImage(file, 400, 400, 0.60);
             callback(compressedDataUrl);
-            showStatus('Image compressed & saved! ✓');
+            showStatus('Image saved & compressed! ✓');
             e.target.value = '';
         } catch (err) {
-            console.warn('Compression notice, loading file directly:', err);
+            console.warn('Compression notice, reading file:', err);
             const reader = new FileReader();
             reader.onload = () => {
-                callback(reader.result);
-                showStatus('Image loaded! ✓');
+                if (reader.result) {
+                    callback(reader.result);
+                    showStatus('Image loaded! ✓');
+                }
                 e.target.value = '';
             };
             reader.onerror = () => {
@@ -367,7 +345,7 @@ export default function AdminDashboard({ onExit }) {
             };
             reader.readAsDataURL(file);
         }
-    };    };
+    };
 
     // Export complete data snapshot as JSON
     const handleDownloadBackup = () => {
