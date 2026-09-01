@@ -28,10 +28,12 @@ const router = Router();
  * Helpers
  * ------------------------------------------------------------------ */
 
+let localMemoryConfig = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+
 /** The singleton config, seeded from defaults the first time it is asked for. */
 async function getConfig() {
     if (!isMongoConnected()) {
-        return DEFAULT_CONFIG;
+        return localMemoryConfig;
     }
     let config = await RecruitmentConfig.findOne({ key: 'main' });
     if (!config) {
@@ -39,6 +41,22 @@ async function getConfig() {
         console.log('Seeded recruitment config for cycle', DEFAULT_CONFIG.cycle);
     }
     return config;
+}
+
+async function saveRecruitmentConfig(config) {
+    if (!isMongoConnected()) {
+        localMemoryConfig = config;
+        return true;
+    }
+    if (typeof config.markModified === 'function') {
+        config.markModified('tracks');
+        config.markModified('headline');
+        config.markModified('intro');
+        config.markModified('notice');
+        config.markModified('resultsNote');
+        await config.save();
+    }
+    return true;
 }
 
 const trackConfig = (config, trackId) => config.tracks.find((t) => t.id === trackId) || null;
@@ -865,7 +883,7 @@ router.put('/config', authenticateToken, async (req, res) => {
             }).filter(Boolean);
         }
 
-        await config.save();
+        await saveRecruitmentConfig(config);
         res.json({ success: true, message: 'Recruitment schedule saved.' });
     } catch (err) {
         console.error('Failed to save recruitment config:', err);
@@ -886,7 +904,7 @@ router.post('/config/publish-results', authenticateToken, async (req, res) => {
         if (resultsBody !== undefined) trackCfg.resultsBody = String(resultsBody);
         if (typeof published === 'boolean') trackCfg.resultsPublished = published;
 
-        await config.save();
+        await saveRecruitmentConfig(config);
         res.json({
             success: true,
             track,

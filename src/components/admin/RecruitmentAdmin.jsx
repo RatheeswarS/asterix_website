@@ -160,6 +160,7 @@ export default function RecruitmentAdmin({ showStatus }) {
                 resultsNote: config.resultsNote,
                 tracks: config.tracks
             });
+            window.dispatchEvent(new Event('asterix_recruitment_config_updated'));
             showStatus?.('Recruitment schedule saved.');
             setError('');
             await loadConfig();

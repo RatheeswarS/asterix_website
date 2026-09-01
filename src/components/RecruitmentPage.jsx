@@ -108,12 +108,16 @@ export default function RecruitmentPage({ onBack }) {
         const onFocus = () => {
             if (document.visibilityState !== 'hidden') loadConfig(true);
         };
+        const onCustomUpdate = () => loadConfig(true);
+
         window.addEventListener('focus', onFocus);
         document.addEventListener('visibilitychange', onFocus);
+        window.addEventListener('asterix_recruitment_config_updated', onCustomUpdate);
         return () => {
             clearInterval(poll);
             window.removeEventListener('focus', onFocus);
             document.removeEventListener('visibilitychange', onFocus);
+            window.removeEventListener('asterix_recruitment_config_updated', onCustomUpdate);
         };
     }, [loadConfig]);
 
