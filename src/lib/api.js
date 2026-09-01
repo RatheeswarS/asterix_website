@@ -14,11 +14,16 @@ export const API_BASE = (
    which has no such files and answers 404 -- so they are returned untouched. */
 const FRONTEND_PATHS = /^\/(gallery|intro|assets|icons\.svg|favicon\.|asterix-logo)/i;
 
-/* Uploads written to a container's local disk are gone after the next deploy.
-   Records saved while the server had no ImageKit credentials still point at
-   them, so those links are blanked and the component's own fallback (initials,
-   placeholder art) is shown instead of a broken image. */
-const DEAD_UPLOAD_PATH = /(^|\/)uploads\/asterix-\d+-\d+\./i;
+/* Records written while the server had no ImageKit credentials point at files
+   saved on the Render container's own disk, which is erased by every deploy.
+   Those URLs are dead for good, so they are blanked here and the component's
+   own fallback (initials, placeholder art) is shown instead of a broken image.
+
+   Deliberately matched by host rather than by the '/uploads/' path: a server
+   with a persistent volume mounted at UPLOADS_DIR serves that path perfectly
+   well, and this must not blank it. Remove this once the affected records have
+   been re-uploaded to the CDN. */
+const DEAD_UPLOAD_HOST = /^https?:\/\/asterix-backend\.onrender\.com\/uploads\//i;
 
 /* Records written before the gallery moved to the CDN hold build output paths
    like '/assets/06_team_celebration-DWYblmDj.jpg'. The hash in that name is
@@ -33,7 +38,7 @@ export function apiUrl(path) {
     if (!trimmed) return '';
 
     // Legacy links to files that no longer exist on the backend's disk.
-    if (DEAD_UPLOAD_PATH.test(trimmed)) {
+    if (DEAD_UPLOAD_HOST.test(trimmed)) {
         return '';
     }
     if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:') || trimmed.startsWith('blob:')) {

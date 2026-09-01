@@ -70,7 +70,8 @@ app.use('/uploads', express.static(uploadsPath));
    at UPLOADS_DIR. On a plain container (Render's free tier, for one) the
    directory is wiped on every deploy, so anything written there becomes a dead
    URL in the database. */
-const persistentUploads = Boolean(process.env.UPLOADS_DIR) || process.env.ALLOW_LOCAL_UPLOADS === 'true';
+const flagEnabled = (value) => ['true', '1', 'yes'].includes(String(value || '').trim().toLowerCase());
+const persistentUploads = Boolean(String(process.env.UPLOADS_DIR || '').trim()) || flagEnabled(process.env.ALLOW_LOCAL_UPLOADS);
 
 /* Health check endpoint.
 

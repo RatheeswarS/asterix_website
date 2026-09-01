@@ -9,7 +9,12 @@ const router = Router();
    volume at UPLOADS_DIR. Without one, a container rebuild erases every file and
    the URLs saved in the database keep pointing at 404s -- which is exactly how
    the gallery and squad photos were lost. */
-const persistentUploads = Boolean(process.env.UPLOADS_DIR) || process.env.ALLOW_LOCAL_UPLOADS === 'true';
+/* Trimmed and lowercased because a value typed into a host's environment panel
+   (or set through `set VAR=true &&` on Windows) routinely carries stray
+   whitespace, and a strict comparison would silently read it as "off". */
+const flagEnabled = (value) => ['true', '1', 'yes'].includes(String(value || '').trim().toLowerCase());
+
+const persistentUploads = Boolean(String(process.env.UPLOADS_DIR || '').trim()) || flagEnabled(process.env.ALLOW_LOCAL_UPLOADS);
 
 // GET /api/upload/status (Public - no secrets, just whether uploads can persist)
 router.get('/status', (req, res) => {
