@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import Lenis from "lenis";
 import useScrollAssembly from "./hooks/useScrollAssembly";
 import CyberNavbar from "./components/CyberNavbar";
@@ -13,11 +13,12 @@ import CyberNewsletterCTA from "./components/CyberNewsletterCTA";
 import CyberFooter from "./components/CyberFooter";
 import SubsystemDetail from "./components/SubsystemDetail";
 import FloatingBackground from "./components/FloatingBackground";
-import BajaModelPage from "./components/BajaModelPage";
-import AdminDashboard from "./components/admin/AdminDashboard";
-import SponsorPage from "./components/SponsorPage";
-import RecruitmentPage from "./components/RecruitmentPage";
 import { WebsiteDataProvider } from "./context/WebsiteDataContext";
+
+const BajaModelPage = lazy(() => import("./components/BajaModelPage"));
+const AdminDashboard = lazy(() => import("./components/admin/AdminDashboard"));
+const SponsorPage = lazy(() => import("./components/SponsorPage"));
+const RecruitmentPage = lazy(() => import("./components/RecruitmentPage"));
 
 function MainApp() {
     const [selectedSubsystem, setSelectedSubsystem] = useState(null);
@@ -145,28 +146,47 @@ function MainApp() {
         scrollToTop();
     };
 
+    const pageFallback = (
+        <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center font-mono text-sky-400 gap-3">
+            <div className="w-10 h-10 border-4 border-sky-400 border-t-transparent rounded-full animate-spin"></div>
+            <span className="text-xs font-black tracking-widest uppercase text-slate-300">LOADING ASTERIX PORTAL...</span>
+        </div>
+    );
+
     // Dedicated Full-Screen Admin Management Interface
     if (isAdminOpen) {
         return (
-            <AdminDashboard
-                onExit={handleBackToHome}
-            />
+            <Suspense fallback={pageFallback}>
+                <AdminDashboard onExit={handleBackToHome} />
+            </Suspense>
         );
     }
 
     // Dedicated Full-Screen 3D Baja Model Inspector Page
     if (isModelPage) {
-        return <BajaModelPage onBack={handleBackToHome} />;
+        return (
+            <Suspense fallback={pageFallback}>
+                <BajaModelPage onBack={handleBackToHome} />
+            </Suspense>
+        );
     }
 
     // Dedicated Full-Screen Sponsorship & Pitch Deck Portal
     if (isSponsorPage) {
-        return <SponsorPage onBack={handleBackToHome} />;
+        return (
+            <Suspense fallback={pageFallback}>
+                <SponsorPage onBack={handleBackToHome} />
+            </Suspense>
+        );
     }
 
     // Dedicated Full-Screen Crew Recruitment Portal
     if (isRecruitmentPage) {
-        return <RecruitmentPage onBack={handleBackToHome} />;
+        return (
+            <Suspense fallback={pageFallback}>
+                <RecruitmentPage onBack={handleBackToHome} />
+            </Suspense>
+        );
     }
 
     return (
