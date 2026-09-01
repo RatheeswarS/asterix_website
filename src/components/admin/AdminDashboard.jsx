@@ -1041,7 +1041,6 @@ export default function AdminDashboard({ onExit }) {
                                                         ...(fields.fit !== undefined ? { photoFit: fields.fit } : {}),
                                                         ...(fields.position !== undefined ? { photoPosition: fields.position } : {})
                                                     })}
-                                                    compact
                                                 />
 
                                                 <input
@@ -1439,7 +1438,6 @@ export default function AdminDashboard({ onExit }) {
                                                         ...(fields.fit !== undefined ? { fit: fields.fit } : {}),
                                                         ...(fields.position !== undefined ? { position: fields.position } : {})
                                                     })}
-                                                    compact
                                                 />
                                             </div>
                                             <input
@@ -1568,7 +1566,6 @@ export default function AdminDashboard({ onExit }) {
                                                 ...(fields.fit !== undefined ? { fit: fields.fit } : {}),
                                                 ...(fields.position !== undefined ? { position: fields.position } : {})
                                             })}
-                                            compact
                                         />
                                     </div>
                                 ))}

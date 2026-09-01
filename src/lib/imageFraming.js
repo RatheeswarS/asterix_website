@@ -77,21 +77,23 @@ export const memberFramingStyle = (member) =>
  *
  * The admin renders one live preview per entry, so the person choosing the crop
  * sees the phone result next to the desktop result instead of discovering the
- * difference after publishing.
+ * difference after publishing. Only the ratio is given: the previews are all
+ * rendered to one height and take their width from it, which keeps the strip
+ * even however many frames a kind has.
  */
 export const FRAME_PRESETS = {
     member: [
-        { id: 'mobile', label: 'Phone card', ratio: '3 / 4', width: 120 },
-        { id: 'desktop', label: 'Desktop card', ratio: '4 / 5', width: 148 },
-        { id: 'badge', label: 'Downloadable badge', ratio: '1 / 1', width: 120 }
+        { id: 'mobile', label: 'Phone card', ratio: '3 / 4' },
+        { id: 'desktop', label: 'Desktop card', ratio: '4 / 5' },
+        { id: 'badge', label: 'Downloadable badge', ratio: '1 / 1' }
     ],
     gallery: [
-        { id: 'grid', label: 'Grid tile', ratio: '4 / 3', width: 176 },
-        { id: 'wall', label: 'Drift wall tile', ratio: '11 / 7', width: 176 },
-        { id: 'lightbox', label: 'Lightbox', ratio: '16 / 9', width: 208 }
+        { id: 'grid', label: 'Grid tile', ratio: '4 / 3' },
+        { id: 'wall', label: 'Drift wall tile', ratio: '11 / 7' },
+        { id: 'lightbox', label: 'Lightbox', ratio: '16 / 9' }
     ],
     update: [
-        { id: 'panel', label: 'Accordion panel', ratio: '2 / 3', width: 112 },
-        { id: 'expanded', label: 'Expanded panel', ratio: '16 / 10', width: 200 }
+        { id: 'panel', label: 'Accordion panel', ratio: '2 / 3' },
+        { id: 'expanded', label: 'Expanded panel', ratio: '16 / 10' }
     ]
 };
