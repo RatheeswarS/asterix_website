@@ -37,9 +37,13 @@ const MONO = "'Space Grotesk', ui-monospace, SFMono-Regular, Menlo, monospace";
 /* Laid out at this size, then scaled by the device pixel ratio so the file is
    crisp when someone drops it into a slide or a PDF. */
 const W = 900;
-const H = 480;
 const PAD = 36;
 const PHOTO = 260;
+const STRIP = 20;
+const FOOTER = 44;
+/* Derived rather than picked, so the card is exactly as tall as its contents.
+   A fixed 480 left a band of empty white under the portrait. */
+const H = 34 + STRIP + PAD + PHOTO + PAD + FOOTER;
 
 /**
  * Loads an image for canvas use.
@@ -72,21 +76,28 @@ const initialsFor = (name) =>
         .toUpperCase() || 'TM';
 
 /**
- * Draws `text`, shrinking the font until it fits `maxWidth`, and returns the
- * size it actually drew at so the caller can advance the baseline by it.
+ * The largest size at or below `startSize` at which `text` fits `maxWidth`,
+ * leaving `ctx.font` set to it.
  *
- * The decrement has to happen before the re-measure, not after: a do/while that
- * set the font and then decremented returned a size one smaller than the one on
- * the canvas, which pushed the following line 8px too close whenever a name
- * landed either side of the caller's threshold.
+ * Separate from drawing because the name's size decides how tall the text block
+ * is, and the block has to be positioned before its first line is drawn.
+ *
+ * The decrement precedes the re-measure. A do/while that set the font and then
+ * decremented reported a size one smaller than the one on the canvas.
  */
-function fitText(ctx, text, x, y, maxWidth, startSize, { weight = '900', font = SANS, color = INK }) {
+function fitSize(ctx, text, maxWidth, startSize, weight, font) {
     let size = startSize;
     ctx.font = `${weight} ${size}px ${font}`;
     while (ctx.measureText(text).width > maxWidth && size > 10) {
         size -= 1;
         ctx.font = `${weight} ${size}px ${font}`;
     }
+    return size;
+}
+
+/** Shrinks `text` to fit and draws it, returning the size used. */
+function drawFit(ctx, text, x, y, maxWidth, startSize, { weight = '900', font = SANS, color = INK }) {
+    const size = fitSize(ctx, text, maxWidth, startSize, weight, font);
     ctx.fillStyle = color;
     ctx.fillText(text, x, y);
     return size;
@@ -104,9 +115,11 @@ function chip(ctx, text, x, y, { bg, fg = INK, size = 13 }) {
     ctx.strokeStyle = INK;
     ctx.strokeRect(x, y, w, h);
     ctx.fillStyle = fg;
+    // Restored to whatever the caller had, not assumed to be the default.
+    const previousBaseline = ctx.textBaseline;
     ctx.textBaseline = 'middle';
     ctx.fillText(text, x + padX, y + h / 2 + 1);
-    ctx.textBaseline = 'alphabetic';
+    ctx.textBaseline = previousBaseline;
     return x + w + 8;
 }
 
@@ -210,33 +223,65 @@ export async function renderBadge(member, subsystem) {
     ctx.strokeStyle = INK;
     ctx.strokeRect(photoX, photoY, PHOTO, PHOTO);
 
-    // Text column.
+    /* Text column.
+       Every line is placed by its TOP edge. With the default alphabetic
+       baseline the y handed to fillText is the bottom of the glyphs, so the
+       name -- drawn 58px below the chips at up to 54px tall -- reached back up
+       into them and collided. Aligning to the top removes that class of bug
+       entirely, and makes each advance simply "height plus a gap". */
     const tx = photoX + PHOTO + PAD;
     const tw = cx + cw - PAD - tx;
-    let ty = photoY;
 
-    let chipX = chip(ctx, isAlumni ? '★ ALUMNI' : '● ACTIVE CREW', tx, ty, {
+    const nameText = String(member?.name || 'Team Asterix Crew').toUpperCase();
+    const roleText = member?.role || '';
+    const subText = String(subsystem?.name || '').toUpperCase();
+
+    const CHIP_SIZE = 13;
+    const CHIP_H = CHIP_SIZE + 12;
+    const ROLE_SIZE = 22;
+    const SUB_SIZE = 16;
+    const GAP = 18;
+    const TIGHT = 12;
+
+    /* Measured before anything is drawn: the name's size decides the block's
+       height, and the height decides where the first chip goes. */
+    const nameSize = fitSize(ctx, nameText, tw, 54, '900', SANS);
+
+    let blockH = CHIP_H + GAP + nameSize;
+    if (roleText) blockH += GAP + ROLE_SIZE;
+    if (subText) blockH += TIGHT + SUB_SIZE;
+
+    // Centred against the portrait, so the two columns balance.
+    let ty = photoY + Math.max(0, (PHOTO - blockH) / 2);
+
+    ctx.textBaseline = 'top';
+
+    const chipX = chip(ctx, isAlumni ? '★ ALUMNI' : '● ACTIVE CREW', tx, ty, {
         bg: statusColor,
-        fg: INK
+        fg: INK,
+        size: CHIP_SIZE
     });
     if (member?.badge) {
-        chip(ctx, String(member.badge).toUpperCase(), chipX, ty, { bg: INK, fg: PAPER });
+        chip(ctx, String(member.badge).toUpperCase(), chipX, ty, {
+            bg: INK,
+            fg: PAPER,
+            size: CHIP_SIZE
+        });
     }
-    ty += 58;
+    ty += CHIP_H + GAP;
 
-    const nameSize = fitText(ctx, String(member?.name || 'Team Asterix Crew').toUpperCase(), tx, ty, tw, 54, {});
-    ty += nameSize > 40 ? 40 : 32;
+    drawFit(ctx, nameText, tx, ty, tw, nameSize, {});
+    ty += nameSize + GAP;
 
-    if (member?.role) {
-        fitText(ctx, member.role, tx, ty, tw, 22, { weight: '700', font: MONO, color: SKY });
-        ty += 34;
+    if (roleText) {
+        drawFit(ctx, roleText, tx, ty, tw, ROLE_SIZE, { weight: '700', font: MONO, color: SKY });
+        ty += ROLE_SIZE + TIGHT;
+    }
+    if (subText) {
+        drawFit(ctx, subText, tx, ty, tw, SUB_SIZE, { weight: '700', font: MONO, color: MUTED });
     }
 
-    fitText(ctx, String(subsystem?.name || '').toUpperCase(), tx, ty, tw, 16, {
-        weight: '700',
-        font: MONO,
-        color: MUTED
-    });
+    ctx.textBaseline = 'alphabetic';
 
     // Footer bar.
     const barH = 44;
