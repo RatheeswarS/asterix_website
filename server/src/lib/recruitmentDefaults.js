@@ -6,7 +6,7 @@ import { CYCLE, STAGES } from './recruitmentConstants.js';
  * Every timestamp carries an explicit +05:30 so a candidate's own timezone can
  * never shift a deadline, matching the convention already used by the countdown
  * on the recruitment page. These are defaults: the admin can retune any of them,
- * but the written test (11 Sept) and the 20 Sept cutoff are fixed by the team.
+ * Dates live in the AT block below, and only there.
  *
  * `gated: true` on a brief means its body is withheld from the public config and
  * released only to an applicant on that track who has reached `gatedToStage`.
@@ -14,53 +14,81 @@ import { CYCLE, STAGES } from './recruitmentConstants.js';
  * statement before the people who actually sat the written test do.
  */
 
+/**
+ * Every date in the cycle, written once.
+ *
+ * These seed a database that has none. Once the config document exists the
+ * admin owns the schedule outright and editing this file changes nothing on a
+ * running site -- so this is a starting point, not a source of truth. They are
+ * gathered here because the same instant is used by several tracks (one
+ * stage closing is the next one opening), and repeating a literal is how a
+ * schedule ends up disagreeing with itself.
+ *
+ * Named for the moment they mark rather than the track that uses them, and
+ * every one carries an explicit +05:30 so no consumer has to guess a zone.
+ */
+const AT = {
+    orientation:     '2026-09-02T17:30:00+05:30',
+    applyClose:      '2026-09-07T23:59:00+05:30',
+    swDrawDone:      '2026-09-08T18:00:00+05:30',
+    ptRegisterClose: '2026-09-10T18:00:00+05:30',
+    ptTestStart:     '2026-09-11T09:00:00+05:30',
+    ptTestEnd:       '2026-09-11T13:00:00+05:30',
+    ptShortlistDone: '2026-09-12T18:00:00+05:30',
+    ptDrawDone:      '2026-09-12T21:00:00+05:30',
+    swPhase1Close:   '2026-09-13T23:59:00+05:30',
+    meSubmitClose:   '2026-09-18T23:59:00+05:30',
+    submitClose:     '2026-09-19T23:59:00+05:30',
+    cycleEnds:       '2026-09-20T20:00:00+05:30',
+};
+
 export const DEFAULT_TRACKS = [
     {
         id: 'software-perception',
         name: 'Software & Perception',
         enabled: true,
         blurb: 'Build the autonomous stack: perception, planning and control for the BAJA vehicle.',
-        applyOpensAt: '2026-09-02T17:30:00+05:30',
-        applyClosesAt: '2026-09-07T23:59:00+05:30',
+        applyOpensAt: AT.orientation,
+        applyClosesAt: AT.applyClose,
         stages: [
             {
                 id: 'sw-apply',
                 label: 'Applications Close',
                 detail: 'Register for the Software & Perception track. Teams are drawn from everyone who applies.',
-                opensAt: '2026-09-02T17:30:00+05:30',
-                closesAt: '2026-09-07T23:59:00+05:30',
+                opensAt: AT.orientation,
+                closesAt: AT.applyClose,
                 submissionPhase: null
             },
             {
                 id: 'sw-draw',
                 label: 'Random Team Draw',
                 detail: 'Applicants are shuffled into teams. The draw is seeded and recorded, so it can be reproduced on request.',
-                opensAt: '2026-09-07T23:59:00+05:30',
-                closesAt: '2026-09-08T18:00:00+05:30',
+                opensAt: AT.applyClose,
+                closesAt: AT.swDrawDone,
                 submissionPhase: null
             },
             {
                 id: 'sw-phase-1',
                 label: 'Phase 1 — Documentation & Research',
                 detail: 'Your team submits its written research and design documentation for the problem statement.',
-                opensAt: '2026-09-08T18:00:00+05:30',
-                closesAt: '2026-09-13T23:59:00+05:30',
+                opensAt: AT.swDrawDone,
+                closesAt: AT.swPhase1Close,
                 submissionPhase: 'sw-phase-1'
             },
             {
                 id: 'sw-phase-2',
                 label: 'Phase 2 — Working Model',
                 detail: 'Your team submits a running implementation of the problem statement, with test evidence.',
-                opensAt: '2026-09-13T23:59:00+05:30',
-                closesAt: '2026-09-19T23:59:00+05:30',
+                opensAt: AT.swPhase1Close,
+                closesAt: AT.submitClose,
                 submissionPhase: 'sw-phase-2'
             },
             {
                 id: 'sw-interview',
                 label: 'Team Interviews',
                 detail: 'Shortlisted teams defend their design and implementation in person.',
-                opensAt: '2026-09-19T23:59:00+05:30',
-                closesAt: '2026-09-20T20:00:00+05:30',
+                opensAt: AT.submitClose,
+                closesAt: AT.cycleEnds,
                 submissionPhase: null
             }
         ],
@@ -105,55 +133,55 @@ export const DEFAULT_TRACKS = [
         name: 'Powertrain',
         enabled: true,
         blurb: 'Engine, CVT and drivetrain. Selection starts with a written test.',
-        applyOpensAt: '2026-09-02T17:30:00+05:30',
-        applyClosesAt: '2026-09-10T18:00:00+05:30',
+        applyOpensAt: AT.orientation,
+        applyClosesAt: AT.ptRegisterClose,
         stages: [
             {
                 id: 'pt-register',
                 label: 'Registration Closes',
                 detail: 'Register to sit the Powertrain written test. Registration is required to be allotted a seat.',
-                opensAt: '2026-09-02T17:30:00+05:30',
-                closesAt: '2026-09-10T18:00:00+05:30',
+                opensAt: AT.orientation,
+                closesAt: AT.ptRegisterClose,
                 submissionPhase: null
             },
             {
                 id: 'pt-written-test',
                 label: 'Written Test (in person)',
-                detail: 'Held on 11 September. Bring your application reference code and college ID.',
-                opensAt: '2026-09-11T09:00:00+05:30',
-                closesAt: '2026-09-11T13:00:00+05:30',
+                detail: 'Sat in person. Bring your application reference code and college ID.',
+                opensAt: AT.ptTestStart,
+                closesAt: AT.ptTestEnd,
                 submissionPhase: null
             },
             {
                 id: 'pt-shortlist',
                 label: 'Written Test Shortlist',
                 detail: 'Candidates who cleared the test are published here. Only they continue.',
-                opensAt: '2026-09-11T13:00:00+05:30',
-                closesAt: '2026-09-12T18:00:00+05:30',
+                opensAt: AT.ptTestEnd,
+                closesAt: AT.ptShortlistDone,
                 submissionPhase: null
             },
             {
                 id: 'pt-draw',
                 label: 'Random Team Draw',
                 detail: 'Shortlisted candidates are shuffled into teams. Drawn separately from every other track.',
-                opensAt: '2026-09-12T18:00:00+05:30',
-                closesAt: '2026-09-12T21:00:00+05:30',
+                opensAt: AT.ptShortlistDone,
+                closesAt: AT.ptDrawDone,
                 submissionPhase: null
             },
             {
                 id: 'pt-solution',
                 label: 'Problem Statement Submission',
                 detail: 'The problem statement is released to shortlisted teams only. Submit your solution and deck.',
-                opensAt: '2026-09-12T21:00:00+05:30',
-                closesAt: '2026-09-19T23:59:00+05:30',
+                opensAt: AT.ptDrawDone,
+                closesAt: AT.submitClose,
                 submissionPhase: 'pt-solution'
             },
             {
                 id: 'pt-presentation',
                 label: 'Presentation & Interview',
                 detail: 'Presentation and technical interview run in the same session.',
-                opensAt: '2026-09-19T23:59:00+05:30',
-                closesAt: '2026-09-20T20:00:00+05:30',
+                opensAt: AT.submitClose,
+                closesAt: AT.cycleEnds,
                 submissionPhase: null
             }
         ],
@@ -204,31 +232,31 @@ Duration and venue are announced with the shortlist. Bring your application refe
         name: 'Mechanical',
         enabled: true,
         blurb: 'Chassis, suspension and structures. Solve the statement, build a deck, defend it.',
-        applyOpensAt: '2026-09-02T17:30:00+05:30',
-        applyClosesAt: '2026-09-07T23:59:00+05:30',
+        applyOpensAt: AT.orientation,
+        applyClosesAt: AT.applyClose,
         stages: [
             {
                 id: 'me-apply',
                 label: 'Applications Close',
                 detail: 'Register for the Mechanical track. The problem statement is released to every applicant.',
-                opensAt: '2026-09-02T17:30:00+05:30',
-                closesAt: '2026-09-07T23:59:00+05:30',
+                opensAt: AT.orientation,
+                closesAt: AT.applyClose,
                 submissionPhase: null
             },
             {
                 id: 'me-solution',
                 label: 'Solution & Presentation Deck',
                 detail: 'Solve the problem statement individually and submit your work together with your PPT.',
-                opensAt: '2026-09-07T23:59:00+05:30',
-                closesAt: '2026-09-18T23:59:00+05:30',
+                opensAt: AT.applyClose,
+                closesAt: AT.meSubmitClose,
                 submissionPhase: 'me-solution'
             },
             {
                 id: 'me-presentation',
                 label: 'Presentation & Interview',
                 detail: 'Present your deck and sit the technical interview in the same session.',
-                opensAt: '2026-09-18T23:59:00+05:30',
-                closesAt: '2026-09-20T20:00:00+05:30',
+                opensAt: AT.meSubmitClose,
+                closesAt: AT.cycleEnds,
                 submissionPhase: null
             }
         ],
@@ -266,15 +294,15 @@ export const DEFAULT_CONFIG = {
     key: 'main',
     cycle: CYCLE,
     headline: 'SAEINDIA BAJA 2026-27 Crew Recruitment',
-    intro: 'Three subsystems, three different selection processes, one shared deadline: everything concludes on 20 September 2026, and results follow after that.',
+    intro: 'Three subsystems, three different selection processes, one shared deadline. Every track concludes together, and results follow after that.',
     // Cleared once applications are open; the admin edits it on the Schedule tab.
-    notice: 'Applications and problem statements go live at the orientation on Wednesday 2 September 2026, 17:30 IST. Come to the orientation to hear what each subsystem actually does before you pick one.',
-    resultsNote: 'Results for all tracks are published after 20 September 2026.',
+    notice: 'Applications and problem statements go live at the orientation. Come along to hear what each subsystem actually does before you pick one.',
+    resultsNote: 'Results for all tracks are published once every track has concluded.',
     /* One switch for the whole cycle. Until this moment passes the server
        withholds every problem statement and the portal shows the message below
        in its place; after it, the briefs appear on their own. Set it to a past
        date, or use "Release now" in the admin, to publish early. */
-    briefsLaunchAt: '2026-09-02T17:30:00+05:30',
-    stayTunedMessage: 'Problem statements are released at the orientation on 2 September 2026, 17:30 IST. Stay tuned.',
+    briefsLaunchAt: AT.orientation,
+    stayTunedMessage: 'Problem statements are released at the orientation. Stay tuned.',
     tracks: DEFAULT_TRACKS
 };

@@ -201,84 +201,6 @@ const initialSponsorshipData = {
     contactPhone: '+91 98765 43210'
 };
 
-const initialRecruitmentData = {
-    status: 'Open',
-    title: 'SAEINDIA BAJA 2026-27 CREW RECRUITMENT',
-    description: 'Join Team Asterix and build next-generation off-road and autonomous racing machines. Open for 1st, 2nd, and 3rd year engineering students.',
-    applicationLink: 'https://forms.gle/6hHG6aXqrunnfj7V6',
-    // Stage deadlines drive the countdown board on #join. Dates carry an
-    // explicit +05:30 offset so a visitor's own timezone cannot shift them.
-    deadlines: [
-        {
-            id: 'stage-01',
-            stage: '01',
-            label: 'Applications Close',
-            detail: 'Submit the crew application form with your subsystem preference.',
-            date: '2026-09-07T23:59:00+05:30',
-            opensAt: '2026-08-24T09:00:00+05:30'
-        },
-        {
-            id: 'stage-02',
-            stage: '02',
-            label: 'Problem Statement Submission',
-            detail: 'Upload code, CAD, FEA or deck for your chosen subsystem brief.',
-            date: '2026-09-21T23:59:00+05:30'
-        },
-        {
-            id: 'stage-03',
-            stage: '03',
-            label: 'Technical Review Slots',
-            detail: 'In-person design defence with the subsystem leads.',
-            date: '2026-10-05T18:00:00+05:30'
-        },
-        {
-            id: 'stage-04',
-            stage: '04',
-            label: 'Workshop Trial & Induction',
-            detail: 'Tool safety briefing and hands-on fabrication induction.',
-            date: '2026-10-19T18:00:00+05:30'
-        }
-    ],
-    problemStatements: [
-        {
-            id: 'ps-software',
-            subsystem: 'Software & Perception',
-            title: 'OpenCV Lane Extraction & Stanley Lateral Controller',
-            description: 'Design a high-speed vision pipeline to crop and warp camera feeds into Bird\'s-Eye View and calculate real-time steering error using the Stanley algorithm.',
-            fileUrl: ''
-        },
-        {
-            id: 'ps-powertrain',
-            subsystem: 'Powertrain',
-            title: 'CVT Shift Curve Optimization & Dynamic Reduction',
-            description: 'Calculate secondary spring preload and flyweight profiles for a 305cc Vanguard engine to sustain instant rock crawl torque and 45 km/h top speed.',
-            fileUrl: ''
-        },
-        {
-            id: 'ps-mechanical',
-            subsystem: 'Mechanical',
-            title: 'Roll Cage Torsional Rigidity & Suspension Kinematics',
-            description: 'Design a double wishbone suspension with minimal bump steer and conduct FEA crash simulations on an AISI 4130 tubular spaceframe.',
-            fileUrl: ''
-        },
-        {
-            id: 'ps-leads',
-            subsystem: 'Leads & Management',
-            title: 'Corporate Sponsorship Pitch Deck & Paddock Budgeting',
-            description: 'Develop a 5-page corporate sponsorship pitch deck and create a risk-mitigated procurement and logistics plan for BAJA national endurance.',
-            fileUrl: ''
-        }
-    ],
-    results: [
-        {
-            title: 'Round 1 Shortlist (Written & CAD Tasks)',
-            date: 'Ongoing Evaluation',
-            status: 'Screening in Progress',
-            announcement: 'Submissions are currently under review by subsystem leads. Shortlisted candidates will be listed here in real time.'
-        }
-    ]
-};
-
 // Helper to ensure 4 subsystems are active without discarding user edits
 const normalizeSubsystems = (subs) => {
     if (!subs || !Array.isArray(subs) || subs.length === 0) {
@@ -338,7 +260,6 @@ export function WebsiteDataProvider({ children }) {
                     contact: parsed.contact || initialContactInfo,
                     accounts: parsed.accounts || initialAccounts,
                     sponsorship: parsed.sponsorship || initialSponsorshipData,
-                    recruitment: parsed.recruitment || initialRecruitmentData,
                     lastModified: parsed.lastModified || new Date().toISOString()
                 };
             }
@@ -354,7 +275,6 @@ export function WebsiteDataProvider({ children }) {
             contact: initialContactInfo,
             accounts: initialAccounts,
             sponsorship: initialSponsorshipData,
-            recruitment: initialRecruitmentData,
             lastModified: new Date().toISOString()
         };
     });
@@ -404,7 +324,6 @@ export function WebsiteDataProvider({ children }) {
                             updates: (data.updates && data.updates.length > 0) ? data.updates : prev.updates,
                             contact: data.contact || prev.contact,
                             sponsorship: data.sponsorship || prev.sponsorship || initialSponsorshipData,
-                            recruitment: data.recruitment || prev.recruitment || initialRecruitmentData,
                             lastModified: data.lastModified || prev.lastModified
                         };
                         try {
@@ -465,7 +384,6 @@ export function WebsiteDataProvider({ children }) {
             updates: dataToSync.updates,
             contact: dataToSync.contact,
             sponsorship: dataToSync.sponsorship || initialSponsorshipData,
-            recruitment: dataToSync.recruitment || initialRecruitmentData,
             lastModified: new Date().toISOString()
         };
 
@@ -743,14 +661,6 @@ export function WebsiteDataProvider({ children }) {
         }));
     };
 
-    const updateRecruitment = (fields) => {
-        setSiteData(prev => ({
-            ...prev,
-            recruitment: { ...(prev.recruitment || initialRecruitmentData), ...fields },
-            lastModified: new Date().toISOString()
-        }));
-    };
-
     const resetToDefaults = () => {
         const defaults = {
             hero: initialHeroData,
@@ -761,7 +671,6 @@ export function WebsiteDataProvider({ children }) {
             contact: initialContactInfo,
             accounts: initialAccounts,
             sponsorship: initialSponsorshipData,
-            recruitment: initialRecruitmentData,
             lastModified: new Date().toISOString()
         };
         setSiteData(defaults);
@@ -807,7 +716,6 @@ export function WebsiteDataProvider({ children }) {
             updateAccount,
             deleteAccount,
             updateSponsorship,
-            updateRecruitment,
             syncState,
             syncError,
             resetToDefaults,

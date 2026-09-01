@@ -17,39 +17,6 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 
 const IST = 'Asia/Kolkata';
 
-/** Deadlines the page falls back to when none are configured in the admin. */
-export const FALLBACK_DEADLINES = [
-    {
-        id: 'stage-01',
-        stage: '01',
-        label: 'Applications Close',
-        detail: 'Submit the crew application form with your subsystem preference.',
-        date: '2026-09-07T23:59:00+05:30',
-        opensAt: '2026-08-24T09:00:00+05:30',
-    },
-    {
-        id: 'stage-02',
-        stage: '02',
-        label: 'Problem Statement Submission',
-        detail: 'Upload code, CAD, FEA or deck for your chosen subsystem brief.',
-        date: '2026-09-21T23:59:00+05:30',
-    },
-    {
-        id: 'stage-03',
-        stage: '03',
-        label: 'Technical Review Slots',
-        detail: 'In-person design defence with the subsystem leads.',
-        date: '2026-10-05T18:00:00+05:30',
-    },
-    {
-        id: 'stage-04',
-        stage: '04',
-        label: 'Workshop Trial & Induction',
-        detail: 'Tool safety briefing and hands-on fabrication induction.',
-        date: '2026-10-19T18:00:00+05:30',
-    },
-];
-
 const MINUTE = 60 * 1000;
 const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;
@@ -91,11 +58,12 @@ const formatShort = (ms) => shortFormatter.format(new Date(ms));
  */
 export function useRecruitmentCountdown(deadlines, clockOffsetMs = 0) {
     const schedule = useMemo(() => {
-        // An admin who deletes every stage means "nothing is scheduled", so an
-        // empty array stays empty. Only a missing field -- never configured --
-        // falls back, otherwise clearing the list would republish the built-in
-        // placeholder dates as if they were real deadlines.
-        const source = Array.isArray(deadlines) ? deadlines : FALLBACK_DEADLINES;
+        /* No schedule means no schedule. There used to be a built-in list of
+           placeholder deadlines here, so a page that had not loaded its
+           configuration yet -- or a track with no stages -- displayed four
+           invented dates as though the team had published them. Nothing on
+           this page states a date the admin did not enter. */
+        const source = Array.isArray(deadlines) ? deadlines : [];
         const parsed = source
             .map((d, i) => ({
                 ...d,
