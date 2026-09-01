@@ -49,11 +49,14 @@ async function saveRecruitmentConfig(config) {
         return true;
     }
     if (typeof config.markModified === 'function') {
-        config.markModified('tracks');
-        config.markModified('headline');
-        config.markModified('intro');
-        config.markModified('notice');
-        config.markModified('resultsNote');
+        /* Named individually rather than derived, so adding a field to the
+           schema and forgetting it here shows up as an edit that will not
+           stick. `tracks` genuinely needs this -- nested arrays of subdocuments
+           are not always seen as dirty -- and the scalars are marked alongside
+           it so the list stays one thing to keep in step with the schema. */
+        for (const field of ['tracks', 'headline', 'intro', 'notice', 'resultsNote', 'briefsLaunchAt', 'stayTunedMessage']) {
+            config.markModified(field);
+        }
         await config.save();
     }
     return true;
