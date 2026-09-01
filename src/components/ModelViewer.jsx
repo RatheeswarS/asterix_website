@@ -85,7 +85,7 @@ const ModelInner = ({
   }, [url]);
 
   const content = useMemo(() => {
-    if (!url || url === 'baja' || url.includes('baja')) {
+    if (!url || url === 'procedural' || url === 'stub') {
       return buildBajaCarGroup();
     }
     if (ext === 'glb' || ext === 'gltf') return useGLTF(url).scene.clone();
@@ -341,7 +341,7 @@ const ModelInner = ({
 };
 
 const ModelViewer = ({
-  url = 'baja',
+  url = '/assembly_file_for_abaja.glb',
   width = 400,
   height = 400,
   modelXOffset = 0,
@@ -369,7 +369,7 @@ const ModelViewer = ({
   onModelLoaded
 }) => {
   useEffect(() => {
-    if (url && (url.endsWith('.glb') || url.endsWith('.gltf')) && !url.includes('baja')) {
+    if (url && (url.endsWith('.glb') || url.endsWith('.gltf'))) {
       useGLTF.preload(url);
     }
   }, [url]);

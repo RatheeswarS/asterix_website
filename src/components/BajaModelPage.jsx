@@ -59,7 +59,7 @@ export default function BajaModelPage({ onBack }) {
                 <div className="relative w-full max-w-6xl h-[65vh] sm:h-[72vh] bg-white border-4 border-slate-900 shadow-[10px_10px_0px_#0f172a] overflow-hidden">
 
                     <ModelViewer
-                        url="baja"
+                        url="/assembly_file_for_abaja.glb"
                         width="100%"
                         height="100%"
                         defaultRotationX={-35}

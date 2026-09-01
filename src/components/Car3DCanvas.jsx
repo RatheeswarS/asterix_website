@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { introHandoff } from '../lib/introHandoff';
 
 export default function Car3DCanvas() {
@@ -182,12 +183,60 @@ export default function Car3DCanvas() {
             metalness: 0.95,
         });
 
-        // --- 3D VEHICLE ASSEMBLY ---
+        // --- 3D VEHICLE ASSEMBLY (REAL GLB CAD MODEL) ---
         const carRoot = new THREE.Group();
         scene.add(carRoot);
 
+        const proceduralModel = new THREE.Group();
+        carRoot.add(proceduralModel);
+
+        // Load Real Team Asterix SAE BAJA GLB CAD Assembly Model
+        const gltfLoader = new GLTFLoader();
+        gltfLoader.load(
+            '/assembly_file_for_abaja.glb',
+            (gltf) => {
+                const model = gltf.scene;
+
+                // Auto-center and normalize scale for the CAD assembly
+                const box = new THREE.Box3().setFromObject(model);
+                const center = box.getCenter(new THREE.Vector3());
+                const size = box.getSize(new THREE.Vector3());
+
+                model.position.sub(center);
+
+                // CAD assembly dimensions scaling
+                const maxDim = Math.max(size.x, size.y, size.z);
+                const targetScale = maxDim > 0 ? (2.8 / maxDim) : 1;
+
+                const glbWrapper = new THREE.Group();
+                glbWrapper.add(model);
+                glbWrapper.scale.setScalar(targetScale);
+                glbWrapper.position.y = 0.12;
+
+                // Enhance materials & shadows for CAD components
+                model.traverse((child) => {
+                    if (child.isMesh) {
+                        child.castShadow = true;
+                        child.receiveShadow = true;
+                        if (child.material) {
+                            child.material.envMapIntensity = 1.35;
+                            child.material.needsUpdate = true;
+                        }
+                    }
+                });
+
+                // Swap out procedural fallback with real CAD GLB assembly!
+                carRoot.remove(proceduralModel);
+                carRoot.add(glbWrapper);
+            },
+            undefined,
+            (err) => {
+                console.warn('GLB model load notice, keeping procedural fallback:', err);
+            }
+        );
+
         const frameGroup = new THREE.Group();
-        carRoot.add(frameGroup);
+        proceduralModel.add(frameGroup);
 
         const addTube = (start, end, radius = 0.032, mat = skyBluePowderCoat) => {
             const vStart = new THREE.Vector3(...start);
@@ -285,7 +334,7 @@ export default function Car3DCanvas() {
         dashPlate.position.set(0, 0.58, 0.72);
         dashPlate.rotation.x = -0.55;
         dashPlate.castShadow = true;
-        carRoot.add(dashPlate);
+        proceduralModel.add(dashPlate);
 
         const steerCol = new THREE.Mesh(
             new THREE.CylinderGeometry(0.018, 0.018, 0.35, 12),
@@ -293,7 +342,7 @@ export default function Car3DCanvas() {
         );
         steerCol.position.set(0, 0.65, 0.58);
         steerCol.rotation.x = 0.6;
-        carRoot.add(steerCol);
+        proceduralModel.add(steerCol);
 
         const steerWheel = new THREE.Mesh(
             new THREE.TorusGeometry(0.13, 0.016, 10, 24),
@@ -301,7 +350,7 @@ export default function Car3DCanvas() {
         );
         steerWheel.position.set(0, 0.74, 0.44);
         steerWheel.rotation.x = -0.6;
-        carRoot.add(steerWheel);
+        proceduralModel.add(steerWheel);
 
         // ==========================================
         // 2. WHITE COMPOSITE FIREWALL / SEATBACK PANEL
@@ -345,7 +394,7 @@ export default function Car3DCanvas() {
         };
         seatGroup.add(createHarnessSlot(-0.11));
         seatGroup.add(createHarnessSlot(0.11));
-        carRoot.add(seatGroup);
+        proceduralModel.add(seatGroup);
 
         // Battery Box & Floor Pan
         const batteryBox = new THREE.Mesh(
@@ -354,7 +403,7 @@ export default function Car3DCanvas() {
         );
         batteryBox.position.set(0, 0.14, 0.12);
         batteryBox.castShadow = true;
-        carRoot.add(batteryBox);
+        proceduralModel.add(batteryBox);
 
         const floorPan = new THREE.Mesh(
             new THREE.BoxGeometry(0.96, 0.015, 1.35),
@@ -362,7 +411,7 @@ export default function Car3DCanvas() {
         );
         floorPan.position.set(0, 0.05, 0.25);
         floorPan.receiveShadow = true;
-        carRoot.add(floorPan);
+        proceduralModel.add(floorPan);
 
         // ==========================================
         // 3. SUSPENSION A-ARMS & FOX AIR SHOCKS
@@ -418,13 +467,13 @@ export default function Car3DCanvas() {
         flShock.position.set(-0.68, 0.36, 1.12);
         flShock.rotation.z = -0.42;
         flShock.rotation.x = 0.18;
-        carRoot.add(flShock);
+        proceduralModel.add(flShock);
 
         const frShock = createFoxAirShock(false);
         frShock.position.set(0.68, 0.36, 1.12);
         frShock.rotation.z = 0.42;
         frShock.rotation.x = 0.18;
-        carRoot.add(frShock);
+        proceduralModel.add(frShock);
 
         const rearHubLeft = [-0.98, 0.12, -0.95];
         const rearHubRight = [0.98, 0.12, -0.95];
@@ -435,13 +484,13 @@ export default function Car3DCanvas() {
         rlShock.position.set(-0.72, 0.42, -0.85);
         rlShock.rotation.z = -0.32;
         rlShock.rotation.x = -0.15;
-        carRoot.add(rlShock);
+        proceduralModel.add(rlShock);
 
         const rrShock = createFoxAirShock(false);
         rrShock.position.set(0.72, 0.42, -0.85);
         rrShock.rotation.z = 0.32;
         rrShock.rotation.x = -0.15;
-        carRoot.add(rrShock);
+        proceduralModel.add(rrShock);
 
         // ==========================================
         // 4. 4 KNOBBY ATV TIRES & WHITE STEEL RIMS
@@ -566,7 +615,7 @@ export default function Car3DCanvas() {
             // wheel by the same local delta therefore rotated the two sides in
             // opposite world directions. Record the sign and apply it.
             wheelObj.spinSign = isLeft ? 1 : -1;
-            carRoot.add(wheelObj.group);
+            proceduralModel.add(wheelObj.group);
             wheels.push(wheelObj);
         });
 
