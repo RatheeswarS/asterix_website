@@ -43,17 +43,7 @@ export default function CyberFooter({ onOpenAdmin }) {
                     </div>
 
                     {/* Column 1: The Machine */}
-                    <div>
-                        <span className="text-xs font-black font-mono text-sky-600 uppercase block mb-4">
-                            THE MACHINE
-                        </span>
-                        <div className="flex flex-col gap-2.5 text-xs font-bold text-slate-700">
-                            <a href="#squad" className="hover:text-sky-600 transition-colors">4130 Spaceframe</a>
-                            <a href="#squad" className="hover:text-sky-600 transition-colors">FOX Air Dampers</a>
-                            <a href="#squad" className="hover:text-sky-600 transition-colors">CVT Drivetrain</a>
-                            <a href="#squad" className="hover:text-sky-600 transition-colors">ATV Lug Tires</a>
-                        </div>
-                    </div>
+
 
                     {/* Column 2: The Squad */}
                     <div>
