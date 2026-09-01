@@ -20,14 +20,14 @@ export const DEFAULT_TRACKS = [
         name: 'Software & Perception',
         enabled: true,
         blurb: 'Build the autonomous stack: perception, planning and control for the BAJA vehicle.',
-        applyOpensAt: '2026-09-02T10:00:00+05:30',
+        applyOpensAt: '2026-08-24T09:00:00+05:30',
         applyClosesAt: '2026-09-07T23:59:00+05:30',
         stages: [
             {
                 id: 'sw-apply',
                 label: 'Applications Close',
                 detail: 'Register for the Software & Perception track. Teams are drawn from everyone who applies.',
-                opensAt: '2026-09-02T10:00:00+05:30',
+                opensAt: '2026-08-24T09:00:00+05:30',
                 closesAt: '2026-09-07T23:59:00+05:30',
                 submissionPhase: null
             },
@@ -101,14 +101,14 @@ export const DEFAULT_TRACKS = [
         name: 'Powertrain',
         enabled: true,
         blurb: 'Engine, CVT and drivetrain. Selection starts with a written test.',
-        applyOpensAt: '2026-09-02T10:00:00+05:30',
+        applyOpensAt: '2026-08-24T09:00:00+05:30',
         applyClosesAt: '2026-09-10T18:00:00+05:30',
         stages: [
             {
                 id: 'pt-register',
                 label: 'Registration Closes',
                 detail: 'Register to sit the Powertrain written test. Registration is required to be allotted a seat.',
-                opensAt: '2026-09-02T10:00:00+05:30',
+                opensAt: '2026-08-24T09:00:00+05:30',
                 closesAt: '2026-09-10T18:00:00+05:30',
                 submissionPhase: null
             },
@@ -188,14 +188,14 @@ export const DEFAULT_TRACKS = [
         name: 'Mechanical',
         enabled: true,
         blurb: 'Chassis, suspension and structures. Solve the statement, build a deck, defend it.',
-        applyOpensAt: '2026-09-02T10:00:00+05:30',
+        applyOpensAt: '2026-08-24T09:00:00+05:30',
         applyClosesAt: '2026-09-07T23:59:00+05:30',
         stages: [
             {
                 id: 'me-apply',
                 label: 'Applications Close',
                 detail: 'Register for the Mechanical track. The problem statement is released to every applicant.',
-                opensAt: '2026-09-02T10:00:00+05:30',
+                opensAt: '2026-08-24T09:00:00+05:30',
                 closesAt: '2026-09-07T23:59:00+05:30',
                 submissionPhase: null
             },

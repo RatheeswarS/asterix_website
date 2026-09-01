@@ -297,7 +297,7 @@ export function RecruitmentCountdownBoard({ countdown, applyLink, onDockChange }
                         className={`px-3 py-1 border-2 border-slate-900 font-mono font-black text-[11px] uppercase ${accent.chip} shadow-[3px_3px_0px_#0284c7] flex items-center gap-2`}
                     >
                         <span className="w-1.5 h-1.5 bg-slate-900 rounded-full" aria-hidden="true" />
-                        {active ? `Stage ${active.stage} running` : 'Board clear'}
+                        {active ? (countdown.now < active.opensAtMs ? `Stage ${active.stage} upcoming` : `Stage ${active.stage} running`) : 'Board clear'}
                     </span>
                 </div>
 
