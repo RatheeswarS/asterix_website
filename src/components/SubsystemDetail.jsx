@@ -159,28 +159,45 @@ export default function SubsystemDetail({ subsystemId, onBack, onSelectSubsystem
                                 <div>
                                     {/* Member Photo Frame */}
                                     <div className="w-full h-56 sm:h-60 overflow-hidden border-2 border-slate-900 bg-slate-100 relative mb-4 shadow-[3px_3px_0px_#0f172a]">
-                                        {member.photo ? (
-                                            <img
-                                                src={apiUrl(member.photo)}
-                                                alt={member.name}
-                                                className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300"
-                                                onError={(e) => {
-                                                    e.currentTarget.style.display = 'none';
-                                                    if (e.currentTarget.nextElementSibling) {
-                                                        e.currentTarget.nextElementSibling.classList.remove('hidden');
-                                                        e.currentTarget.nextElementSibling.classList.add('flex');
-                                                    }
-                                                }}
-                                            />
-                                        ) : null}
-                                        <div className={`w-full h-full bg-gradient-to-br from-slate-100 to-sky-50 flex-col items-center justify-center p-4 text-center ${member.photo ? 'hidden' : 'flex'}`}>
-                                            <div className="w-16 h-16 rounded-full bg-slate-900 text-white font-mono font-black text-xl flex items-center justify-center border-2 border-sky-400 shadow-[3px_3px_0px_#0284c7] mb-2">
-                                                {member.initials || member.name?.slice(0, 2).toUpperCase() || 'TM'}
-                                            </div>
-                                            <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">
-                                                [ PHOTO PENDING ]
-                                            </span>
-                                        </div>
+                                        {(() => {
+                                            const photoUrl = apiUrl(member.photo);
+                                            if (!photoUrl) {
+                                                return (
+                                                    <div className="w-full h-full bg-gradient-to-br from-slate-100 to-sky-50 flex flex-col items-center justify-center p-4 text-center">
+                                                        <div className="w-16 h-16 rounded-full bg-slate-900 text-white font-mono font-black text-xl flex items-center justify-center border-2 border-sky-400 shadow-[3px_3px_0px_#0284c7] mb-2">
+                                                            {member.initials || member.name?.slice(0, 2).toUpperCase() || 'TM'}
+                                                        </div>
+                                                        <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">
+                                                            [ PHOTO PENDING ]
+                                                        </span>
+                                                    </div>
+                                                );
+                                            }
+                                            return (
+                                                <>
+                                                    <img
+                                                        src={photoUrl}
+                                                        alt={member.name}
+                                                        className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300"
+                                                        onError={(e) => {
+                                                            e.currentTarget.style.display = 'none';
+                                                            if (e.currentTarget.nextElementSibling) {
+                                                                e.currentTarget.nextElementSibling.classList.remove('hidden');
+                                                                e.currentTarget.nextElementSibling.classList.add('flex');
+                                                            }
+                                                        }}
+                                                    />
+                                                    <div className="w-full h-full bg-gradient-to-br from-slate-100 to-sky-50 hidden flex-col items-center justify-center p-4 text-center">
+                                                        <div className="w-16 h-16 rounded-full bg-slate-900 text-white font-mono font-black text-xl flex items-center justify-center border-2 border-sky-400 shadow-[3px_3px_0px_#0284c7] mb-2">
+                                                            {member.initials || member.name?.slice(0, 2).toUpperCase() || 'TM'}
+                                                        </div>
+                                                        <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">
+                                                            [ PHOTO PENDING ]
+                                                        </span>
+                                                    </div>
+                                                </>
+                                            );
+                                        })()}
 
                                         {/* Corner Role Badge */}
                                         <span className="absolute top-2.5 right-2.5 px-2.5 py-0.5 bg-white/95 backdrop-blur-xs border-2 border-slate-900 font-mono font-black text-[10px] uppercase shadow-[2px_2px_0px_#0f172a]">
