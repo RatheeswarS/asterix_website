@@ -86,12 +86,14 @@ export default function TeamGallery() {
         setLightboxIndex(foundIdx !== -1 ? foundIdx : 0);
     };
 
+    const [viewMode, setViewMode] = useState('wall'); // 'wall' | 'grid'
+
     return (
         <section id="gallery" className="py-28 px-4 sm:px-8 bg-white border-t-4 border-slate-900 relative overflow-hidden z-10 select-none">
 
             <div className="max-w-7xl mx-auto">
 
-                {/* Section Header (Cyberbites Stacked Brutalist Typography) */}
+                {/* Section Header */}
                 <div data-assemble="header" className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
                     <div>
                         <div className="flex flex-wrap items-center gap-3">
@@ -101,42 +103,101 @@ export default function TeamGallery() {
                             <h2 className="text-6xl sm:text-7xl md:text-8xl font-black text-stroke-black text-transparent leading-none uppercase">
                                 GALLERY
                             </h2>
-                            <span className="animate-spin-slow text-amber-400 text-4xl hidden sm:inline-block">★</span>
+                            <span className="px-3 py-1 bg-amber-300 border-2 border-slate-900 shadow-[2px_2px_0px_#0f172a] font-mono text-xs font-black text-slate-900 uppercase">
+                                ★ {galleryItems.length} ARCHIVE PHOTOS
+                            </span>
                         </div>
                         <p className="text-sm sm:text-base font-bold text-slate-600 mt-3 max-w-xl">
                             Moments from our workshop fabrication, autonomous sensor calibration, proving trials, and race day celebrations. Click any photo to inspect.
                         </p>
                     </div>
+
+                    {/* View Mode Switcher */}
+                    <div className="flex items-center gap-2 bg-slate-100 p-1.5 border-2 border-slate-900 shadow-[3px_3px_0px_#0f172a]">
+                        <button
+                            onClick={() => setViewMode('wall')}
+                            className={`press px-4 py-2 font-mono text-xs font-black uppercase cursor-pointer border border-slate-900 transition-all ${
+                                viewMode === 'wall'
+                                    ? 'bg-sky-500 text-white shadow-[2px_2px_0px_#0f172a]'
+                                    : 'bg-white text-slate-900 hover:bg-sky-100'
+                            }`}
+                        >
+                            3D Drift Wall
+                        </button>
+                        <button
+                            onClick={() => setViewMode('grid')}
+                            className={`press px-4 py-2 font-mono text-xs font-black uppercase cursor-pointer border border-slate-900 transition-all ${
+                                viewMode === 'grid'
+                                    ? 'bg-sky-500 text-white shadow-[2px_2px_0px_#0f172a]'
+                                    : 'bg-white text-slate-900 hover:bg-sky-100'
+                            }`}
+                        >
+                            Grid Gallery ({galleryItems.length})
+                        </button>
+                    </div>
                 </div>
 
-                {/* 3D DriftWall Stage (Clean Brutalist Light Container Merged With Website Theme) */}
-                <div data-assemble="card" className="relative w-full h-[540px] sm:h-[620px] md:h-[680px] bg-sky-50/40 border-4 border-slate-900 shadow-[10px_10px_0px_#0f172a] overflow-hidden">
-
-                    {/* The 3D DriftWall */}
-                    <DriftWall
-                        items={driftItems}
-                        columns={isNarrow ? 3 : 5}
-                        tileWidth={isNarrow ? 165 : 220}
-                        tileHeight={isNarrow ? 115 : 150}
-                        gap={18}
-                        radius={12}
-                        tilt={16}
-                        turn={-14}
-                        perspective={1200}
-                        depth={100}
-                        speed={38}
-                        direction="up"
-                        variance={0.45}
-                        parallax={0.6}
-                        lift={54}
-                        fade={0.3}
-                        dim={0.92}
-                        overlayColor="transparent"
-                        onItemClick={handleTileClick}
-                        className="w-full h-full"
-                    />
-
-                </div>
+                {/* 3D DriftWall or High-Density Grid Gallery Stage */}
+                {viewMode === 'wall' ? (
+                    <div data-assemble="card" className="relative w-full h-[540px] sm:h-[620px] md:h-[680px] bg-sky-50/40 border-4 border-slate-900 shadow-[10px_10px_0px_#0f172a] overflow-hidden">
+                        {/* The 3D DriftWall */}
+                        <DriftWall
+                            items={driftItems}
+                            columns={isNarrow ? 3 : 5}
+                            tileWidth={isNarrow ? 165 : 220}
+                            tileHeight={isNarrow ? 115 : 150}
+                            gap={18}
+                            radius={12}
+                            tilt={16}
+                            turn={-14}
+                            perspective={1200}
+                            depth={100}
+                            speed={38}
+                            direction="up"
+                            variance={0.45}
+                            parallax={0.6}
+                            lift={54}
+                            fade={0.3}
+                            dim={0.92}
+                            overlayColor="transparent"
+                            onItemClick={handleTileClick}
+                            className="w-full h-full"
+                        />
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+                        {galleryItems.map((item, idx) => (
+                            <div
+                                key={item.id || idx}
+                                onClick={() => setLightboxIndex(idx)}
+                                className="press group relative bg-white border-3 border-slate-900 shadow-[5px_5px_0px_#0f172a] hover:shadow-[8px_8px_0px_#0284c7] hover:translate-x-[-2px] hover:translate-y-[-2px] overflow-hidden cursor-pointer flex flex-col justify-between"
+                            >
+                                <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-950">
+                                    <img
+                                        src={apiUrl(item.image)}
+                                        alt={item.title}
+                                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                        onError={(e) => {
+                                            e.currentTarget.onerror = null;
+                                            e.currentTarget.src = 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=600&q=80';
+                                        }}
+                                    />
+                                    <span className="absolute top-2 left-2 px-2 py-0.5 bg-slate-900/90 text-white font-mono text-[9px] font-black uppercase border border-white/20">
+                                        {item.badge}
+                                    </span>
+                                </div>
+                                <div className="p-3 bg-white border-t-2 border-slate-900 flex flex-col justify-between flex-1">
+                                    <h3 className="font-black text-sm uppercase text-slate-900 group-hover:text-sky-600 transition-colors line-clamp-1">
+                                        {item.title}
+                                    </h3>
+                                    <span className="text-[10px] font-mono font-bold text-slate-500 block mt-1">
+                                        {item.location} • {item.date}
+                                    </span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
 
             </div>
 

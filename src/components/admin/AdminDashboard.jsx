@@ -15,6 +15,7 @@ export default function AdminDashboard({ onExit }) {
         addTeamMember,
         updateTeamMember,
         deleteTeamMember,
+        moveTeamMember,
         addGalleryItem,
         updateGalleryItem,
         deleteGalleryItem,
@@ -958,14 +959,40 @@ export default function AdminDashboard({ onExit }) {
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     {(currentSubsystem.teamMembers || []).map((m, idx) => (
                                         <div key={idx} className="p-3.5 bg-white border-2 border-slate-900 shadow-[3px_3px_0px_#0f172a] relative flex flex-col justify-between">
-                                            <button
-                                                onClick={() => deleteTeamMember(currentSubsystem.id, idx)}
-                                                className="press press-flat absolute top-2 right-2 text-rose-500 hover:text-rose-700 font-black text-xs cursor-pointer p-1"
-                                                title="Delete Member"
-                                            >
-                                                ✕
-                                            </button>
-                                            <div className="pr-6 space-y-2.5">
+                                            <div className="flex items-center justify-between gap-2 pb-2 mb-2 border-b border-slate-200">
+                                                <span className="font-mono text-[10px] font-black text-sky-600 uppercase">
+                                                    # Pos {idx + 1} of {currentSubsystem.teamMembers.length}
+                                                </span>
+                                                <div className="flex items-center gap-1">
+                                                    <button
+                                                        type="button"
+                                                        disabled={idx === 0}
+                                                        onClick={() => moveTeamMember(currentSubsystem.id, idx, idx - 1)}
+                                                        className="press px-2 py-0.5 bg-slate-100 hover:bg-sky-100 disabled:opacity-30 border border-slate-900 font-mono text-[10px] font-black cursor-pointer uppercase"
+                                                        title="Move Up in UI"
+                                                    >
+                                                        ▲ Up
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        disabled={idx === currentSubsystem.teamMembers.length - 1}
+                                                        onClick={() => moveTeamMember(currentSubsystem.id, idx, idx + 1)}
+                                                        className="press px-2 py-0.5 bg-slate-100 hover:bg-sky-100 disabled:opacity-30 border border-slate-900 font-mono text-[10px] font-black cursor-pointer uppercase"
+                                                        title="Move Down in UI"
+                                                    >
+                                                        ▼ Down
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => deleteTeamMember(currentSubsystem.id, idx)}
+                                                        className="press px-2 py-0.5 bg-rose-50 hover:bg-rose-100 border border-slate-900 text-rose-600 font-mono text-[10px] font-black cursor-pointer uppercase"
+                                                        title="Delete Member"
+                                                    >
+                                                        ✕
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div className="space-y-2.5">
                                                 {/* Photo Row & Preview */}
                                                 <div className="flex items-center gap-3 bg-slate-50 p-2 border border-slate-300">
                                                     <div className="w-14 h-14 border-2 border-slate-900 bg-white flex items-center justify-center overflow-hidden flex-shrink-0 relative">

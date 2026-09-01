@@ -604,6 +604,23 @@ export function WebsiteDataProvider({ children }) {
         }));
     };
 
+    const moveTeamMember = (subsystemId, fromIndex, toIndex) => {
+        setSiteData(prev => ({
+            ...prev,
+            subsystems: prev.subsystems.map(s => {
+                if (s.id === subsystemId) {
+                    const members = [...(s.teamMembers || [])];
+                    if (toIndex < 0 || toIndex >= members.length) return s;
+                    const [moved] = members.splice(fromIndex, 1);
+                    members.splice(toIndex, 0, moved);
+                    return { ...s, teamMembers: members };
+                }
+                return s;
+            }),
+            lastModified: new Date().toISOString()
+        }));
+    };
+
     const addGalleryItem = (newItem) => {
         setSiteData(prev => ({
             ...prev,
@@ -737,6 +754,7 @@ export function WebsiteDataProvider({ children }) {
             addTeamMember,
             updateTeamMember,
             deleteTeamMember,
+            moveTeamMember,
             addGalleryItem,
             updateGalleryItem,
             deleteGalleryItem,
