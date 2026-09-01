@@ -1,9 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useWebsiteData, AUTH_TOKEN_KEY } from '../../context/WebsiteDataContext';
 import { apiUrl } from '../../lib/api';
-import { auth, db, isFirebaseConfigured } from '../../lib/firebase';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
-import { collection, getDocs, deleteDoc, doc } from 'firebase/firestore';
 import { compressImage } from '../../lib/imageOptimizer';
 import Icon from '../Icon';
 import RecruitmentAdmin from './RecruitmentAdmin';
@@ -109,15 +106,6 @@ export default function AdminDashboard({ onExit }) {
             sessionStorage.setItem(AUTH_TOKEN_KEY, data.token);
             sessionStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(data.user));
 
-            // Best effort only: signing into Firebase keeps the Firestore
-            // fallback sync usable, since those rules now require an
-            // authenticated session. Never creates an account, and a failure
-            // here does not affect the login that already succeeded.
-            if (isFirebaseConfigured && auth) {
-                const email = username.includes('@') ? username : `${username}@teamasterix.com`;
-                signInWithEmailAndPassword(auth, email, password).catch(() => { });
-            }
-
             showStatus(`Welcome back, ${data.user.name}!`);
             fetchFromDatabase?.();
         } catch {
@@ -128,9 +116,6 @@ export default function AdminDashboard({ onExit }) {
     };
 
     const handleLogout = () => {
-        if (isFirebaseConfigured && auth) {
-            signOut(auth).catch(() => { });
-        }
         setCurrentUser(null);
         sessionStorage.removeItem(AUTH_SESSION_KEY);
         sessionStorage.removeItem(AUTH_TOKEN_KEY);
@@ -242,25 +227,8 @@ export default function AdminDashboard({ onExit }) {
         reader.readAsText(file);
     };
 
-    // Fetch Alliance Subscribers from database or Firestore with optional silent refresh
+    // Fetch Alliance Subscribers from database with optional silent refresh
     const fetchSubscribers = useCallback(async (isSilent = false) => {
-        // 1. Cloud Firestore
-        if (isFirebaseConfigured && db) {
-            if (!isSilent) setIsLoadingSubscribers(true);
-            try {
-                const snap = await getDocs(collection(db, 'subscribers'));
-                const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-                list.sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
-                setSubscribers(list);
-            } catch (err) {
-                console.warn('Failed to fetch subscribers from Firestore:', err);
-            } finally {
-                if (!isSilent) setIsLoadingSubscribers(false);
-            }
-            return;
-        }
-
-        // 2. Server API
         const token = sessionStorage.getItem(AUTH_TOKEN_KEY);
         if (!token) return;
 
@@ -282,19 +250,6 @@ export default function AdminDashboard({ onExit }) {
 
     // Delete single subscriber
     const handleDeleteSubscriber = async (id) => {
-        // 1. Cloud Firestore
-        if (isFirebaseConfigured && db) {
-            try {
-                await deleteDoc(doc(db, 'subscribers', id));
-                setSubscribers(prev => prev.filter(s => s.id !== id));
-                showStatus('Subscriber removed from Firestore.');
-                return;
-            } catch (err) {
-                console.error('Failed to delete subscriber from Firestore:', err);
-            }
-        }
-
-        // 2. Server API
         const token = sessionStorage.getItem(AUTH_TOKEN_KEY);
         if (!token) return;
 
@@ -634,7 +589,7 @@ export default function AdminDashboard({ onExit }) {
 
                     <div className="mt-6 pt-4 border-t-2 border-slate-200">
                         <div className="text-[10px] font-mono text-slate-500 space-y-1">
-                            <div>• {isFirebaseConfigured ? (isServerConnected ? '✓ Cloud Firestore persistent storage' : '• Local cache (connecting to Cloud...)') : (isServerConnected ? '✓ SQLite database storage' : '• Local browser cache')}</div>
+                            <div>• {isServerConnected ? '✓ Database connected (MongoDB Atlas)' : '• Local browser cache'}</div>
                             <div>• {siteData.subsystems.length} Subsystems active</div>
                             <div>• {siteData.gallery.length} Gallery items</div>
                             <div>• {subscribers.length} Alliance leads captured</div>
@@ -1742,14 +1697,6 @@ export default function AdminDashboard({ onExit }) {
                                         } catch (err) {
                                             console.warn('Backend API account notice:', err);
                                         }
-                                    }
-
-                                    // 3. Register in Firebase Auth if configured
-                                    if (isFirebaseConfigured && auth) {
-                                        try {
-                                            const email = cleanUsername.includes('@') ? cleanUsername : `${cleanUsername}@teamasterix.com`;
-                                            await createUserWithEmailAndPassword(auth, email, cleanPassword);
-                                        } catch { /* ignore if already exists */ }
                                     }
 
                                     setNewAccount({ username: '', password: '', name: '', role: 'Team Member', accessLevel: 'Lead' });

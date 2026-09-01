@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useWebsiteData } from '../context/WebsiteDataContext';
 import { apiUrl } from '../lib/api';
-import { db, isFirebaseConfigured } from '../lib/firebase';
-import { doc, setDoc } from 'firebase/firestore';
 import teamLogo from '../assets/Screenshot 2026-08-26 232320.png';
 
 
@@ -34,27 +32,12 @@ export default function SponsorPage({ onBack }) {
         if (!form.email || !form.companyName) return;
 
         setIsSubmitting(true);
-        setStatusNote('');
 
         const inquiryData = {
             ...form,
             created_at: new Date().toISOString()
         };
 
-        // 1. Save to Cloud Firestore
-        if (isFirebaseConfigured && db) {
-            try {
-                const docId = `${Date.now()}_${form.companyName.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()}`;
-                await setDoc(doc(db, 'sponsor_inquiries', docId), inquiryData);
-                setSubmitted(true);
-                setIsSubmitting(false);
-                return;
-            } catch (err) {
-                console.warn('Firestore inquiry error, falling back:', err);
-            }
-        }
-
-        // 2. Server API fallback (MongoDB Atlas)
         try {
             const res = await fetch(apiUrl('/api/sponsor-inquiries'), {
                 method: 'POST',
@@ -67,10 +50,10 @@ export default function SponsorPage({ onBack }) {
                 return;
             }
         } catch (apiErr) {
-            console.warn('Server API inquiry error, falling back to local storage:', apiErr);
+            console.warn('Server API inquiry error:', apiErr);
         }
 
-        // 3. Local fallback
+        // Local fallback
         try {
             const existing = JSON.parse(localStorage.getItem('asterix_sponsor_inquiries') || '[]');
             existing.push(inquiryData);

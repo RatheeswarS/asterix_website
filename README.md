@@ -82,10 +82,10 @@ left hidden if the hook bails out.
 
 ### Content and admin
 
-`WebsiteDataContext` holds all editable site content. It connects in real time
-to Cloud Firestore (via `src/lib/firebase.js`), falls back to `/api/site-data`
-or `localStorage`, then to bundled defaults. The admin dashboard is at `#admin`.
-Media uploads go to Firebase Cloud Storage.
+`WebsiteDataContext` holds all editable site content. It connects directly
+to the Node / Express backend API (`/api/site-data`), falling back to `localStorage`
+and bundled defaults when offline. The admin dashboard is at `#admin`.
+Media uploads go to ImageKit CDN / server storage.
 
 
 ---

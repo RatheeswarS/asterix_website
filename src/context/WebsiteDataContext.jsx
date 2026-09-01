@@ -1,8 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { subsystems as initialSubsystems } from '../data/subsystemsData';
 import { apiUrl } from '../lib/api';
-import { db, isFirebaseConfigured } from '../lib/firebase';
-import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 
 import imgPaddock from '../assets/gallery/01_team_paddock.jpg';
 import imgWelding from '../assets/gallery/02_workshop_welding.jpg';
@@ -357,77 +355,6 @@ export function WebsiteDataProvider({ children }) {
         };
     });
 
-    // Listen in real-time from Cloud Firestore if configured
-    useEffect(() => {
-        if (!isFirebaseConfigured || !db) return;
-
-        const docRef = doc(db, 'site_data', 'main');
-        const unsubscribe = onSnapshot(docRef, async (docSnap) => {
-            if (docSnap.exists()) {
-                const data = docSnap.data();
-                setSiteData(prev => {
-                    const remoteTime = new Date(data.lastModified || 0).getTime();
-                    const localTime = new Date(prev.lastModified || 0).getTime();
-
-                    // If local edits are NEWER than the remote document (e.g. cloud quota was hit),
-                    // NEVER wipe out local edits!
-                    if (localTime > remoteTime) {
-                        console.log('Local modifications are newer than cloud snapshot; preserving local state.');
-                        return prev;
-                    }
-
-                    // Mark that this update came from the server so we don't loop-sync it back
-                    isRemoteUpdate.current = true;
-
-                    const merged = {
-                        ...prev,
-                        hero: data.hero || prev.hero,
-                        story: data.story || prev.story,
-                        subsystems: normalizeSubsystems(data.subsystems || prev.subsystems),
-                        gallery: (data.gallery && data.gallery.length > 0) ? data.gallery : prev.gallery,
-                        updates: (data.updates && data.updates.length > 0) ? data.updates : prev.updates,
-                        contact: data.contact || prev.contact,
-                        sponsorship: data.sponsorship || prev.sponsorship || initialSponsorshipData,
-                        recruitment: data.recruitment || prev.recruitment || initialRecruitmentData,
-                        lastModified: data.lastModified || prev.lastModified
-                    };
-                    try {
-                        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(merged));
-                    } catch { /* ignore */ }
-                    return merged;
-                });
-                setIsServerConnected(true);
-                setIsLoading(false);
-            } else {
-                // Auto-seed Firestore on first project launch
-                console.log('⚡ Initializing and seeding Firestore with default Asterix data...');
-                try {
-                    await setDoc(docRef, {
-                        hero: initialHeroData,
-                        story: initialStoryText,
-                        subsystems: initialSubsystems,
-                        gallery: initialGalleryItems,
-                        updates: initialUpdates,
-                        contact: initialContactInfo,
-                        sponsorship: initialSponsorshipData,
-                        recruitment: initialRecruitmentData,
-                        lastModified: new Date().toISOString()
-                    });
-                    setIsServerConnected(true);
-                } catch (seedErr) {
-                    console.warn('Could not auto-seed Firestore:', seedErr);
-                }
-                setIsLoading(false);
-            }
-        }, (err) => {
-            console.warn('Firestore subscription notice (running on cache):', err.message);
-            setIsServerConnected(false);
-            setIsLoading(false);
-        });
-
-        return () => unsubscribe();
-    }, []);
-
     const [lastRefreshedAt, setLastRefreshedAt] = useState(() => new Date());
     const [isLiveRefreshing, setIsLiveRefreshing] = useState(false);
 
@@ -549,33 +476,7 @@ export function WebsiteDataProvider({ children }) {
                     return true;
                 }
             } catch (err) {
-                console.warn('Backend server save notice, checking fallback:', err.message);
-            }
-        }
-
-        // 2. Fallback: Firebase Cloud Firestore (with 1MB document limit safety check)
-        if (isFirebaseConfigured && db) {
-            try {
-                const payloadSize = new Blob([JSON.stringify(payload)]).size;
-                if (payloadSize > 950000) {
-                    throw new Error(`Data size (${(payloadSize / 1024 / 1024).toFixed(2)} MB) exceeds Firestore 1MB limit. Connect to Render backend to save unlimited data.`);
-                }
-                const docRef = doc(db, 'site_data', 'main');
-                await setDoc(docRef, payload, { merge: true });
-                setIsServerConnected(true);
-                setSyncState('synced');
-                setSyncError(null);
-                return true;
-            } catch (err) {
-                console.warn('Failed to sync changes to Firestore:', err);
-                const isQuota = err.message?.includes('RESOURCE_EXHAUSTED') || err.code === 'resource-exhausted' || err.code === 8;
-                const errorMsg = isQuota
-                    ? 'Firebase daily write quota reached. Edits are preserved safely in browser storage.'
-                    : (err.message || 'Cloud sync failed.');
-                setSyncState('error');
-                setSyncError(errorMsg);
-                setIsServerConnected(false);
-                return false;
+                console.warn('Backend server save notice:', err.message);
             }
         }
 
