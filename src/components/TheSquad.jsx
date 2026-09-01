@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import ScrollStack from './ScrollStack';
 import { useWebsiteData } from '../context/WebsiteDataContext';
 
-export default function TheSquad({ onSelectSubsystem, onOpenBadges }) {
+export default function TheSquad({ onSelectSubsystem }) {
     const { siteData } = useWebsiteData();
     const subsystems = siteData.subsystems;
     const [activeIdx, setActiveIdx] = useState(0);
@@ -171,21 +171,6 @@ export default function TheSquad({ onSelectSubsystem, onOpenBadges }) {
                 <span data-assemble="header" className="text-xs font-mono font-black text-slate-500 uppercase tracking-widest block mb-6 text-center">
                     OR DIRECTLY SELECT A SUBSYSTEM TO INSPECT
                 </span>
-
-                {/* Credential registry. Alumni have no other route back into the
-                    site once they leave the roster page, so it gets a door here
-                    rather than only in the footer. */}
-                <div className="flex justify-center mb-8">
-                    <button
-                        onClick={() => {
-                            if (onOpenBadges) onOpenBadges();
-                            else window.location.hash = '#badges';
-                        }}
-                        className="press px-5 py-2.5 bg-amber-300 hover:bg-amber-200 border-3 border-slate-900 shadow-[4px_4px_0px_#0f172a] hover:shadow-[6px_6px_0px_#0284c7] hover:-translate-x-0.5 hover:-translate-y-0.5 font-mono font-black text-xs uppercase text-slate-900 cursor-pointer transition-all"
-                    >
-                        🎖 Alumni &amp; Crew Engineering Badges →
-                    </button>
-                </div>
 
                 <div data-assemble="stagger" className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 font-mono">
                     {subsystems.map((s, idx) => (

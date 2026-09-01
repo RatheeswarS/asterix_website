@@ -83,7 +83,7 @@ export const FRAME_PRESETS = {
     member: [
         { id: 'mobile', label: 'Phone card', ratio: '3 / 4', width: 120 },
         { id: 'desktop', label: 'Desktop card', ratio: '4 / 5', width: 148 },
-        { id: 'badge', label: 'Credential badge', ratio: '1 / 1', width: 120 }
+        { id: 'badge', label: 'Downloadable badge', ratio: '1 / 1', width: 120 }
     ],
     gallery: [
         { id: 'grid', label: 'Grid tile', ratio: '4 / 3', width: 176 },

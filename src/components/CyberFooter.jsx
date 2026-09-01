@@ -5,7 +5,7 @@ import Icon from './Icon';
 /* `onOpenRecruitment` / `onOpenSponsor` were passed by `App` but never
    destructured here, so both buttons always took the `window.location.hash`
    branch -- which works, but bypasses the router's own scroll reset. */
-export default function CyberFooter({ onOpenAdmin, onOpenRecruitment, onOpenSponsor, onOpenBadges }) {
+export default function CyberFooter({ onOpenAdmin, onOpenRecruitment, onOpenSponsor }) {
     const { siteData } = useWebsiteData();
     const { contact } = siteData;
 
@@ -87,15 +87,6 @@ export default function CyberFooter({ onOpenAdmin, onOpenRecruitment, onOpenSpon
                                 className="text-left hover:text-sky-600 transition-colors font-bold cursor-pointer"
                             >
                                 Sponsorship Portal
-                            </button>
-                            <button
-                                onClick={() => {
-                                    if (onOpenBadges) onOpenBadges();
-                                    else window.location.hash = '#badges';
-                                }}
-                                className="text-left hover:text-amber-600 transition-colors font-bold cursor-pointer"
-                            >
-                                🎖 Alumni &amp; Crew Badges
                             </button>
                             <a href="#hero" className="hover:text-sky-600 transition-colors">Back to Top ↑</a>
                         </div>

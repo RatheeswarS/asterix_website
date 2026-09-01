@@ -18,7 +18,7 @@ import {
  * arrived on a phone with the top of the head cut off, and nothing in the
  * console could have predicted it. This renders the picture at full width, then
  * beside it every frame the site will actually put it in -- phone card, desktop
- * card, credential badge -- computed from the same two values the public page
+ * card, downloadable badge -- computed from the same two values the public page
  * reads.
  *
  * Dragging on the large preview moves the focal point, so the part of the photo

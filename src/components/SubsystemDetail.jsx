@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useWebsiteData } from '../context/WebsiteDataContext';
 import { apiUrl } from '../lib/api';
 import { memberFramingStyle } from '../lib/imageFraming';
-import { credentialId } from '../lib/credentials';
+import { downloadBadge } from '../lib/badgeImage';
 import Icon from './Icon';
 
 export default function SubsystemDetail({ subsystemId, onBack, onSelectSubsystem }) {
@@ -17,13 +17,38 @@ export default function SubsystemDetail({ subsystemId, onBack, onSelectSubsystem
     /* The card frame has to crop to keep the grid even. This is the escape
        hatch: the original picture, whole, at whatever aspect it was shot in. */
     const [portrait, setPortrait] = useState(null);
+    /* Which member's badge is currently rendering, and the last error if one
+       failed. Rendering is fast but not instant -- it waits on webfonts and on
+       the photo -- so the button has to say something while it works.
+
+       Tracked by roster index rather than by name: two people on a subsystem
+       can share a first-and-last name, and keying on the name put both their
+       buttons into the busy state at once. */
+    const [badgeBusy, setBadgeBusy] = useState(null);
+    const [badgeError, setBadgeError] = useState('');
 
     /* Switching subsystem has to drop whatever portrait is open, or the modal
        outlives the page it belongs to. Done in the handler rather than in an
        effect on `subsystemId`, so there is no render where the two disagree. */
     const selectSubsystem = (id) => {
         setPortrait(null);
+        setBadgeError('');
+        // An index means nothing once the roster under it changes, so a render
+        // still in flight must not leave a button on the new page marked busy.
+        setBadgeBusy(null);
         onSelectSubsystem(id);
+    };
+
+    const saveBadge = async (member, index) => {
+        setBadgeError('');
+        setBadgeBusy(index);
+        try {
+            await downloadBadge(member, currentSystem);
+        } catch (err) {
+            setBadgeError(`${member.name}: ${err.message}`);
+        } finally {
+            setBadgeBusy(null);
+        }
     };
 
     useEffect(() => {
@@ -277,18 +302,23 @@ export default function SubsystemDetail({ subsystemId, onBack, onSelectSubsystem
                                     )}
                                 </div>
 
-                                {member.credential?.issued !== false && (
-                                    <a
-                                        href={`#badge/${credentialId(currentSystem.id, member.name)}`}
-                                        onClick={(e) => e.stopPropagation()}
-                                        className="press press-flat mt-2 block text-center px-2 py-1.5 bg-slate-900 hover:bg-sky-600 text-white font-mono font-black text-[10px] uppercase tracking-wider border-2 border-slate-900 cursor-pointer"
-                                    >
-                                        🎖 Engineering Credential →
-                                    </a>
-                                )}
+                                <button
+                                    type="button"
+                                    disabled={badgeBusy === idx}
+                                    onClick={() => saveBadge(member, idx)}
+                                    className="press press-flat mt-2 w-full px-2 py-1.5 bg-slate-900 hover:bg-sky-600 disabled:bg-slate-400 text-white font-mono font-black text-[10px] uppercase tracking-wider border-2 border-slate-900 cursor-pointer disabled:cursor-wait"
+                                >
+                                    {badgeBusy === idx ? 'Drawing…' : '🎖 Download badge'}
+                                </button>
                             </div>
                         ))}
                     </div>
+
+                    {badgeError && (
+                        <p role="alert" className="mt-6 p-3 bg-rose-100 border-2 border-rose-500 font-mono text-xs font-bold text-rose-800">
+                            {badgeError}
+                        </p>
+                    )}
                 </div>
 
                 {/* Bottom Subsystem Switcher Footer */}

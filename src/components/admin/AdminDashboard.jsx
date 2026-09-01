@@ -5,7 +5,6 @@ import { compressImage } from '../../lib/imageOptimizer';
 import Icon from '../Icon';
 import RecruitmentAdmin from './RecruitmentAdmin';
 import ImageField from './ImageField';
-import CredentialEditor from './CredentialEditor';
 
 export default function AdminDashboard({ onExit }) {
     const {
@@ -878,17 +877,9 @@ export default function AdminDashboard({ onExit }) {
                             <div className="border-b-2 border-slate-200 pb-4">
                                 <h2 className="text-2xl font-black uppercase text-slate-900">Subsystem & Squad Roster</h2>
                                 <p className="text-xs font-bold text-slate-500 font-mono mt-1">
-                                    Manage technical specs, subsystem descriptions, specialist tags, portraits and
-                                    engineering credentials.
+                                    Manage technical specs, subsystem descriptions, specialist tags and portraits.
+                                    Each member's downloadable badge is generated from these fields.
                                 </p>
-                                <a
-                                    href="#badges"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="press press-flat inline-block mt-3 px-3 py-1.5 bg-amber-300 hover:bg-amber-200 border-2 border-slate-900 font-mono text-[10px] font-black uppercase shadow-[2px_2px_0px_#0f172a] cursor-pointer"
-                                >
-                                    🎖 Open the public credential registry ↗
-                                </a>
                             </div>
 
                             {/* Subsystem Selector Pills */}
@@ -1106,12 +1097,6 @@ export default function AdminDashboard({ onExit }) {
                                                     placeholder="Bio / Responsibilities"
                                                     rows={2}
                                                     className="w-full font-mono text-[11px] text-slate-600 border border-slate-200 p-1.5"
-                                                />
-
-                                                <CredentialEditor
-                                                    member={m}
-                                                    subsystem={currentSubsystem}
-                                                    onPatch={(fields) => updateTeamMember(currentSubsystem.id, idx, fields)}
                                                 />
                                             </div>
                                         </div>

@@ -273,7 +273,6 @@ the API.
 | Publish results | `POST /config/publish-results` | ✅ embargo enforced server-side |
 | CSV export | `GET /export` | ✅ auth required, so it cannot be a plain link |
 | Site content | `GET/PUT /api/site-data` | ✅ admin JWT required to write |
-| Credential registry | `GET /api/credentials`, `/:id` | ✅ reads the live roster |
 | Image upload | `POST /api/upload` | ⚠️ see below |
 | Health | `GET /api/health` | ✅ reports real DB and upload state |
 
@@ -312,35 +311,44 @@ secret.
 
 ---
 
-## 7. Engineering credentials
+## 7. Engineering badges
 
 Not recruitment, but the other end of the same thread: what a member takes with
 them when they leave.
 
-- Every roster member gets `#badge/<ID>`, a page naming their subsystem, their
-  role, their tenure and the work they shipped, with LinkedIn share and
-  "add to profile" links.
-- The identifier is **derived**, not stored: `ASX-<SUB>-<FNV1a(subsystem|name)>`.
-  Every existing roster row therefore already has a working badge with no
-  migration. The trade is that renaming a member issues a new id and retires the
-  old link — a credential should follow the roster, not outlive it.
-- `src/lib/credentials.js` and `server/src/lib/credentials.js` are deliberate
-  duplicates. `server/` has its own `package.json` and must deploy alone. They
-  agree byte-for-byte on the hash; a divergence shows up immediately as a badge
-  link that fails to resolve.
-- The page renders instantly from the roster already in the browser, then asks
-  `GET /api/credentials/:id` independently. **The API's answer is what the
-  verification strip reports**, because the local copy could have been edited in
-  devtools before a screenshot.
-- The strip states exactly what was checked: the team's own roster still lists
-  this person in this role. It is a record lookup, not a cryptographic
-  attestation, and it says so.
-- An empty or unreachable registry answers `503 registry_unavailable`, never
-  `404`. "We cannot check" and "this person is not on the team" are different
-  claims and the page must not confuse them.
-- Editing lives on the admin's **Subsystems & Squad** tab, per member, under
-  *🎖 Engineering Credential*: publish toggle, tenure, headline accomplishment,
-  and a list of verified accomplishments.
+It is deliberately small. A **downloadable PNG**, drawn in the member's own
+browser, and nothing else — no hosted page, no route, no API, no identifier to
+look up. There was a version with all of that, and it bought a verification
+story nobody had asked for at the cost of four files and an endpoint; what a
+member actually wants is an image they can put in a post or a CV.
+
+- **Where.** Each member card on a subsystem page carries **Download badge**.
+- **How.** `src/lib/badgeImage.js` draws to a canvas and saves a PNG. 900×480,
+  multiplied by the device pixel ratio so it stays crisp in a slide or a PDF.
+- **What it says.** Portrait, name, role, subsystem, the specialist tag, and an
+  ALUMNI or ACTIVE CREW chip — everything already on the roster. No separate
+  record to fill in, so a badge is never out of date with the site.
+- **Styling.** The site's own language: white card, hard black border, offset
+  shadow, subsystem colour strip. `SUBSYSTEM_COLORS` maps the Tailwind class to
+  a hex value, because canvas cannot read a class name.
+- **Cropping.** `drawFramed` reimplements `object-fit` / `object-position` as
+  canvas source-rectangle maths, so the badge crops a photo exactly the way the
+  website does. Without it, a portrait whose focal point was deliberately moved
+  in the admin would be centre-cropped here.
+
+Two failure modes are handled explicitly rather than left to the console:
+
+- **A photo that will not load** falls back to an initials block. A badge
+  without a photograph is still a usable badge.
+- **A photo served without permissive CORS headers taints the canvas**, and the
+  error surfaces only at `toBlob`, after everything has been drawn. The button
+  reports it in words and says to re-upload through the admin so the file lands
+  on the CDN. `crossOrigin` is set before `src`, which is the only order that
+  works.
+
+Webfonts are awaited via `document.fonts.ready` before drawing. A canvas drawn
+first silently falls back to the system stack — the exact bug the site's font
+tokens exist to prevent.
 
 ---
 
@@ -350,8 +358,6 @@ them when they leave.
   `{email, cycle}` is what actually stops duplicates.
 - **A missing ref code and a wrong token give the same error.** Distinguishing
   them turns the endpoint into a way to enumerate reference codes.
-- **A retired badge and a badge that never existed give the same 404.**
-  Distinguishing them turns the registry into a way to enumerate people who left.
 - **`currentStage()` prefers a stage that accepts a submission** when two windows
   overlap. Overlapping windows are easy to set by accident, and unavoidable for
   the instant one stage closes as the next opens. Taking the first match would
