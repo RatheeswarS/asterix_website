@@ -286,6 +286,12 @@ export default function RecruitmentPage({ onBack }) {
                                     {selectedTrack.brief.description}
                                 </p>
                             )}
+                            {selectedTrack.brief?.stayTuned && (
+                                <p className="text-sm font-bold text-slate-600 mt-2 max-w-3xl">
+                                    The selection process and its dates are below. The problem statement
+                                    itself is released at the time shown.
+                                </p>
+                            )}
                         </div>
 
                         {/* View tabs */}
@@ -318,19 +324,80 @@ export default function RecruitmentPage({ onBack }) {
                             <div className="space-y-6">
                                 <TrackTimeline track={selectedTrack} now={countdown.now} />
 
-                                <div className="p-5 bg-white border-4 border-slate-900 shadow-[6px_6px_0px_#0f172a]">
-                                    <h4 className="font-black uppercase text-sm text-slate-900 mb-2">
-                                        What you will be asked to hand in
-                                    </h4>
-                                    <p className="text-xs font-mono text-slate-700 mb-3">
-                                        {selectedTrack.brief?.deliverables || 'Published with the problem statement.'}
-                                    </p>
-                                    <p className="text-xs font-bold text-slate-500">
-                                        {selectedTrack.brief?.gated
-                                            ? 'The full problem statement is released through your own application page once you reach the stage that unlocks it — it is not published here.'
-                                            : 'The full problem statement is available to everyone on this track.'}
-                                    </p>
-                                </div>
+                                {/* Before the release moment this stands in for the whole
+                                    brief. The server sends nothing about the statement
+                                    until then, so there is nothing here to reveal by
+                                    reading the page source. */}
+                                {selectedTrack.brief?.stayTuned ? (
+                                    <div className="p-6 sm:p-8 bg-amber-300 text-slate-900 border-4 border-slate-900 shadow-[8px_8px_0px_#0284c7]">
+                                        <span className="font-mono font-black text-[11px] uppercase tracking-widest block mb-2">
+                                            ⚡ Problem statement
+                                        </span>
+                                        <h4 className="text-2xl sm:text-3xl font-black uppercase tracking-tight mb-2">
+                                            Stay tuned
+                                        </h4>
+                                        <p className="text-sm font-bold leading-relaxed max-w-2xl">
+                                            {config?.stayTunedMessage
+                                                || 'The problem statements have not been released yet.'}
+                                        </p>
+                                        {config?.briefsLaunchAt && (
+                                            <p className="font-mono text-xs font-black uppercase mt-3">
+                                                Releases {formatIstFull(config.briefsLaunchAt)}
+                                            </p>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="p-5 bg-white border-4 border-slate-900 shadow-[6px_6px_0px_#0f172a]">
+                                        <h4 className="font-black uppercase text-sm text-slate-900 mb-2">
+                                            What you will be asked to hand in
+                                        </h4>
+                                        <p className="text-xs font-mono text-slate-700 mb-3">
+                                            {selectedTrack.brief?.deliverables || 'Published with the problem statement.'}
+                                        </p>
+                                        <p className="text-xs font-bold text-slate-500">
+                                            {selectedTrack.brief?.gated
+                                                ? 'The full problem statement is released through your own application page once you reach the stage that unlocks it — it is not published here.'
+                                                : 'The full problem statement is available to everyone on this track.'}
+                                        </p>
+                                    </div>
+                                )}
+
+                                {/* Written-test syllabus. Public on a gated track too:
+                                    nobody can revise for a secret. */}
+                                {selectedTrack.brief?.portions && (
+                                    <div className="p-5 sm:p-6 bg-white border-4 border-slate-900 shadow-[6px_6px_0px_#0f172a]">
+                                        <h4 className="font-black uppercase text-sm text-slate-900 mb-3">
+                                            Written test portions
+                                        </h4>
+                                        <pre className="text-xs sm:text-sm font-mono text-slate-700 whitespace-pre-wrap leading-relaxed">
+                                            {selectedTrack.brief.portions}
+                                        </pre>
+                                    </div>
+                                )}
+
+                                {/* The statement itself, once it is both released and
+                                    ungated. A gated track still routes it through the
+                                    candidate own application page. */}
+                                {selectedTrack.brief?.bodyMarkdown && (
+                                    <div className="p-5 sm:p-6 bg-white border-4 border-slate-900 shadow-[6px_6px_0px_#0f172a]">
+                                        <h4 className="font-black uppercase text-sm text-slate-900 mb-3">
+                                            Problem statement
+                                        </h4>
+                                        <pre className="text-xs sm:text-sm font-mono text-slate-700 whitespace-pre-wrap leading-relaxed">
+                                            {selectedTrack.brief.bodyMarkdown}
+                                        </pre>
+                                        {selectedTrack.brief.fileUrl && (
+                                            <a
+                                                href={selectedTrack.brief.fileUrl}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="press inline-block mt-4 px-4 py-2 bg-slate-900 hover:bg-sky-600 text-white font-mono font-black text-xs uppercase border-2 border-slate-900 cursor-pointer no-underline"
+                                            >
+                                                Open the attachment ↗
+                                            </a>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         )}
 

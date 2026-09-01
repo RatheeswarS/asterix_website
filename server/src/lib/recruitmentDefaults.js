@@ -20,14 +20,14 @@ export const DEFAULT_TRACKS = [
         name: 'Software & Perception',
         enabled: true,
         blurb: 'Build the autonomous stack: perception, planning and control for the BAJA vehicle.',
-        applyOpensAt: '2026-08-24T09:00:00+05:30',
+        applyOpensAt: '2026-09-02T17:30:00+05:30',
         applyClosesAt: '2026-09-07T23:59:00+05:30',
         stages: [
             {
                 id: 'sw-apply',
                 label: 'Applications Close',
                 detail: 'Register for the Software & Perception track. Teams are drawn from everyone who applies.',
-                opensAt: '2026-08-24T09:00:00+05:30',
+                opensAt: '2026-09-02T17:30:00+05:30',
                 closesAt: '2026-09-07T23:59:00+05:30',
                 submissionPhase: null
             },
@@ -68,7 +68,11 @@ export const DEFAULT_TRACKS = [
             title: 'Classical OpenCV Lane Extraction & Stanley Steering Controller',
             description: 'A two-phase challenge: first document the approach in depth, then build it. Phase 1 is written research and design; Phase 2 is a working model.',
             deliverables: 'Phase 1 — research and design document (PDF). Phase 2 — source repository, recorded test results, and a short architecture note.',
-            gated: true,
+            /* Released to everyone at the launch moment rather than held back
+               until the team draw: the statement is announced at the
+               orientation, so gating it to TEAM_ASSIGNED would contradict the
+               announcement. `briefsLaunchAt` is what withholds it until then. */
+            gated: false,
             gatedToStage: STAGES.TEAM_ASSIGNED,
             bodyMarkdown: [
                 '## Phase 1 — Documentation & Detailed Research',
@@ -101,14 +105,14 @@ export const DEFAULT_TRACKS = [
         name: 'Powertrain',
         enabled: true,
         blurb: 'Engine, CVT and drivetrain. Selection starts with a written test.',
-        applyOpensAt: '2026-08-24T09:00:00+05:30',
+        applyOpensAt: '2026-09-02T17:30:00+05:30',
         applyClosesAt: '2026-09-10T18:00:00+05:30',
         stages: [
             {
                 id: 'pt-register',
                 label: 'Registration Closes',
                 detail: 'Register to sit the Powertrain written test. Registration is required to be allotted a seat.',
-                opensAt: '2026-08-24T09:00:00+05:30',
+                opensAt: '2026-09-02T17:30:00+05:30',
                 closesAt: '2026-09-10T18:00:00+05:30',
                 submissionPhase: null
             },
@@ -159,6 +163,18 @@ export const DEFAULT_TRACKS = [
             deliverables: 'Calculations, shift ratio curves (Excel / MATLAB / Python), a reduction gearbox casing CAD brief, and the presentation deck.',
             gated: true,
             gatedToStage: STAGES.TEST_PASSED,
+            /* Public from the launch moment even though the statement above
+               stays gated: this is what candidates revise from before the
+               written test, so withholding it would be self-defeating. */
+            portions: `### Written test portions — Powertrain
+
+- Engine fundamentals: four-stroke cycle, torque and power curves, volumetric efficiency.
+- CVT operation: primary and secondary clutch behaviour, flyweights, ramps, spring preload.
+- Drivetrain: gear ratios, reduction stages, torque multiplication, final drive sizing.
+- Vehicle dynamics: tractive effort, rolling resistance, gradeability, acceleration.
+- Basic thermodynamics and power transmission losses.
+
+Duration and venue are announced with the shortlist. Bring your application reference code and college ID.`,
             bodyMarkdown: [
                 '## Problem Statement',
                 '',
@@ -188,14 +204,14 @@ export const DEFAULT_TRACKS = [
         name: 'Mechanical',
         enabled: true,
         blurb: 'Chassis, suspension and structures. Solve the statement, build a deck, defend it.',
-        applyOpensAt: '2026-08-24T09:00:00+05:30',
+        applyOpensAt: '2026-09-02T17:30:00+05:30',
         applyClosesAt: '2026-09-07T23:59:00+05:30',
         stages: [
             {
                 id: 'me-apply',
                 label: 'Applications Close',
                 detail: 'Register for the Mechanical track. The problem statement is released to every applicant.',
-                opensAt: '2026-08-24T09:00:00+05:30',
+                opensAt: '2026-09-02T17:30:00+05:30',
                 closesAt: '2026-09-07T23:59:00+05:30',
                 submissionPhase: null
             },
@@ -220,7 +236,8 @@ export const DEFAULT_TRACKS = [
             title: 'Roll Cage Torsional Rigidity & Suspension Kinematics Design',
             description: 'Solved individually. Submit the engineering work and a presentation deck, then defend both in a combined presentation and interview.',
             deliverables: 'CAD STEP file, FEA impact stress report, kinematics coordinate spreadsheet, and a presentation deck (PPT or PDF).',
-            gated: true,
+            // Announced publicly at the launch moment, like Software & Perception.
+            gated: false,
             gatedToStage: STAGES.APPLIED,
             bodyMarkdown: [
                 '## Problem Statement',
@@ -251,7 +268,13 @@ export const DEFAULT_CONFIG = {
     headline: 'SAEINDIA BAJA 2026-27 Crew Recruitment',
     intro: 'Three subsystems, three different selection processes, one shared deadline: everything concludes on 20 September 2026, and results follow after that.',
     // Cleared once applications are open; the admin edits it on the Schedule tab.
-    notice: 'Applications open on Wednesday 2 September during the orientation event. The forms below go live then — come to the orientation to hear what each subsystem actually does before you pick one.',
+    notice: 'Applications and problem statements go live at the orientation on Wednesday 2 September 2026, 17:30 IST. Come to the orientation to hear what each subsystem actually does before you pick one.',
     resultsNote: 'Results for all tracks are published after 20 September 2026.',
+    /* One switch for the whole cycle. Until this moment passes the server
+       withholds every problem statement and the portal shows the message below
+       in its place; after it, the briefs appear on their own. Set it to a past
+       date, or use "Release now" in the admin, to publish early. */
+    briefsLaunchAt: '2026-09-02T17:30:00+05:30',
+    stayTunedMessage: 'Problem statements are released at the orientation on 2 September 2026, 17:30 IST. Stay tuned.',
     tracks: DEFAULT_TRACKS
 };

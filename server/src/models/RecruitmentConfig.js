@@ -22,7 +22,11 @@ const BriefSchema = new mongoose.Schema({
     gated: { type: Boolean, default: true },
     gatedToStage: { type: String, default: 'TEAM_ASSIGNED' },
     bodyMarkdown: { type: String, default: '' },
-    fileUrl: { type: String, default: '' }
+    fileUrl: { type: String, default: '' },
+    /* The written-test syllabus, for a track that examines before it sets a
+       problem statement. Public from the launch moment even when the statement
+       itself stays gated -- candidates cannot revise for a secret. */
+    portions: { type: String, default: '' }
 }, { _id: false });
 
 const StageSchema = new mongoose.Schema({
@@ -57,6 +61,12 @@ const RecruitmentConfigSchema = new mongoose.Schema({
     // Free-text banner shown above the track cards. Empty hides it.
     notice: { type: String, default: '' },
     resultsNote: { type: String, default: '' },
+    /* One moment, for every track, when the problem statements stop reading
+       "stay tuned" and become real. Held here rather than per track because the
+       team releases them together, and one field is one thing to get wrong.
+       Empty means released -- an unset date must not hide content forever. */
+    briefsLaunchAt: { type: String, default: '' },
+    stayTunedMessage: { type: String, default: '' },
     tracks: { type: [TrackSchema], default: [] }
 }, {
     timestamps: true,

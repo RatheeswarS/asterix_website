@@ -314,7 +314,6 @@ export function WebsiteDataProvider({ children }) {
     const [isLoading, setIsLoading] = useState(true);
     const [syncState, setSyncState] = useState('idle'); // 'idle' | 'saving' | 'synced' | 'error'
     const [syncError, setSyncError] = useState(null);
-    const isRemoteUpdate = useRef(false);
     const isInitialMount = useRef(true);
 
     // Initial state from localStorage or defaults
@@ -484,8 +483,16 @@ export function WebsiteDataProvider({ children }) {
             return false;
         }
 
-        setSyncState('synced');
-        return true;
+        /* No token means no PUT happened. This used to report 'synced' and
+           return true, so the console showed "Cloud Synced" while the edit sat
+           in localStorage and never reached the site -- which is exactly what
+           "the admin is not synced with the website" looks like from outside.
+           The token lives in sessionStorage, so it is gone after a tab is
+           closed or the browser restarts, and the console otherwise gives no
+           sign of it. */
+        setSyncState('error');
+        setSyncError('Not signed in, so nothing was saved to the server. Log out and back in, then press Sync Cloud.');
+        return false;
     }, []);
 
     // Save changes to localStorage and automatically sync to backend database if admin is authenticated
@@ -501,17 +508,12 @@ export function WebsiteDataProvider({ children }) {
             console.error("Failed to save website data to localStorage:", e);
         }
 
-        // If this update was received from remote Firestore onSnapshot, NEVER echo it back!
-        if (isRemoteUpdate.current) {
-            isRemoteUpdate.current = false;
-            return;
-        }
-
-        // ONLY sync to remote server if an admin is currently authenticated!
-        const isAdminLoggedIn = Boolean(
-            sessionStorage.getItem(AUTH_SESSION_KEY) || sessionStorage.getItem(AUTH_TOKEN_KEY)
-        );
-        if (!isAdminLoggedIn) {
+        /* Guarded on the token alone, which is the thing `syncToServer`
+           actually needs. It used to accept a session object OR a token, so a
+           browser holding a stale session with no token got past this guard,
+           reached a `syncToServer` that could not send anything, and was told
+           the save had succeeded. */
+        if (!sessionStorage.getItem(AUTH_TOKEN_KEY)) {
             return;
         }
 

@@ -166,7 +166,30 @@ server reads it to decide whether a window is open, and `SiteData` is a
 client-writable blob replaced wholesale on every content save. A deadline that a
 general content save could overwrite is not a deadline.
 
-### 3.2 Briefs tab
+### 3.2 Problem statement release
+
+One control, at the top of the Schedule tab, decides when every track stops
+reading *Stay tuned*: a single datetime in IST, the message shown until it
+passes, and a **Release now** button that clears the date so the statements
+publish on the next save.
+
+It is enforced by the server, not by the page. Before the moment,
+`/api/recruitment/config` carries no title, no description, no deliverables and
+no body for any track, so there is nothing in the response to reveal by
+reading the page source. It binds `/lookup` too: being drawn into a team early
+does not hand anyone a head start on the statement.
+
+An empty date counts as released. A missing value must never hide the briefs
+indefinitely -- that is the failure a team would notice far too late.
+
+Track cards, timelines and the application forms stay visible throughout. Only
+the statements are held back.
+
+**Portions.** A track with a written test carries a `portions` syllabus that goes
+public at the release moment even while its statement stays gated -- nobody can
+revise for a secret. Powertrain uses it; the other two leave it empty.
+
+### 3.3 Briefs tab
 
 Title, public description, deliverables, the problem statement body, an optional
 attachment, and the **gated** flag.
@@ -176,7 +199,7 @@ hidden by the page, *absent from the response*. An entitled applicant receives
 theirs through `/lookup`. That is what stops a mechanical applicant reading the
 powertrain statement before the people who actually sat the written test do.
 
-### 3.3 Applications tab
+### 3.4 Applications tab
 
 Filter by track, stage, status or free text; change stage and status inline;
 export CSV. Stage changes are validated against `TRACK_STAGES` for that
@@ -188,7 +211,7 @@ so a stray code from another track is reported as unmatched rather than
 advanced. It sets `writtenTest.attended`, `writtenTest.passed` and the stage
 together.
 
-### 3.4 Teams tab
+### 3.5 Teams tab
 
 `POST /teams/draw`. Seeded and reproducible: the seed and a roster hash are
 stored on every team, so a draw can be replayed and shown to have been fair.
@@ -201,7 +224,7 @@ stored on every team, so a draw can be replayed and shown to have been fair.
   old teams are cleared only *after* the new draw computes successfully, so a
   failed draw never leaves a track team-less.
 
-### 3.5 Results tab
+### 3.6 Results tab
 
 `POST /config/publish-results` per track. Nothing reaches a visitor until it is
 published: `publicTrack()` returns an empty `resultsBody` for an unpublished

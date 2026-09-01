@@ -158,6 +158,8 @@ export default function RecruitmentAdmin({ showStatus }) {
                 intro: config.intro,
                 notice: config.notice,
                 resultsNote: config.resultsNote,
+                briefsLaunchAt: config.briefsLaunchAt || '',
+                stayTunedMessage: config.stayTunedMessage || '',
                 tracks: config.tracks
             });
             window.dispatchEvent(new Event('asterix_recruitment_config_updated'));
@@ -245,6 +247,19 @@ export default function RecruitmentAdmin({ showStatus }) {
 /* ------------------------------------------------------------------ */
 
 function ScheduleTab({ config, busy, onPatchTrack, onPatchStage, onAddStage, onRemoveStage, onMoveStage, onSave, onSetConfig }) {
+    /* Mirrors `briefsAreLive` on the server: an empty or unparseable date means
+       released, so an unset field can never hide the statements indefinitely.
+       The clock is state rather than a `Date.now()` read during render, so the
+       badge flips on its own when the moment passes instead of staying wrong
+       until something else happens to re-render the tab. */
+    const [now, setNow] = useState(() => Date.now());
+    useEffect(() => {
+        const id = setInterval(() => setNow(Date.now()), 30000);
+        return () => clearInterval(id);
+    }, []);
+    const launchMs = new Date(config.briefsLaunchAt || 0).getTime();
+    const briefsLive = !config.briefsLaunchAt || Number.isNaN(launchMs) || now >= launchMs;
+
     return (
         <div className="space-y-6">
             <div className="p-5 bg-white border-4 border-slate-900 shadow-[6px_6px_0px_#0f172a] space-y-3">
@@ -279,6 +294,67 @@ function ScheduleTab({ config, busy, onPatchTrack, onPatchStage, onAddStage, onR
                     <p className="text-[11px] font-mono font-bold text-slate-500 mt-1">
                         Currently announcing the orientation. Clear this once applications are open.
                     </p>
+                </div>
+            </div>
+
+            {/* One control for the whole cycle: when the problem statements stop
+                reading "stay tuned". Kept at the top of the tab because it is the
+                thing most likely to be changed in a hurry. */}
+            <div className="p-5 bg-amber-50 border-4 border-slate-900 shadow-[6px_6px_0px_#f59e0b] space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    <h3 className="text-lg font-black uppercase text-slate-900">Problem statement release</h3>
+                    <span className={`px-2 py-1 border-2 border-slate-900 font-mono font-black text-[10px] uppercase ${
+                        briefsLive ? 'bg-emerald-400 text-slate-900' : 'bg-slate-200 text-slate-600'
+                    }`}>
+                        {briefsLive ? 'Released' : 'Stay tuned'}
+                    </span>
+                </div>
+                <p className="text-[11px] font-mono font-bold text-slate-600">
+                    Until this moment passes, every track&apos;s problem statement is withheld by the server and
+                    the portal shows the message below in its place. Track cards, timelines and the
+                    application forms stay visible throughout.
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label className="block text-[10px] font-mono font-black uppercase text-slate-600 mb-1">
+                            Statements go live (IST)
+                        </label>
+                        <input
+                            type="datetime-local"
+                            className={input}
+                            value={istInputValue(config.briefsLaunchAt)}
+                            onChange={(e) => onSetConfig((p) => ({ ...p, briefsLaunchAt: istInputToIso(e.target.value) }))}
+                        />
+                        <p className="text-[10px] font-mono font-bold text-slate-500 mt-1">
+                            {config.briefsLaunchAt
+                                ? formatIstFull(config.briefsLaunchAt)
+                                : 'Empty means released right now.'}
+                        </p>
+                    </div>
+                    <div className="flex items-end gap-2">
+                        <button
+                            type="button"
+                            onClick={() => onSetConfig((p) => ({ ...p, briefsLaunchAt: '' }))}
+                            className={btnPrimary}
+                            title="Clears the date so the statements publish immediately on save."
+                        >
+                            Release now
+                        </button>
+                    </div>
+                </div>
+
+                <div>
+                    <label className="block text-[10px] font-mono font-black uppercase text-slate-600 mb-1">
+                        &ldquo;Stay tuned&rdquo; message
+                    </label>
+                    <textarea
+                        rows={2}
+                        className={input}
+                        placeholder="Shown where each problem statement will appear, until the moment above."
+                        value={config.stayTunedMessage || ''}
+                        onChange={(e) => onSetConfig((p) => ({ ...p, stayTunedMessage: e.target.value }))}
+                    />
                 </div>
             </div>
 
@@ -492,6 +568,18 @@ function BriefsTab({ config, busy, onPatchTrack, onSave }) {
                             Problem statement body {track.brief?.gated !== false && <span className="text-rose-600">(withheld from the public config)</span>}
                         </label>
                         <textarea rows={10} className={`${input} font-mono`} value={track.brief?.bodyMarkdown || ''} onChange={(e) => patchBrief(track, { bodyMarkdown: e.target.value })} />
+                    </div>
+                    <div>
+                        <label className="block text-[10px] font-mono font-black uppercase text-slate-600 mb-1">
+                            Written test portions (optional, always public once released)
+                        </label>
+                        <textarea
+                            rows={6}
+                            className={`${input} font-mono`}
+                            placeholder="The syllabus candidates revise from. Shown to everyone on this track from the release moment, even when the statement above stays gated. Leave empty for tracks with no written test."
+                            value={track.brief?.portions || ''}
+                            onChange={(e) => patchBrief(track, { portions: e.target.value })}
+                        />
                     </div>
                     <div>
                         <label className="block text-[10px] font-mono font-black uppercase text-slate-600 mb-1">

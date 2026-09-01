@@ -128,7 +128,20 @@ function nextStage(track, now = Date.now()) {
  * for -- but the body and any attached file are withheld until the applicant
  * has actually earned them.
  */
-function publicTrack(track) {
+/**
+ * Whether the problem statements have been released yet.
+ *
+ * Judged on the server clock like every other window, so a candidate cannot
+ * read a statement early by moving their own clock forward. An empty or
+ * unparseable date counts as released: a missing value must not hide the
+ * briefs forever, which is the failure a team would notice far too late.
+ */
+function briefsAreLive(config, now = Date.now()) {
+    const at = parseIso(config?.briefsLaunchAt);
+    return at === null || now >= at;
+}
+
+function publicTrack(track, briefsLive = true) {
     const brief = track.brief || {};
     const gated = brief.gated !== false;
     return {
@@ -150,14 +163,24 @@ function publicTrack(track) {
             submissionPhase: s.submissionPhase || null
         })),
         brief: {
-            title: brief.title || '',
-            description: brief.description || '',
-            deliverables: brief.deliverables || '',
+            /* Two independent gates. `briefsLive` is the timed release that
+               applies to every track at once; `gated` is the per-track
+               entitlement that outlasts it. Before the release nothing about
+               the statement is public -- not even its title, which would
+               otherwise give the game away on the page that says "stay tuned". */
+            stayTuned: !briefsLive,
+            title: briefsLive ? (brief.title || '') : '',
+            description: briefsLive ? (brief.description || '') : '',
+            deliverables: briefsLive ? (brief.deliverables || '') : '',
             gated,
             // Withheld unless the brief is ungated. Entitled applicants receive
             // it through /lookup instead, never through the public config.
-            bodyMarkdown: gated ? null : (brief.bodyMarkdown || ''),
-            fileUrl: gated ? null : (brief.fileUrl || '')
+            bodyMarkdown: (briefsLive && !gated) ? (brief.bodyMarkdown || '') : null,
+            fileUrl: (briefsLive && !gated) ? (brief.fileUrl || '') : null,
+            /* Test portions are public once released even on a gated track.
+               They are what a candidate revises from, and a syllabus nobody can
+               read is not a syllabus. */
+            portions: briefsLive ? (brief.portions || '') : ''
         },
         resultsPublished: Boolean(track.resultsPublished),
         // Embargoed until explicitly published, so the 20 Sept result date holds.
@@ -225,8 +248,14 @@ async function applicantView(application, config) {
     }
 
     const brief = track?.brief || {};
-    const entitled = brief.gated === false
-        || hasReachedStage(application.stage, brief.gatedToStage || STAGES.TEAM_ASSIGNED);
+    /* The timed release binds here too. Reaching TEAM_ASSIGNED early must not
+       hand someone the statement before the announcement -- otherwise the
+       people drawn first get a head start nobody agreed to. */
+    const briefsLive = briefsAreLive(config, now);
+    const entitled = briefsLive && (
+        brief.gated === false
+        || hasReachedStage(application.stage, brief.gatedToStage || STAGES.TEAM_ASSIGNED)
+    );
 
     const running = currentStage(track, now);
     const openPhase = openSubmissionPhase(track, now);
@@ -270,12 +299,16 @@ async function applicantView(application, config) {
                 description: brief.description || '',
                 deliverables: brief.deliverables || '',
                 bodyMarkdown: brief.bodyMarkdown || '',
-                fileUrl: brief.fileUrl || ''
+                fileUrl: brief.fileUrl || '',
+                portions: brief.portions || ''
             }
             : null,
         briefLockedReason: entitled
             ? null
-            : 'The problem statement is released once you reach the required stage for this track.'
+            : (briefsLive
+                ? 'The problem statement is released once you reach the required stage for this track.'
+                : (config.stayTunedMessage
+                    || 'The problem statements have not been released yet. Stay tuned.'))
     };
 }
 
@@ -309,14 +342,20 @@ const adminView = (a) => ({
 router.get('/config', async (req, res) => {
     try {
         const config = await getConfig();
+        const briefsLive = briefsAreLive(config);
         res.json({
             cycle: config.cycle,
             headline: config.headline,
             intro: config.intro,
             notice: config.notice,
             resultsNote: config.resultsNote,
+            briefsLaunchAt: config.briefsLaunchAt || '',
+            stayTunedMessage: config.stayTunedMessage || '',
+            briefsLive,
             serverTime: new Date().toISOString(),
-            tracks: config.tracks.filter((t) => t.enabled !== false).map(publicTrack)
+            tracks: config.tracks
+                .filter((t) => t.enabled !== false)
+                .map((t) => publicTrack(t, briefsLive))
         });
     } catch (err) {
         console.error('Failed to build public recruitment config:', err);
@@ -855,13 +894,15 @@ router.get('/config/admin', authenticateToken, async (req, res) => {
 // PUT /api/recruitment/config
 router.put('/config', authenticateToken, async (req, res) => {
     try {
-        const { headline, intro, notice, resultsNote, tracks } = req.body || {};
+        const { headline, intro, notice, resultsNote, briefsLaunchAt, stayTunedMessage, tracks } = req.body || {};
         const config = await getConfig();
 
         if (headline !== undefined) config.headline = String(headline);
         if (intro !== undefined) config.intro = String(intro);
         if (notice !== undefined) config.notice = String(notice);
         if (resultsNote !== undefined) config.resultsNote = String(resultsNote);
+        if (briefsLaunchAt !== undefined) config.briefsLaunchAt = String(briefsLaunchAt);
+        if (stayTunedMessage !== undefined) config.stayTunedMessage = String(stayTunedMessage);
 
         if (Array.isArray(tracks)) {
             const unknown = tracks.filter((t) => !isTrack(t.id)).map((t) => t.id);
