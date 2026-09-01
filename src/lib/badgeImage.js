@@ -71,13 +71,22 @@ const initialsFor = (name) =>
         .slice(0, 2)
         .toUpperCase() || 'TM';
 
-/** Draws `text`, shrinking the font until it fits `maxWidth`. */
+/**
+ * Draws `text`, shrinking the font until it fits `maxWidth`, and returns the
+ * size it actually drew at so the caller can advance the baseline by it.
+ *
+ * The decrement has to happen before the re-measure, not after: a do/while that
+ * set the font and then decremented returned a size one smaller than the one on
+ * the canvas, which pushed the following line 8px too close whenever a name
+ * landed either side of the caller's threshold.
+ */
 function fitText(ctx, text, x, y, maxWidth, startSize, { weight = '900', font = SANS, color = INK }) {
     let size = startSize;
-    do {
-        ctx.font = `${weight} ${size}px ${font}`;
+    ctx.font = `${weight} ${size}px ${font}`;
+    while (ctx.measureText(text).width > maxWidth && size > 10) {
         size -= 1;
-    } while (ctx.measureText(text).width > maxWidth && size > 10);
+        ctx.font = `${weight} ${size}px ${font}`;
+    }
     ctx.fillStyle = color;
     ctx.fillText(text, x, y);
     return size;
@@ -281,5 +290,9 @@ export async function downloadBadge(member, subsystem) {
     document.body.append(a);
     a.click();
     a.remove();
-    URL.revokeObjectURL(href);
+    /* Revoked on a later tick rather than immediately. Chrome and Firefox start
+       the download synchronously inside the click, but Safari does not always,
+       and revoking first leaves the member with nothing and no error. The URL
+       is released either way; only the timing differs. */
+    setTimeout(() => URL.revokeObjectURL(href), 60_000);
 }
