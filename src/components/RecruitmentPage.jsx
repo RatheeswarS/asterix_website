@@ -44,6 +44,12 @@ export default function RecruitmentPage({ onBack }) {
     const [config, setConfig] = useState(null);
     const [loadError, setLoadError] = useState('');
     const [isLoading, setIsLoading] = useState(true);
+    /* Difference between this browser's clock and the server's, measured on
+       every config fetch. Everything on this page that says "open" or "closed"
+       is computed against the server's clock through this, because the server
+       is what actually accepts or refuses a submission. */
+    const [clockOffsetMs, setClockOffsetMs] = useState(0);
+    const [lastSyncedAt, setLastSyncedAt] = useState(null);
     const [selectedTrackId, setSelectedTrackId] = useState(null);
     const [isCountdownDocked, setIsCountdownDocked] = useState(false);
     const [storedCredential] = useState(() => loadCredential());
@@ -61,21 +67,55 @@ export default function RecruitmentPage({ onBack }) {
         warmUpBackend();
     }, []);
 
-    const loadConfig = useCallback(async () => {
-        setIsLoading(true);
+    const loadConfig = useCallback(async (isSilent = false) => {
+        if (!isSilent) setIsLoading(true);
+        const sentAt = Date.now();
         try {
             const data = await fetchRecruitmentConfig();
+            const receivedAt = Date.now();
+            if (data.serverTime) {
+                const serverMs = new Date(data.serverTime).getTime();
+                if (!Number.isNaN(serverMs)) {
+                    /* The server stamps `serverTime` when it builds the response,
+                       so the round trip is split in half to place that instant
+                       against the local clock. On a Render cold start the trip
+                       can be a minute; halving it keeps the estimate honest
+                       rather than pushing the offset a full minute out. */
+                    setClockOffsetMs(serverMs + (receivedAt - sentAt) / 2 - receivedAt);
+                }
+            }
             setConfig(data);
             setLoadError('');
+            setLastSyncedAt(new Date(receivedAt));
             setSelectedTrackId((current) => current || data.tracks[0]?.id || null);
         } catch (err) {
-            setLoadError(err.message);
+            // A failed background poll keeps the schedule already on screen.
+            if (!isSilent) setLoadError(err.message);
         } finally {
-            setIsLoading(false);
+            if (!isSilent) setIsLoading(false);
         }
     }, []);
 
-    useEffect(() => { loadConfig(); }, [loadConfig]);
+    useEffect(() => { loadConfig(false); }, [loadConfig]);
+
+    /* The admin edits the schedule through `/api/recruitment/config`, and this
+       page used to read it once at mount -- so a deadline moved during an open
+       session stayed wrong on every tab already looking at it. It now re-reads
+       on a slow poll and whenever the tab is brought back to the front, which
+       matches how the main site's data context already behaves. */
+    useEffect(() => {
+        const poll = setInterval(() => loadConfig(true), 60000);
+        const onFocus = () => {
+            if (document.visibilityState !== 'hidden') loadConfig(true);
+        };
+        window.addEventListener('focus', onFocus);
+        document.addEventListener('visibilitychange', onFocus);
+        return () => {
+            clearInterval(poll);
+            window.removeEventListener('focus', onFocus);
+            document.removeEventListener('visibilitychange', onFocus);
+        };
+    }, [loadConfig]);
 
     const tracks = useMemo(() => config?.tracks || [], [config]);
     const selectedTrack = useMemo(
@@ -98,7 +138,7 @@ export default function RecruitmentPage({ onBack }) {
         }));
     }, [selectedTrack]);
 
-    const countdown = useRecruitmentCountdown(deadlines);
+    const countdown = useRecruitmentCountdown(deadlines, clockOffsetMs);
 
     const handleSelectTrack = (id) => {
         setSelectedTrackId(id);
@@ -199,7 +239,7 @@ export default function RecruitmentPage({ onBack }) {
                         <p className="font-mono text-xs text-rose-700 mb-4">{loadError}</p>
                         <button
                             type="button"
-                            onClick={loadConfig}
+                            onClick={() => loadConfig(false)}
                             className="press px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white font-mono font-black text-xs uppercase border-2 border-slate-900 cursor-pointer"
                         >
                             Try again
@@ -328,9 +368,10 @@ export default function RecruitmentPage({ onBack }) {
                 <div className="max-w-6xl mx-auto mt-14 pt-8 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-mono text-slate-400">
                     <span>
                         © 2026 TEAM ASTERIX • RECRUITMENT &amp; INDUCTION PORTAL
-                        {config?.serverTime && (
+                        {countdown.now > 0 && (
                             <span className="block sm:inline sm:ml-2 text-slate-600">
-                                Server time {formatIstFull(config.serverTime)}
+                                Server clock {formatIstFull(new Date(countdown.now).toISOString())}
+                                {lastSyncedAt && ` · schedule synced ${lastSyncedAt.toLocaleTimeString()}`}
                             </span>
                         )}
                     </span>

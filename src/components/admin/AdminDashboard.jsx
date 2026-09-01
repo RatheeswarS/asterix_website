@@ -4,6 +4,8 @@ import { apiUrl } from '../../lib/api';
 import { compressImage } from '../../lib/imageOptimizer';
 import Icon from '../Icon';
 import RecruitmentAdmin from './RecruitmentAdmin';
+import ImageField from './ImageField';
+import CredentialEditor from './CredentialEditor';
 
 export default function AdminDashboard({ onExit }) {
     const {
@@ -54,9 +56,9 @@ export default function AdminDashboard({ onExit }) {
     const [selectedSubsystemId, setSelectedSubsystemId] = useState(siteData.subsystems[0]?.id || 'software-perception');
 
     // Forms state
-    const [newMember, setNewMember] = useState({ name: '', role: '', initials: '', bio: '', badge: 'SPECIALIST', photo: '', status: 'Active Member' });
-    const [newGallery, setNewGallery] = useState({ title: '', category: 'PIT LANE', year: '2026', src: '', desc: '' });
-    const [newUpdateItem, setNewUpdateItem] = useState({ label: '', tag: 'PROVING GROUNDS', image: '', link: '#' });
+    const [newMember, setNewMember] = useState({ name: '', role: '', initials: '', bio: '', badge: 'SPECIALIST', photo: '', photoFit: 'cover', photoPosition: '50% 50%', status: 'Active Member' });
+    const [newGallery, setNewGallery] = useState({ title: '', category: 'PIT LANE', year: '2026', src: '', desc: '', fit: 'cover', position: '50% 50%' });
+    const [newUpdateItem, setNewUpdateItem] = useState({ label: '', tag: 'PROVING GROUNDS', image: '', link: '#', fit: 'cover', position: '50% 50%' });
     const [newAccount, setNewAccount] = useState({ username: '', password: '', name: '', role: 'Team Member', accessLevel: 'Lead' });
 
     // Alliance Leads, Sponsor Inquiries & Database Accounts State
@@ -876,8 +878,17 @@ export default function AdminDashboard({ onExit }) {
                             <div className="border-b-2 border-slate-200 pb-4">
                                 <h2 className="text-2xl font-black uppercase text-slate-900">Subsystem & Squad Roster</h2>
                                 <p className="text-xs font-bold text-slate-500 font-mono mt-1">
-                                    Manage technical specs, subsystem descriptions, and team specialists.
+                                    Manage technical specs, subsystem descriptions, specialist tags, portraits and
+                                    engineering credentials.
                                 </p>
+                                <a
+                                    href="#badges"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="press press-flat inline-block mt-3 px-3 py-1.5 bg-amber-300 hover:bg-amber-200 border-2 border-slate-900 font-mono text-[10px] font-black uppercase shadow-[2px_2px_0px_#0f172a] cursor-pointer"
+                                >
+                                    🎖 Open the public credential registry ↗
+                                </a>
                             </div>
 
                             {/* Subsystem Selector Pills */}
@@ -946,7 +957,38 @@ export default function AdminDashboard({ onExit }) {
                                         className="w-full p-3 border-2 border-slate-900 bg-white font-mono text-xs leading-relaxed"
                                     />
                                 </div>
+
+                                {/* The address the subsystem page offers for questions.
+                                    The page used to carry a hardcoded contact@teamasterix.org
+                                    that nobody reads; it now shows whatever is typed here, and
+                                    shows nothing at all while this is blank. */}
+                                <div>
+                                    <label className="block text-xs font-mono font-black uppercase text-slate-700 mb-1">
+                                        Mailing Address for {currentSubsystem.name} Enquiries
+                                    </label>
+                                    <input
+                                        type="email"
+                                        value={currentSubsystem.contactEmail || ''}
+                                        onChange={e => updateSubsystem(currentSubsystem.id, { contactEmail: e.target.value })}
+                                        placeholder="e.g. software.asterix@psgitech.ac.in — leave blank to hide the contact line entirely"
+                                        className="w-full px-3 py-1.5 border-2 border-slate-900 bg-white font-mono text-xs"
+                                    />
+                                    <p className="text-[10px] font-mono font-bold text-slate-500 mt-1">
+                                        Shown on the public {currentSubsystem.name} page as a mail link for this
+                                        subsystem&apos;s engineers. Blank means no contact line is rendered.
+                                    </p>
+                                </div>
                             </div>
+
+                            {/* Suggestions only. The tag stays free text so a new
+                                discipline does not need a code change to be named. */}
+                            <datalist id="asterix-specialist-tags">
+                                {[...new Set([
+                                    'SUBSYSTEM LEAD', 'SPECIALIST', 'PERCEPTION', 'CONTROLS', 'EMBEDDED',
+                                    'POWERTRAIN', 'CHASSIS', 'SUSPENSION', 'MANUFACTURING', 'ALUMNI LEAD',
+                                    ...siteData.subsystems.flatMap(s => (s.teamMembers || []).map(m => m.badge).filter(Boolean))
+                                ])].map(tag => <option key={tag} value={tag} />)}
+                            </datalist>
 
                             {/* Team Members List in this Subsystem */}
                             <div className="space-y-4 pt-4 border-t-2 border-slate-200">
@@ -993,56 +1035,23 @@ export default function AdminDashboard({ onExit }) {
                                                 </div>
                                             </div>
                                             <div className="space-y-2.5">
-                                                {/* Photo Row & Preview */}
-                                                <div className="flex items-center gap-3 bg-slate-50 p-2 border border-slate-300">
-                                                    <div className="w-14 h-14 border-2 border-slate-900 bg-white flex items-center justify-center overflow-hidden flex-shrink-0 relative">
-                                                        {m.photo ? (
-                                                            <img
-                                                                src={apiUrl(m.photo)}
-                                                                alt={m.name}
-                                                                className="w-full h-full object-cover"
-                                                                onError={(e) => {
-                                                                    e.currentTarget.style.display = 'none';
-                                                                    if (e.currentTarget.nextElementSibling) {
-                                                                        e.currentTarget.nextElementSibling.classList.remove('hidden');
-                                                                    }
-                                                                }}
-                                                            />
-                                                        ) : null}
-                                                        <span className={`font-mono text-[9px] font-black text-slate-400 text-center uppercase leading-tight ${m.photo ? 'hidden' : ''}`}>
-                                                            NO<br />PHOTO
-                                                        </span>
-                                                    </div>
-                                                    <div className="flex-1 min-w-0 space-y-1">
-                                                        <input
-                                                            type="text"
-                                                            value={m.photo || ''}
-                                                            onChange={e => updateTeamMember(currentSubsystem.id, idx, { photo: e.target.value })}
-                                                            placeholder="Photo URL or browse..."
-                                                            className="w-full font-mono text-[10px] border border-slate-300 px-1.5 py-0.5 bg-white focus:outline-none"
-                                                        />
-                                                        <div className="flex items-center gap-2">
-                                                            <label className="press press-flat px-2 py-0.5 bg-white hover:bg-slate-100 border border-slate-900 font-mono text-[9px] cursor-pointer font-bold uppercase">
-                                                                <span>Upload Photo</span>
-                                                                <input
-                                                                    type="file"
-                                                                    accept="image/*"
-                                                                    className="hidden"
-                                                                    onChange={e => handleImageUpload(e, (dataUrl) => updateTeamMember(currentSubsystem.id, idx, { photo: dataUrl }), '/asterix/squad')}
-                                                                />
-                                                            </label>
-                                                            {m.photo && (
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => updateTeamMember(currentSubsystem.id, idx, { photo: '' })}
-                                                                    className="press press-flat text-[9px] font-mono text-rose-600 hover:text-rose-800 font-bold uppercase cursor-pointer"
-                                                                >
-                                                                    Remove
-                                                                </button>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </div>
+                                                {/* Photo, with the crop shown in the frames the
+                                                    site really uses rather than in a 56px square. */}
+                                                <ImageField
+                                                    label={`${m.name || 'Specialist'} — portrait`}
+                                                    value={m.photo || ''}
+                                                    fit={m.photoFit}
+                                                    position={m.photoPosition}
+                                                    frames="member"
+                                                    folder="/asterix/squad"
+                                                    onUpload={handleImageUpload}
+                                                    onChange={(fields) => updateTeamMember(currentSubsystem.id, idx, {
+                                                        ...(fields.url !== undefined ? { photo: fields.url } : {}),
+                                                        ...(fields.fit !== undefined ? { photoFit: fields.fit } : {}),
+                                                        ...(fields.position !== undefined ? { photoPosition: fields.position } : {})
+                                                    })}
+                                                    compact
+                                                />
 
                                                 <input
                                                     type="text"
@@ -1058,6 +1067,21 @@ export default function AdminDashboard({ onExit }) {
                                                     placeholder="Role Title"
                                                     className="w-full font-mono text-xs text-sky-600 font-bold border-b border-slate-200 pb-0.5 focus:border-slate-900 focus:outline-none"
                                                 />
+
+                                                {/* The corner tag on the public member card. It was
+                                                    settable when adding a specialist and then frozen
+                                                    forever, so a promotion could not be reflected. */}
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[10px] font-mono font-black uppercase text-slate-500 shrink-0">Tag:</span>
+                                                    <input
+                                                        type="text"
+                                                        list="asterix-specialist-tags"
+                                                        value={m.badge || ''}
+                                                        onChange={e => updateTeamMember(currentSubsystem.id, idx, { badge: e.target.value.toUpperCase() })}
+                                                        placeholder="SPECIALIST"
+                                                        className="flex-1 min-w-0 font-mono text-[11px] font-black uppercase border-2 border-slate-900 px-2 py-0.5 bg-sky-50 focus:outline-none"
+                                                    />
+                                                </div>
                                                 <div className="flex items-center justify-between gap-2 pt-1">
                                                     <div className="flex items-center gap-1.5">
                                                         <span className="text-[10px] font-mono font-black uppercase text-slate-500">Status:</span>
@@ -1082,6 +1106,12 @@ export default function AdminDashboard({ onExit }) {
                                                     placeholder="Bio / Responsibilities"
                                                     rows={2}
                                                     className="w-full font-mono text-[11px] text-slate-600 border border-slate-200 p-1.5"
+                                                />
+
+                                                <CredentialEditor
+                                                    member={m}
+                                                    subsystem={currentSubsystem}
+                                                    onPatch={(fields) => updateTeamMember(currentSubsystem.id, idx, fields)}
                                                 />
                                             </div>
                                         </div>
@@ -1126,44 +1156,21 @@ export default function AdminDashboard({ onExit }) {
                                     </div>
 
                                     {/* Member Photo Input */}
-                                    <div className="flex items-center gap-3 bg-white p-2.5 border-2 border-slate-900">
-                                        <div className="w-14 h-14 border-2 border-slate-900 bg-slate-100 flex items-center justify-center overflow-hidden flex-shrink-0 relative">
-                                            {newMember.photo ? (
-                                                <img
-                                                    src={apiUrl(newMember.photo)}
-                                                    alt="Preview"
-                                                    className="w-full h-full object-cover"
-                                                    onError={(e) => {
-                                                        e.currentTarget.style.display = 'none';
-                                                        if (e.currentTarget.nextElementSibling) {
-                                                            e.currentTarget.nextElementSibling.classList.remove('hidden');
-                                                        }
-                                                    }}
-                                                />
-                                            ) : null}
-                                            <span className={`font-mono text-[9px] font-black text-slate-400 text-center uppercase leading-tight ${newMember.photo ? 'hidden' : ''}`}>
-                                                PHOTO<br />PREVIEW
-                                            </span>
-                                        </div>
-                                        <div className="flex-1 space-y-1.5">
-                                            <input
-                                                type="text"
-                                                value={newMember.photo}
-                                                onChange={e => setNewMember({ ...newMember, photo: e.target.value })}
-                                                placeholder="Paste Photo URL or browse file below"
-                                                className="w-full font-mono text-xs border border-slate-300 p-1 bg-white focus:outline-none"
-                                            />
-                                            <label className="press press-flat inline-block px-2.5 py-1 bg-slate-100 hover:bg-slate-200 border border-slate-900 font-mono text-[10px] cursor-pointer font-bold uppercase">
-                                                <span>Browse Photo File</span>
-                                                <input
-                                                    type="file"
-                                                    accept="image/*"
-                                                    className="hidden"
-                                                    onChange={e => handleImageUpload(e, (dataUrl) => setNewMember(prev => ({ ...prev, photo: dataUrl })), '/asterix/squad')}
-                                                />
-                                            </label>
-                                        </div>
-                                    </div>
+                                    <ImageField
+                                        label="Specialist portrait"
+                                        value={newMember.photo}
+                                        fit={newMember.photoFit}
+                                        position={newMember.photoPosition}
+                                        frames="member"
+                                        folder="/asterix/squad"
+                                        onUpload={handleImageUpload}
+                                        onChange={(fields) => setNewMember(prev => ({
+                                            ...prev,
+                                            ...(fields.url !== undefined ? { photo: fields.url } : {}),
+                                            ...(fields.fit !== undefined ? { photoFit: fields.fit } : {}),
+                                            ...(fields.position !== undefined ? { photoPosition: fields.position } : {})
+                                        }))}
+                                    />
 
                                     <textarea
                                         value={newMember.bio}
@@ -1177,7 +1184,7 @@ export default function AdminDashboard({ onExit }) {
                                             if (!newMember.name.trim()) return alert('Please enter specialist name');
                                             const initials = newMember.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'TM';
                                             addTeamMember(currentSubsystem.id, { ...newMember, initials });
-                                            setNewMember({ name: '', role: '', initials: '', bio: '', badge: 'SPECIALIST', photo: '', status: 'Active Member' });
+                                            setNewMember({ name: '', role: '', initials: '', bio: '', badge: 'SPECIALIST', photo: '', photoFit: 'cover', photoPosition: '50% 50%', status: 'Active Member' });
                                             showStatus('New specialist added with photo & status!');
                                         }}
                                         className="press press-flat px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-mono font-black text-xs uppercase cursor-pointer"
@@ -1391,37 +1398,21 @@ export default function AdminDashboard({ onExit }) {
                                     />
                                 </div>
 
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
-                                    <div className="flex gap-2 items-center">
-                                        {newGallery.src ? (
-                                            <div className="w-14 h-14 border-2 border-slate-900 overflow-hidden bg-slate-100 flex-shrink-0">
-                                                <img src={apiUrl(newGallery.src)} alt="Preview" className="w-full h-full object-cover" />
-                                            </div>
-                                        ) : (
-                                            <div className="w-14 h-14 border-2 border-dashed border-slate-400 bg-slate-100 flex items-center justify-center text-[9px] font-mono text-slate-500 font-bold text-center flex-shrink-0">
-                                                PHOTO<br />PREVIEW
-                                            </div>
-                                        )}
-                                        <input
-                                            type="text"
-                                            value={newGallery.src}
-                                            onChange={e => setNewGallery({ ...newGallery, src: e.target.value })}
-                                            placeholder="Image URL or choose file →"
-                                            className="flex-1 px-3 py-2 border-2 border-slate-900 bg-white text-xs font-mono"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="press inline-flex items-center justify-center gap-2 w-full py-2.5 px-3 bg-white hover:bg-slate-100 border-2 border-slate-900 font-mono text-xs font-bold uppercase cursor-pointer shadow-[2px_2px_0px_#0f172a] hover:translate-x-[-1px] hover:translate-y-[-1px]">
-                                            <span className="inline-flex items-center gap-1.5"><Icon name="folder" className="w-4 h-4" />Choose Photo from Device</span>
-                                            <input
-                                                type="file"
-                                                accept="image/*"
-                                                className="hidden"
-                                                onChange={e => handleImageUpload(e, (url) => setNewGallery(prev => ({ ...prev, src: url })), '/asterix/gallery')}
-                                            />
-                                        </label>
-                                    </div>
-                                </div>
+                                <ImageField
+                                    label="Gallery photo"
+                                    value={newGallery.src}
+                                    fit={newGallery.fit}
+                                    position={newGallery.position}
+                                    frames="gallery"
+                                    folder="/asterix/gallery"
+                                    onUpload={handleImageUpload}
+                                    onChange={(fields) => setNewGallery(prev => ({
+                                        ...prev,
+                                        ...(fields.url !== undefined ? { src: fields.url } : {}),
+                                        ...(fields.fit !== undefined ? { fit: fields.fit } : {}),
+                                        ...(fields.position !== undefined ? { position: fields.position } : {})
+                                    }))}
+                                />
 
                                 <input
                                     type="text"
@@ -1435,7 +1426,7 @@ export default function AdminDashboard({ onExit }) {
                                     onClick={() => {
                                         if (!newGallery.title || !newGallery.src) return alert('Please provide photo title and image URL/file');
                                         addGalleryItem({ ...newGallery, id: `gal-${Date.now()}` });
-                                        setNewGallery({ title: '', category: 'PIT LANE', year: '2026', src: '', desc: '' });
+                                        setNewGallery({ title: '', category: 'PIT LANE', year: '2026', src: '', desc: '', fit: 'cover', position: '50% 50%' });
                                         showStatus('New photo added to gallery!');
                                     }}
                                     className="press press-flat px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-mono font-black text-xs uppercase cursor-pointer"
@@ -1449,8 +1440,22 @@ export default function AdminDashboard({ onExit }) {
                                 {siteData.gallery.map(item => (
                                     <div key={item.id} className="bg-white border-2 border-slate-900 shadow-[3px_3px_0px_#0f172a] p-3 flex flex-col justify-between">
                                         <div>
-                                            <div className="h-32 w-full overflow-hidden border border-slate-900 mb-2 bg-slate-200">
-                                                <img src={apiUrl(item.src)} alt={item.title} className="w-full h-full object-cover" />
+                                            <div className="mb-2">
+                                                <ImageField
+                                                    label={item.title || 'Gallery photo'}
+                                                    value={item.src}
+                                                    fit={item.fit}
+                                                    position={item.position}
+                                                    frames="gallery"
+                                                    folder="/asterix/gallery"
+                                                    onUpload={handleImageUpload}
+                                                    onChange={(fields) => updateGalleryItem(item.id, {
+                                                        ...(fields.url !== undefined ? { src: fields.url } : {}),
+                                                        ...(fields.fit !== undefined ? { fit: fields.fit } : {}),
+                                                        ...(fields.position !== undefined ? { position: fields.position } : {})
+                                                    })}
+                                                    compact
+                                                />
                                             </div>
                                             <input
                                                 type="text"
@@ -1510,42 +1515,26 @@ export default function AdminDashboard({ onExit }) {
                                         className="px-3 py-1.5 border-2 border-slate-900 bg-white text-xs font-mono"
                                     />
                                 </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
-                                    <div className="flex gap-2 items-center">
-                                        {newUpdateItem.image ? (
-                                            <div className="w-14 h-14 border-2 border-slate-900 overflow-hidden bg-slate-100 flex-shrink-0">
-                                                <img src={newUpdateItem.image} alt="Preview" className="w-full h-full object-cover" />
-                                            </div>
-                                        ) : (
-                                            <div className="w-14 h-14 border-2 border-dashed border-slate-400 bg-slate-100 flex items-center justify-center text-[9px] font-mono text-slate-500 font-bold text-center flex-shrink-0">
-                                                PHOTO<br />PREVIEW
-                                            </div>
-                                        )}
-                                        <input
-                                            type="text"
-                                            value={newUpdateItem.image}
-                                            onChange={e => setNewUpdateItem({ ...newUpdateItem, image: e.target.value })}
-                                            placeholder="Image URL or choose file →"
-                                            className="flex-1 px-3 py-2 border-2 border-slate-900 bg-white text-xs font-mono"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="press inline-flex items-center justify-center gap-2 w-full py-2.5 px-3 bg-white hover:bg-slate-100 border-2 border-slate-900 font-mono text-xs font-bold uppercase cursor-pointer shadow-[2px_2px_0px_#0f172a] hover:translate-x-[-1px] hover:translate-y-[-1px]">
-                                            <span className="inline-flex items-center gap-1.5"><Icon name="folder" className="w-4 h-4" />Choose Photo from Device</span>
-                                            <input
-                                                type="file"
-                                                accept="image/*"
-                                                className="hidden"
-                                                onChange={e => handleImageUpload(e, (url) => setNewUpdateItem(prev => ({ ...prev, image: url })), '/asterix/updates')}
-                                            />
-                                        </label>
-                                    </div>
-                                </div>
+                                <ImageField
+                                    label="Update photo"
+                                    value={newUpdateItem.image}
+                                    fit={newUpdateItem.fit}
+                                    position={newUpdateItem.position}
+                                    frames="update"
+                                    folder="/asterix/updates"
+                                    onUpload={handleImageUpload}
+                                    onChange={(fields) => setNewUpdateItem(prev => ({
+                                        ...prev,
+                                        ...(fields.url !== undefined ? { image: fields.url } : {}),
+                                        ...(fields.fit !== undefined ? { fit: fields.fit } : {}),
+                                        ...(fields.position !== undefined ? { position: fields.position } : {})
+                                    }))}
+                                />
                                 <button
                                     onClick={() => {
                                         if (!newUpdateItem.label) return alert('Please provide an update title');
                                         addUpdate({ ...newUpdateItem, id: `upd-${Date.now()}` });
-                                        setNewUpdateItem({ label: '', tag: 'PROVING GROUNDS', image: '', link: '#' });
+                                        setNewUpdateItem({ label: '', tag: 'PROVING GROUNDS', image: '', link: '#', fit: 'cover', position: '50% 50%' });
                                         showStatus('Team update published!');
                                     }}
                                     className="press press-flat px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-mono font-black text-xs uppercase cursor-pointer"
@@ -1557,29 +1546,45 @@ export default function AdminDashboard({ onExit }) {
                             {/* Updates List */}
                             <div className="space-y-3">
                                 {siteData.updates.map(upd => (
-                                    <div key={upd.id} className="p-3 bg-white border-2 border-slate-900 shadow-[2px_2px_0px_#0f172a] flex items-center justify-between gap-4">
-                                        <div className="flex items-center gap-3">
-                                            {upd.image && (
-                                                <img src={apiUrl(upd.image)} alt={upd.label} className="w-14 h-10 object-cover border border-slate-900" />
-                                            )}
-                                            <div>
+                                    <div key={upd.id} className="p-3 bg-white border-2 border-slate-900 shadow-[2px_2px_0px_#0f172a] space-y-2">
+                                        <div className="flex items-start justify-between gap-4">
+                                            <div className="min-w-0 flex-1">
                                                 <input
                                                     type="text"
                                                     value={upd.label}
                                                     onChange={e => updateUpdate(upd.id, { label: e.target.value })}
-                                                    className="font-bold text-xs border-b border-slate-300 focus:outline-none"
+                                                    className="w-full font-bold text-xs border-b border-slate-300 focus:outline-none"
                                                 />
-                                                <span className="text-[10px] font-mono text-sky-600 block">
-                                                    {upd.tag}
-                                                </span>
+                                                <input
+                                                    type="text"
+                                                    value={upd.tag || ''}
+                                                    onChange={e => updateUpdate(upd.id, { tag: e.target.value })}
+                                                    placeholder="Tag (e.g. FEB 2026 • PIT LANE)"
+                                                    className="w-full text-[10px] font-mono text-sky-600 border-b border-slate-200 focus:outline-none mt-1"
+                                                />
                                             </div>
+                                            <button
+                                                onClick={() => deleteUpdate(upd.id)}
+                                                className="press press-flat text-rose-600 hover:text-rose-800 font-mono text-xs font-black cursor-pointer shrink-0"
+                                            >
+                                                Delete ✕
+                                            </button>
                                         </div>
-                                        <button
-                                            onClick={() => deleteUpdate(upd.id)}
-                                            className="press press-flat text-rose-600 hover:text-rose-800 font-mono text-xs font-black cursor-pointer"
-                                        >
-                                            Delete ✕
-                                        </button>
+                                        <ImageField
+                                            label={upd.label || 'Update photo'}
+                                            value={upd.image}
+                                            fit={upd.fit}
+                                            position={upd.position}
+                                            frames="update"
+                                            folder="/asterix/updates"
+                                            onUpload={handleImageUpload}
+                                            onChange={(fields) => updateUpdate(upd.id, {
+                                                ...(fields.url !== undefined ? { image: fields.url } : {}),
+                                                ...(fields.fit !== undefined ? { fit: fields.fit } : {}),
+                                                ...(fields.position !== undefined ? { position: fields.position } : {})
+                                            })}
+                                            compact
+                                        />
                                     </div>
                                 ))}
                             </div>

@@ -1,6 +1,9 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useWebsiteData } from '../context/WebsiteDataContext';
 import { apiUrl } from '../lib/api';
+import { memberFramingStyle } from '../lib/imageFraming';
+import { credentialId } from '../lib/credentials';
 import Icon from './Icon';
 
 export default function SubsystemDetail({ subsystemId, onBack, onSelectSubsystem }) {
@@ -11,12 +14,39 @@ export default function SubsystemDetail({ subsystemId, onBack, onSelectSubsystem
     const nextSystem = subsystems[(currentIndex + 1) % subsystems.length];
     const prevSystem = subsystems[(currentIndex - 1 + subsystems.length) % subsystems.length];
 
+    /* The card frame has to crop to keep the grid even. This is the escape
+       hatch: the original picture, whole, at whatever aspect it was shot in. */
+    const [portrait, setPortrait] = useState(null);
+
+    /* Switching subsystem has to drop whatever portrait is open, or the modal
+       outlives the page it belongs to. Done in the handler rather than in an
+       effect on `subsystemId`, so there is no render where the two disagree. */
+    const selectSubsystem = (id) => {
+        setPortrait(null);
+        onSelectSubsystem(id);
+    };
+
     useEffect(() => {
         window.scrollTo(0, 0);
         if (window.lenis) {
             window.lenis.scrollTo(0, { immediate: true });
         }
     }, [subsystemId]);
+
+
+    useEffect(() => {
+        if (!portrait) return undefined;
+        const prevOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        window.lenis?.stop();
+        const onKey = (e) => { if (e.key === 'Escape') setPortrait(null); };
+        window.addEventListener('keydown', onKey);
+        return () => {
+            document.body.style.overflow = prevOverflow;
+            window.lenis?.start();
+            window.removeEventListener('keydown', onKey);
+        };
+    }, [portrait]);
 
     return (
         <div className="min-h-screen bg-white text-slate-900 pt-28 pb-20 px-4 sm:px-8 relative z-30 selection:bg-sky-500 selection:text-white">
@@ -33,7 +63,7 @@ export default function SubsystemDetail({ subsystemId, onBack, onSelectSubsystem
 
                     <div className="flex items-center gap-3">
                         <button
-                            onClick={() => onSelectSubsystem(prevSystem.id)}
+                            onClick={() => selectSubsystem(prevSystem.id)}
                             className="press px-4 py-2 border-2 border-slate-900 bg-white font-bold text-xs shadow-[2px_2px_0px_#0f172a] hover:bg-sky-100 transition-colors cursor-pointer"
                         >
                             ← Prev Spec
@@ -42,7 +72,7 @@ export default function SubsystemDetail({ subsystemId, onBack, onSelectSubsystem
                             0{currentIndex + 1} / 0{subsystems.length}
                         </span>
                         <button
-                            onClick={() => onSelectSubsystem(nextSystem.id)}
+                            onClick={() => selectSubsystem(nextSystem.id)}
                             className="press px-4 py-2 border-2 border-slate-900 bg-white font-bold text-xs shadow-[2px_2px_0px_#0f172a] hover:bg-sky-100 transition-colors cursor-pointer"
                         >
                             Next Spec →
@@ -121,20 +151,22 @@ export default function SubsystemDetail({ subsystemId, onBack, onSelectSubsystem
                         </div>
                     </div>
 
-                    {/* Contact Subsystem Engineers Banner */}
-                    <div className="pt-6 border-t-3 border-slate-900 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-sky-50/70 p-6 border-2 border-slate-900">
-                        <div>
+                    {/* Mailing line for this subsystem. Rendered only when the admin
+                        has set an address for it -- this used to be a fixed
+                        contact@teamasterix.org button that reached nobody. */}
+                    {currentSystem.contactEmail && (
+                        <div className="pt-6 border-t-3 border-slate-900 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-sky-50/70 p-6 border-2 border-slate-900">
                             <p className="text-sm sm:text-base font-black text-slate-900 uppercase">
                                 Have a question about {currentSystem.name}?
                             </p>
+                            <a
+                                href={`mailto:${currentSystem.contactEmail}`}
+                                className="press press-flat cyber-button px-6 py-3 text-xs tracking-wider uppercase whitespace-nowrap inline-block self-start sm:self-auto cursor-pointer"
+                            >
+                                {currentSystem.contactEmail} →
+                            </a>
                         </div>
-                        <a
-                            href="mailto:contact@teamasterix.org"
-                            className="press press-flat cyber-button px-6 py-3 text-xs tracking-wider uppercase whitespace-nowrap inline-block self-start sm:self-auto cursor-pointer"
-                        >
-                            Contact Subsystem Engineers →
-                        </a>
-                    </div>
+                    )}
                 </div>
 
                 {/* Subsystem Team Members Section */}
@@ -157,8 +189,20 @@ export default function SubsystemDetail({ subsystemId, onBack, onSelectSubsystem
                                 className="cyber-card p-5 flex flex-col justify-between bg-white group hover:translate-y-[-2px] transition-all"
                             >
                                 <div>
-                                    {/* Member Photo Frame */}
-                                    <div className="w-full h-56 sm:h-60 overflow-hidden border-2 border-slate-900 bg-slate-100 relative mb-4 shadow-[3px_3px_0px_#0f172a]">
+                                    {/* Member Photo Frame.
+                                        The frame used to be a fixed 224px tall box on every
+                                        viewport, so a portrait shot on a phone was cropped
+                                        hardest on the phone that took it. It is now a ratio
+                                        that stays portrait at every width, honours the focal
+                                        point chosen in the admin, and opens the uncropped
+                                        original on tap. */}
+                                    <button
+                                        type="button"
+                                        onClick={() => member.photo && setPortrait(member)}
+                                        aria-label={member.photo ? `View the full portrait of ${member.name}` : undefined}
+                                        disabled={!member.photo}
+                                        className="w-full aspect-[3/4] sm:aspect-[4/5] overflow-hidden border-2 border-slate-900 bg-slate-100 relative mb-4 shadow-[3px_3px_0px_#0f172a] block p-0 disabled:cursor-default cursor-zoom-in"
+                                    >
                                         {(() => {
                                             const photoUrl = apiUrl(member.photo);
                                             if (!photoUrl) {
@@ -178,7 +222,8 @@ export default function SubsystemDetail({ subsystemId, onBack, onSelectSubsystem
                                                     <img
                                                         src={photoUrl}
                                                         alt={member.name}
-                                                        className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300"
+                                                        style={memberFramingStyle(member)}
+                                                        className="w-full h-full group-hover:scale-105 transition-transform duration-300"
                                                         onError={(e) => {
                                                             e.currentTarget.style.display = 'none';
                                                             if (e.currentTarget.nextElementSibling) {
@@ -195,6 +240,9 @@ export default function SubsystemDetail({ subsystemId, onBack, onSelectSubsystem
                                                             [ PHOTO PENDING ]
                                                         </span>
                                                     </div>
+                                                    <span className="absolute bottom-2 left-2 px-2 py-0.5 bg-slate-900/85 text-white font-mono font-black text-[9px] uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        ⤢ View full photo
+                                                    </span>
                                                 </>
                                             );
                                         })()}
@@ -203,7 +251,7 @@ export default function SubsystemDetail({ subsystemId, onBack, onSelectSubsystem
                                         <span className="absolute top-2.5 right-2.5 px-2.5 py-0.5 bg-white/95 backdrop-blur-xs border-2 border-slate-900 font-mono font-black text-[10px] uppercase shadow-[2px_2px_0px_#0f172a]">
                                             {member.badge || 'ENGINEER'}
                                         </span>
-                                    </div>
+                                    </button>
 
                                     <h4 className="text-lg sm:text-xl font-black text-slate-900 uppercase mb-0.5">
                                         {member.name}
@@ -228,6 +276,16 @@ export default function SubsystemDetail({ subsystemId, onBack, onSelectSubsystem
                                         </span>
                                     )}
                                 </div>
+
+                                {member.credential?.issued !== false && (
+                                    <a
+                                        href={`#badge/${credentialId(currentSystem.id, member.name)}`}
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="press press-flat mt-2 block text-center px-2 py-1.5 bg-slate-900 hover:bg-sky-600 text-white font-mono font-black text-[10px] uppercase tracking-wider border-2 border-slate-900 cursor-pointer"
+                                    >
+                                        🎖 Engineering Credential →
+                                    </a>
+                                )}
                             </div>
                         ))}
                     </div>
@@ -244,7 +302,7 @@ export default function SubsystemDetail({ subsystemId, onBack, onSelectSubsystem
                     </div>
 
                     <button
-                        onClick={() => onSelectSubsystem(nextSystem.id)}
+                        onClick={() => selectSubsystem(nextSystem.id)}
                         className="press press-flat cyber-button px-8 py-3.5 text-xs font-black uppercase cursor-pointer"
                     >
                         EXPLORE {nextSystem.name} →
@@ -252,6 +310,46 @@ export default function SubsystemDetail({ subsystemId, onBack, onSelectSubsystem
                 </div>
 
             </div>
+
+            {/* Full, uncropped portrait */}
+            {portrait && typeof document !== 'undefined' && createPortal(
+                <div
+                    className="fixed inset-0 z-[9999] bg-slate-950/90 backdrop-blur-sm flex items-center justify-center p-4 sm:p-8 anim-fade"
+                    onClick={() => setPortrait(null)}
+                    data-lenis-prevent
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label={`Portrait of ${portrait.name}`}
+                >
+                    <div
+                        className="anim-pop-center relative w-full max-w-md bg-white border-4 border-slate-900 shadow-[12px_12px_0px_#0284c7] flex flex-col"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="bg-slate-900 text-white px-4 py-2.5 flex items-center justify-between gap-3 font-mono text-[11px] font-black uppercase">
+                            <span className="truncate">{portrait.name}</span>
+                            <button
+                                onClick={() => setPortrait(null)}
+                                className="press press-flat w-7 h-7 shrink-0 bg-rose-500 hover:bg-rose-600 text-white flex items-center justify-center border-2 border-white cursor-pointer font-sans text-sm font-bold"
+                                aria-label="Close portrait"
+                            >
+                                <span aria-hidden="true">✕</span>
+                            </button>
+                        </div>
+                        <div className="bg-slate-950 flex items-center justify-center max-h-[70vh] overflow-hidden">
+                            <img
+                                src={apiUrl(portrait.photo)}
+                                alt={portrait.name}
+                                className="max-w-full max-h-[70vh] object-contain"
+                            />
+                        </div>
+                        <div className="p-4 border-t-3 border-slate-900">
+                            <p className="font-mono text-xs font-black text-sky-600 uppercase">{portrait.role}</p>
+                            <p className="text-xs text-slate-600 font-medium leading-relaxed mt-1">{portrait.bio}</p>
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
         </div>
     );
 }

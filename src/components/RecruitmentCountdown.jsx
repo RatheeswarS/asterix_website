@@ -89,7 +89,7 @@ const formatShort = (ms) => shortFormatter.format(new Date(ms));
  * down -- once every stage has closed the interval is torn down instead of
  * burning a wakeup a second forever.
  */
-export function useRecruitmentCountdown(deadlines) {
+export function useRecruitmentCountdown(deadlines, clockOffsetMs = 0) {
     const schedule = useMemo(() => {
         // An admin who deletes every stage means "nothing is scheduled", so an
         // empty array stays empty. Only a missing field -- never configured --
@@ -114,14 +114,28 @@ export function useRecruitmentCountdown(deadlines) {
         }));
     }, [deadlines]);
 
-    const [now, setNow] = useState(() => Date.now());
+    /* `clockOffsetMs` carries the difference between this browser's clock and
+       the server's, measured when the schedule was fetched. The server is the
+       only thing that actually decides whether a window is open, so a visitor
+       whose laptop is a day fast must not be shown an open form the API will
+       refuse -- nor a closed one it would have accepted. */
+    /* The tick is stored raw and the offset added during render, so a newly
+       measured offset applies on the next paint without a second state update
+       chasing the first. */
+    const [tick, setTick] = useState(() => Date.now());
+    const now = tick + clockOffsetMs;
 
     const active = useMemo(() => schedule.find((d) => d.at > now) || null, [schedule, now]);
     const isLive = active !== null;
 
+    /* This clock is not only the countdown: the track cards and the timeline
+       read it to decide which stage is open. So it keeps ticking after the last
+       deadline passes, just slowly -- tearing it down entirely froze `now` at
+       mount time, and a tab left open across a boundary went on showing a stage
+       as live long after the server had closed it. */
     useEffect(() => {
-        if (!isLive) return undefined;
-        const id = setInterval(() => setNow(Date.now()), 1000);
+        const period = isLive ? 1000 : 30000;
+        const id = setInterval(() => setTick(Date.now()), period);
         return () => clearInterval(id);
     }, [isLive]);
 

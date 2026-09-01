@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import DriftWall from './DriftWall';
 import { useWebsiteData } from '../context/WebsiteDataContext';
 import { apiUrl } from '../lib/api';
+import { framingStyle } from '../lib/imageFraming';
 import Icon from './Icon';
 
 export default function TeamGallery() {
@@ -47,7 +48,10 @@ export default function TeamGallery() {
             date: g.year || "2026",
             image: apiUrl(g.src),
             badge: g.category || "GALLERY",
-            description: g.desc || ""
+            description: g.desc || "",
+            // Crop chosen in the admin against a preview of this exact tile.
+            fit: g.fit,
+            position: g.position
         }));
     }, [siteData.gallery]);
 
@@ -176,7 +180,8 @@ export default function TeamGallery() {
                                     <img
                                         src={apiUrl(item.image)}
                                         alt={item.title}
-                                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                        style={framingStyle(item.fit, item.position)}
+                                        className="w-full h-full transition-transform duration-500 group-hover:scale-105"
                                         onError={(e) => {
                                             e.currentTarget.onerror = null;
                                             e.currentTarget.src = 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=600&q=80';

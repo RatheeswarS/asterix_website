@@ -22,6 +22,7 @@ import subscriberRoutes from './routes/subscribers.js';
 import sponsorInquiryRoutes from './routes/sponsorInquiries.js';
 import uploadRoutes from './routes/upload.js';
 import recruitmentRoutes from './routes/recruitment.js';
+import credentialRoutes from './routes/credentials.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -106,6 +107,7 @@ app.use('/api/subscribers', subscriberRoutes);
 app.use('/api/sponsor-inquiries', sponsorInquiryRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/recruitment', recruitmentRoutes);
+app.use('/api/credentials', credentialRoutes);
 
 // Global error handler
 app.use((err, req, res, _next) => {

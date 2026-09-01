@@ -19,6 +19,14 @@ const BajaModelPage = lazy(() => import("./components/BajaModelPage"));
 const AdminDashboard = lazy(() => import("./components/admin/AdminDashboard"));
 const SponsorPage = lazy(() => import("./components/SponsorPage"));
 const RecruitmentPage = lazy(() => import("./components/RecruitmentPage"));
+const CrewBadgesPage = lazy(() => import("./components/badges/CrewBadgesPage"));
+const CredentialPage = lazy(() => import("./components/badges/CredentialPage"));
+
+/* `#badge/<ID>` is the link a member shares. Parsed here rather than in the
+   page so a malformed hash falls back to the directory instead of rendering a
+   lookup for an empty identifier. */
+const BADGE_HASH = /^#badge\/([A-Za-z0-9-]+)$/;
+const badgeIdFromHash = (hash) => BADGE_HASH.exec(hash || '')?.[1]?.toUpperCase() || null;
 
 function MainApp() {
     const [selectedSubsystem, setSelectedSubsystem] = useState(null);
@@ -26,6 +34,8 @@ function MainApp() {
     const [isAdminOpen, setIsAdminOpen] = useState(() => window.location.hash === '#admin');
     const [isSponsorPage, setIsSponsorPage] = useState(() => window.location.hash === '#sponsor');
     const [isRecruitmentPage, setIsRecruitmentPage] = useState(() => window.location.hash === '#join' || window.location.hash === '#recruitment');
+    const [isBadgeDirectory, setIsBadgeDirectory] = useState(() => window.location.hash === '#badges');
+    const [badgeId, setBadgeId] = useState(() => badgeIdFromHash(window.location.hash));
     const [lenisInstance, setLenisInstance] = useState(null);
 
     const scrollToTop = () => {
@@ -41,6 +51,8 @@ function MainApp() {
             setIsAdminOpen(hash === '#admin');
             setIsSponsorPage(hash === '#sponsor');
             setIsRecruitmentPage(hash === '#join' || hash === '#recruitment');
+            setIsBadgeDirectory(hash === '#badges');
+            setBadgeId(badgeIdFromHash(hash));
             if (hash === '#model') setIsModelPage(true);
             scrollToTop();
         };
@@ -50,7 +62,7 @@ function MainApp() {
 
     useEffect(() => {
         scrollToTop();
-    }, [isSponsorPage, isRecruitmentPage, selectedSubsystem, isModelPage, isAdminOpen]);
+    }, [isSponsorPage, isRecruitmentPage, selectedSubsystem, isModelPage, isAdminOpen, isBadgeDirectory, badgeId]);
 
     useEffect(() => {
         // Readers who ask for reduced motion get the browser's native scroll.
@@ -96,51 +108,56 @@ function MainApp() {
     // Activate the global scroll assembly/forming effect across all sections and pages
     useScrollAssembly(lenisInstance, selectedSubsystem);
 
-    const handleSelectSubsystem = (id) => {
-        setSelectedSubsystem(id);
+    /* Every page here is a boolean, and forgetting one in a handler leaves two
+       pages claiming the screen at once. `closeAll` is the single place that
+       knows the full set. */
+    const closeAll = () => {
+        setSelectedSubsystem(null);
         setIsModelPage(false);
         setIsAdminOpen(false);
         setIsSponsorPage(false);
         setIsRecruitmentPage(false);
+        setIsBadgeDirectory(false);
+        setBadgeId(null);
+    };
+
+    const handleSelectSubsystem = (id) => {
+        closeAll();
+        setSelectedSubsystem(id);
         scrollToTop();
     };
 
     const handleOpenModelViewer = () => {
+        closeAll();
         setIsModelPage(true);
-        setSelectedSubsystem(null);
-        setIsAdminOpen(false);
-        setIsSponsorPage(false);
-        setIsRecruitmentPage(false);
         scrollToTop();
     };
 
     const handleOpenSponsor = () => {
+        closeAll();
         setIsSponsorPage(true);
-        setIsRecruitmentPage(false);
-        setIsAdminOpen(false);
-        setIsModelPage(false);
-        setSelectedSubsystem(null);
         window.location.hash = '#sponsor';
         scrollToTop();
     };
 
     const handleOpenRecruitment = () => {
+        closeAll();
         setIsRecruitmentPage(true);
-        setIsSponsorPage(false);
-        setIsAdminOpen(false);
-        setIsModelPage(false);
-        setSelectedSubsystem(null);
         window.location.hash = '#join';
         scrollToTop();
     };
 
+    const handleOpenBadges = () => {
+        closeAll();
+        setIsBadgeDirectory(true);
+        window.location.hash = '#badges';
+        scrollToTop();
+    };
+
     const handleBackToHome = () => {
-        setSelectedSubsystem(null);
-        setIsModelPage(false);
-        setIsAdminOpen(false);
-        setIsSponsorPage(false);
-        setIsRecruitmentPage(false);
-        if (['#admin', '#sponsor', '#join', '#recruitment', '#model'].includes(window.location.hash)) {
+        closeAll();
+        const hash = window.location.hash;
+        if (['#admin', '#sponsor', '#join', '#recruitment', '#model', '#badges'].includes(hash) || BADGE_HASH.test(hash)) {
             window.history.replaceState(null, '', window.location.pathname);
         }
         scrollToTop();
@@ -176,6 +193,28 @@ function MainApp() {
         return (
             <Suspense fallback={pageFallback}>
                 <SponsorPage onBack={handleBackToHome} />
+            </Suspense>
+        );
+    }
+
+    // One member's shareable engineering credential
+    if (badgeId) {
+        return (
+            <Suspense fallback={pageFallback}>
+                <CredentialPage
+                    credentialId={badgeId}
+                    onBack={handleBackToHome}
+                    onOpenDirectory={handleOpenBadges}
+                />
+            </Suspense>
+        );
+    }
+
+    // Alumni & crew credential directory
+    if (isBadgeDirectory) {
+        return (
+            <Suspense fallback={pageFallback}>
+                <CrewBadgesPage onBack={handleBackToHome} />
             </Suspense>
         );
     }
@@ -229,7 +268,7 @@ function MainApp() {
                         <MarqueeTicker />
 
                         {/* "THE SQUAD" - Integrated with React Bits <CardSwap /> Component */}
-                        <TheSquad onSelectSubsystem={handleSelectSubsystem} />
+                        <TheSquad onSelectSubsystem={handleSelectSubsystem} onOpenBadges={handleOpenBadges} />
 
                         {/* "OUR GALLERY" - Interactive 3D DriftWall Photo Archive */}
                         <TeamGallery />
@@ -250,6 +289,7 @@ function MainApp() {
                     onOpenAdmin={() => setIsAdminOpen(true)}
                     onOpenSponsor={handleOpenSponsor}
                     onOpenRecruitment={handleOpenRecruitment}
+                    onOpenBadges={handleOpenBadges}
                 />
             </div>
 

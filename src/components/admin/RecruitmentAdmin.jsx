@@ -102,6 +102,54 @@ export default function RecruitmentAdmin({ showStatus }) {
         }));
     };
 
+    /* Stages were fixed at whatever the seed shipped: the schedule could be
+       retimed but not reshaped, so adding a shortlist announcement or dropping
+       a round meant a code change. `submissionPhase` stays read-only, though --
+       the phase ids are namespaced per track and the server matches submissions
+       against them, so a typo here would silently orphan real work. */
+    const withStages = (trackId, fn) => {
+        setConfig((prev) => ({
+            ...prev,
+            tracks: prev.tracks.map((t) => (t.id === trackId ? { ...t, stages: fn([...(t.stages || [])]) } : t))
+        }));
+    };
+
+    const addStage = (trackId) => withStages(trackId, (stages) => [
+        ...stages,
+        {
+            // Suffixed with a timestamp because stage ids are the React key and
+            // the server's own handle on a stage; two stages sharing one would
+            // make edits land on the wrong row.
+            id: `${trackId.slice(0, 2)}-stage-${Date.now().toString(36)}`,
+            label: 'New stage',
+            detail: '',
+            opensAt: '',
+            closesAt: '',
+            submissionPhase: null
+        }
+    ]);
+
+    const removeStage = (trackId, index) => withStages(trackId, (stages) => {
+        const stage = stages[index];
+        if (stage?.submissionPhase && !window.confirm(
+            `"${stage.label}" is the window the server accepts ${stage.submissionPhase} submissions against.
+
+`
+            + 'Deleting it stops that phase being submittable at all. Continue?'
+        )) {
+            return stages;
+        }
+        return stages.filter((_, i) => i !== index);
+    });
+
+    const moveStage = (trackId, index, delta) => withStages(trackId, (stages) => {
+        const target = index + delta;
+        if (target < 0 || target >= stages.length) return stages;
+        const [moved] = stages.splice(index, 1);
+        stages.splice(target, 0, moved);
+        return stages;
+    });
+
     const saveConfig = async () => {
         setBusy(true);
         try {
@@ -166,6 +214,9 @@ export default function RecruitmentAdmin({ showStatus }) {
                     busy={busy}
                     onPatchTrack={patchTrack}
                     onPatchStage={patchStage}
+                    onAddStage={addStage}
+                    onRemoveStage={removeStage}
+                    onMoveStage={moveStage}
                     onSave={saveConfig}
                     onSetConfig={setConfig}
                 />
@@ -192,7 +243,7 @@ export default function RecruitmentAdmin({ showStatus }) {
 
 /* ------------------------------------------------------------------ */
 
-function ScheduleTab({ config, busy, onPatchTrack, onPatchStage, onSave, onSetConfig }) {
+function ScheduleTab({ config, busy, onPatchTrack, onPatchStage, onAddStage, onRemoveStage, onMoveStage, onSave, onSetConfig }) {
     return (
         <div className="space-y-6">
             <div className="p-5 bg-white border-4 border-slate-900 shadow-[6px_6px_0px_#0f172a] space-y-3">
@@ -246,6 +297,26 @@ function ScheduleTab({ config, busy, onPatchTrack, onPatchStage, onSave, onSetCo
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label className="block text-[10px] font-mono font-black uppercase text-slate-600 mb-1">
+                                Track name (shown on the portal)
+                            </label>
+                            <input
+                                className={input}
+                                value={track.name || ''}
+                                onChange={(e) => onPatchTrack(track.id, { name: e.target.value })}
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-[10px] font-mono font-black uppercase text-slate-600 mb-1">
+                                Card blurb
+                            </label>
+                            <input
+                                className={input}
+                                value={track.blurb || ''}
+                                onChange={(e) => onPatchTrack(track.id, { blurb: e.target.value })}
+                            />
+                        </div>
                         <div>
                             <label className="block text-[10px] font-mono font-black uppercase text-slate-600 mb-1">
                                 Applications open (IST)
@@ -314,15 +385,53 @@ function ScheduleTab({ config, busy, onPatchTrack, onPatchStage, onSave, onSetCo
                                             />
                                         </div>
                                     </div>
-                                    <div className="font-mono text-[10px] font-black uppercase text-slate-500 lg:w-32">
-                                        <span className="block mb-1">Phase</span>
-                                        <span className="px-2 py-1 bg-white border-2 border-slate-300 block break-all">
-                                            {stage.submissionPhase || 'none'}
-                                        </span>
+                                    <div className="font-mono text-[10px] font-black uppercase text-slate-500 lg:w-32 space-y-2">
+                                        <div>
+                                            <span className="block mb-1">Phase</span>
+                                            <span className="px-2 py-1 bg-white border-2 border-slate-300 block break-all">
+                                                {stage.submissionPhase || 'none'}
+                                            </span>
+                                        </div>
+                                        <div className="flex flex-wrap gap-1">
+                                            <button
+                                                type="button"
+                                                disabled={index === 0}
+                                                onClick={() => onMoveStage(track.id, index, -1)}
+                                                className="press px-1.5 py-0.5 bg-white hover:bg-slate-100 disabled:opacity-30 border-2 border-slate-900 cursor-pointer"
+                                                title="Move earlier in the process"
+                                            >
+                                                ▲
+                                            </button>
+                                            <button
+                                                type="button"
+                                                disabled={index === track.stages.length - 1}
+                                                onClick={() => onMoveStage(track.id, index, 1)}
+                                                className="press px-1.5 py-0.5 bg-white hover:bg-slate-100 disabled:opacity-30 border-2 border-slate-900 cursor-pointer"
+                                                title="Move later in the process"
+                                            >
+                                                ▼
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => onRemoveStage(track.id, index)}
+                                                className="press px-1.5 py-0.5 bg-rose-50 hover:bg-rose-100 border-2 border-slate-900 text-rose-700 cursor-pointer"
+                                                title="Delete this stage"
+                                            >
+                                                ✕
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             ))}
                         </div>
+
+                        <button
+                            type="button"
+                            onClick={() => onAddStage(track.id)}
+                            className={`${btnQuiet} mt-3`}
+                        >
+                            + Add a stage to {track.name}
+                        </button>
                     </div>
                 </div>
             ))}

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { apiUrl } from '../lib/api';
+import { framingStyle } from '../lib/imageFraming';
 
 const DEFAULT_ITEMS = Array.from({ length: 15 }, (_, i) => {
   const ids = [1015, 1025, 1039, 1043, 1044, 1050, 1062, 1069, 1074, 1080, 1084, 106, 110, 133, 164];
@@ -308,6 +309,7 @@ const DriftWall = ({
           decoding="async"
           draggable={false}
           className={imgClass}
+          style={framingStyle(item.fit, item.position)}
           onError={(e) => {
             e.currentTarget.onerror = null;
             e.currentTarget.src = 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=600&q=80';
