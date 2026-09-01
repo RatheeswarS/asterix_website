@@ -140,6 +140,14 @@ export default function AdminDashboard({ onExit }) {
 
         showStatus('Processing & uploading image... ⚡');
 
+        /* Why the failure reason is carried into the fallback below: a failed
+           CDN upload used to be a console warning while the picture still
+           appeared, so nothing on screen separated a real CDN upload from a
+           15 KB inline copy. Uploads had in fact been landing on a disk the host
+           wipes on every deploy, and the dead links were only noticed once the
+           live gallery had emptied itself. */
+        let uploadFailure = '';
+
         // 1. Try server API upload (ImageKit CDN)
         const token = await ensureAuthToken();
         if (token) {
@@ -164,17 +172,25 @@ export default function AdminDashboard({ onExit }) {
                         e.target.value = '';
                         return;
                     }
+                    uploadFailure = 'The server accepted the upload but returned no URL.';
+                } else {
+                    const body = await res.json().catch(() => ({}));
+                    uploadFailure = body.error || `The server refused the upload (HTTP ${res.status}).`;
                 }
             } catch (uploadErr) {
-                console.warn('Server ImageKit upload notice, using compact WebP fallback:', uploadErr);
+                uploadFailure = uploadErr.message || 'Could not reach the upload server.';
             }
+        } else {
+            uploadFailure = 'Not signed in, so the CDN upload was skipped.';
         }
+
+        console.warn('Cloud upload unavailable, storing a compressed inline copy instead:', uploadFailure);
 
         // 2. Ultra-compact WebP compression fallback (max 400px, 0.60 quality < 15 KB to fit safely in DB)
         try {
             const compressedDataUrl = await compressImage(file, 400, 400, 0.60);
             callback(compressedDataUrl);
-            showStatus('Image saved & compressed! ✓');
+            showStatus(`⚠ Saved as a low-res inline copy, not on the CDN. ${uploadFailure}`);
             e.target.value = '';
         } catch (err) {
             console.warn('Compression notice, reading file:', err);

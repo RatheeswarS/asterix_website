@@ -14,7 +14,8 @@ dotenv.config({ path: path.resolve(process.cwd(), 'server/.env') });
 import express from 'express';
 import cors from 'cors';
 
-import { connectMongoDB } from './db/mongodb.js';
+import { connectMongoDB, isMongoConnected } from './db/mongodb.js';
+import { isImageKitConfigured } from './lib/imagekit.js';
 import siteDataRoutes from './routes/siteData.js';
 import authRoutes from './routes/auth.js';
 import subscriberRoutes from './routes/subscribers.js';
@@ -65,12 +66,34 @@ const uploadsPath = process.env.UPLOADS_DIR
     : path.resolve(__dirname, '../uploads');
 app.use('/uploads', express.static(uploadsPath));
 
-// Health check endpoint
+/* Local disk only survives a redeploy when the host mounts a persistent volume
+   at UPLOADS_DIR. On a plain container (Render's free tier, for one) the
+   directory is wiped on every deploy, so anything written there becomes a dead
+   URL in the database. */
+const persistentUploads = Boolean(process.env.UPLOADS_DIR) || process.env.ALLOW_LOCAL_UPLOADS === 'true';
+
+/* Health check endpoint.
+
+   `database` used to be the constant string 'MongoDB Atlas', so this reported a
+   healthy database even with MONGODB_URI unset and every query timing out. It
+   now reports what is actually true, and says whether image uploads have a
+   persistent destination -- without that, uploads land on an ephemeral
+   container disk and every stored URL dies at the next deploy. */
 app.get('/api/health', (req, res) => {
+    const mongoOk = isMongoConnected();
+    const imagekitOk = isImageKitConfigured();
+
     res.json({
-        status: 'online',
-        database: 'MongoDB Atlas',
+        status: mongoOk ? 'online' : 'degraded',
         service: 'Team Asterix API Engine',
+        database: {
+            connected: mongoOk,
+            provider: process.env.MONGODB_URI ? 'MongoDB Atlas' : 'none (MONGODB_URI unset)'
+        },
+        uploads: {
+            provider: imagekitOk ? 'imagekit' : (persistentUploads ? 'local-disk' : 'none'),
+            persistent: imagekitOk || persistentUploads
+        },
         timestamp: new Date().toISOString()
     });
 });
