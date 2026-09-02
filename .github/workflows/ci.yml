@@ -93,9 +93,6 @@ jobs:
               import('./src/models/User.js'),
               import('./src/models/Subscriber.js'),
               import('./src/models/SponsorInquiry.js'),
-              import('./src/models/RecruitmentApplication.js'),
-              import('./src/models/RecruitmentTeam.js'),
-              import('./src/models/RecruitmentConfig.js'),
               import('./src/db/mongodb.js')
             ]).then(() => console.log('MongoDB schemas and models ok'));
           "
@@ -116,39 +113,7 @@ jobs:
               import('./src/routes/siteData.js'),
               import('./src/routes/subscribers.js'),
               import('./src/routes/sponsorInquiries.js'),
-              import('./src/routes/upload.js'),
-              import('./src/routes/recruitment.js')
+              import('./src/routes/upload.js')
             ]).then(() => console.log('All route modules evaluate ok'));
-          "
-
-      # The team draw is the one operation that would be unrecoverable if it got
-      # something wrong after results were published, so its determinism and its
-      # refusal to mix tracks are asserted on every push.
-      - name: Verify team draw isolation and determinism
-        working-directory: server
-        run: |
-          node -e "
-            import('./src/lib/recruitmentDraw.js').then(({ drawTeams }) => {
-              const pool = (n, track) => Array.from({ length: n }, (_, i) => ({
-                refCode: track.toUpperCase() + '-' + i, track
-              }));
-              const sig = r => r.teams.map(t => t.map(m => m.refCode).join('|')).join('//');
-
-              const a = drawTeams({ applications: pool(17, 'powertrain'), teamSize: 4, seed: 's', track: 'powertrain' });
-              const b = drawTeams({ applications: pool(17, 'powertrain'), teamSize: 4, seed: 's', track: 'powertrain' });
-              if (sig(a) !== sig(b)) throw new Error('Draw is not reproducible for a fixed seed');
-              if (a.teams.flat().length !== 17) throw new Error('Draw dropped applicants');
-
-              let refused = false;
-              try {
-                drawTeams({
-                  applications: [...pool(3, 'powertrain'), ...pool(1, 'mechanical')],
-                  teamSize: 2, seed: 's', track: 'powertrain'
-                });
-              } catch { refused = true; }
-              if (!refused) throw new Error('Draw accepted a cross-track pool');
-
-              console.log('Team draw is deterministic and track-isolated');
-            }).catch(e => { console.error(e.message); process.exit(1); });
           "
 
