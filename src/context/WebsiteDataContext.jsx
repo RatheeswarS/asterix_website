@@ -316,7 +316,13 @@ const normalizeSubsystems = (subs) => {
                 ...m,
                 status: m.status || 'Active Member'
             }));
-            return { ...existing, teamMembers };
+            return {
+                ...defaultSys,
+                ...existing,
+                specifications: (existing.specifications && existing.specifications.length > 0) ? existing.specifications : (defaultSys?.specifications || []),
+                highlights: (existing.highlights && existing.highlights.length > 0) ? existing.highlights : (defaultSys?.highlights || []),
+                teamMembers
+            };
         }
         return defaultSys;
     }).filter(Boolean);

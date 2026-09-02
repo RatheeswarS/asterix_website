@@ -19,6 +19,10 @@ const SubsystemSchema = new mongoose.Schema({
         type: String,
         default: ''
     },
+    shortDesc: {
+        type: String,
+        default: ''
+    },
     fullDesc: {
         type: String,
         default: ''
@@ -26,6 +30,22 @@ const SubsystemSchema = new mongoose.Schema({
     contactEmail: {
         type: String,
         default: ''
+    },
+    color: {
+        type: String,
+        default: 'bg-sky-400'
+    },
+    stat: {
+        type: String,
+        default: ''
+    },
+    specifications: {
+        type: [mongoose.Schema.Types.Mixed],
+        default: []
+    },
+    highlights: {
+        type: [String],
+        default: []
     },
     order: {
         type: Number,

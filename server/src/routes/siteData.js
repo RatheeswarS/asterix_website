@@ -172,6 +172,8 @@ router.get('/', async (req, res) => {
 
         const aggregatedSubsystems = subsystems.map(sub => ({
             ...sub,
+            specifications: sub.specifications || [],
+            highlights: sub.highlights || [],
             teamMembers: allMembers.filter(m => m.subsystemId === sub.id)
         }));
 

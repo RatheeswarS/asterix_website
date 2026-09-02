@@ -53,24 +53,21 @@ const TEAM_STAGES = [
         tag: 'WHO WE ARE',
         tagColor: 'bg-yellow-400 text-slate-950',
         title: 'PASSION DRIVEN',
-        desc: 'Collegiate engineers building high-performance off-road racecars from scratch.',
-        highlight: 'STUDENT RACING CREW',
+        desc: 'Collegiate engineers designing and building high-performance off-road racecars from scratch.',
     },
     {
         step: '02',
         tag: 'WHAT WE DO',
         tagColor: 'bg-sky-400 text-slate-950',
         title: 'BUILT BY HAND',
-        desc: '100% in-house CAD design, chassis fabrication, machining, and custom drivetrain tuning.',
-        highlight: '100% IN-HOUSE FABRICATION',
+        desc: '100% in-house CAD design, chassis fabrication, precision machining, and custom powertrain tuning.',
     },
     {
         step: '03',
         tag: 'OUR MISSION',
         tagColor: 'bg-emerald-400 text-slate-950',
         title: 'CHASING PODIUMS',
-        desc: 'Racing SAEINDIA a-BAJA 2026. Built with grit, tested in dirt, ready to conquer.',
-        highlight: 'SAEINDIA a-BAJA 2026',
+        desc: 'Racing SAEINDIA a-BAJA 2026. Built with grit, tested in dirt, and engineered to conquer.',
     },
 ];
 
@@ -349,10 +346,10 @@ export default function IntroScrollSequence() {
                 dots.forEach((dot, i) => {
                     if (!dot) return;
                     if (i === stageIdx) {
-                        dot.style.width = '20px';
+                        dot.style.width = '24px';
                         dot.style.backgroundColor = '#0f172a';
                     } else {
-                        dot.style.width = '6px';
+                        dot.style.width = '8px';
                         dot.style.backgroundColor = '#cbd5e1';
                     }
                 });
@@ -702,116 +699,92 @@ export default function IntroScrollSequence() {
                 {/* Left-Side Friendly Colourful Team Story Card */}
                 <div
                     ref={hudRef}
-                    className="absolute inset-y-0 left-0 flex items-center justify-start p-4 sm:p-6 md:p-10 z-20 pointer-events-none max-w-[280px] sm:max-w-[330px] w-full select-none"
+                    className="absolute inset-y-0 left-0 flex items-center justify-start p-6 sm:p-10 md:p-14 lg:p-16 z-20 pointer-events-none max-w-[340px] sm:max-w-[400px] md:max-w-[440px] w-full select-none"
                 >
-                    <div className="w-full bg-white/95 text-slate-900 border-3 border-slate-900 shadow-[6px_6px_0px_#0f172a] rounded-xl p-3.5 sm:p-4.5 backdrop-blur-md relative overflow-hidden">
-                        {/* Dynamic Stages Stack */}
-                        <div className="relative min-h-[105px] sm:min-h-[115px]">
+                    <div className="w-full bg-white/95 text-slate-900 border-3 border-slate-900 shadow-[8px_8px_0px_#0f172a] rounded-2xl p-6 sm:p-7 md:p-8 backdrop-blur-md relative overflow-hidden">
+                        {/* Dynamic Stages Stack using CSS Grid overlapping (prevents overlap with footer) */}
+                        <div className="grid grid-cols-1 grid-rows-1 relative">
                             {/* Stage 0 */}
                             <div
                                 ref={stage0Ref}
-                                className="absolute inset-0 flex flex-col justify-between will-change-[transform,opacity]"
+                                className="col-start-1 row-start-1 flex flex-col justify-start will-change-[transform,opacity]"
                             >
-                                <div>
-                                    <div className="flex items-center justify-between gap-2 mb-1.5">
-                                        <span className={`${TEAM_STAGES[0].tagColor} border-2 border-slate-900 px-2 py-0.5 font-black text-[9px] sm:text-[10px] uppercase tracking-wider rounded shadow-[2px_2px_0px_#0f172a]`}>
-                                            {TEAM_STAGES[0].tag}
-                                        </span>
-                                        <span className="font-mono font-bold text-slate-500 text-[11px]">
-                                            01 / 03
-                                        </span>
-                                    </div>
-                                    <h3 className="text-base sm:text-lg font-black uppercase text-slate-900 tracking-tight leading-tight mb-1">
-                                        {TEAM_STAGES[0].title}
-                                    </h3>
-                                    <p className="text-xs sm:text-[13px] text-slate-700 font-bold leading-snug">
-                                        {TEAM_STAGES[0].desc}
-                                    </p>
-                                </div>
-                                <div className="mt-2.5 pt-2 border-t border-slate-900/10 flex items-center gap-1.5">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 border border-slate-900" />
-                                    <span className="text-[9px] sm:text-[10px] font-mono font-black text-slate-600 uppercase">
-                                        {TEAM_STAGES[0].highlight}
+                                <div className="flex items-center justify-between gap-2 mb-3.5">
+                                    <span className={`${TEAM_STAGES[0].tagColor} border-2 border-slate-900 px-3 py-1 font-black text-[10px] sm:text-xs uppercase tracking-wider rounded-md shadow-[2px_2px_0px_#0f172a]`}>
+                                        {TEAM_STAGES[0].tag}
+                                    </span>
+                                    <span className="font-mono font-bold text-slate-500 text-xs sm:text-sm">
+                                        01 / 03
                                     </span>
                                 </div>
+                                <h3 className="text-xl sm:text-2xl font-black uppercase text-slate-900 tracking-tight leading-tight mb-2 sm:mb-2.5">
+                                    {TEAM_STAGES[0].title}
+                                </h3>
+                                <p className="text-xs sm:text-sm md:text-[15px] text-slate-700 font-medium leading-relaxed">
+                                    {TEAM_STAGES[0].desc}
+                                </p>
                             </div>
 
                             {/* Stage 1 */}
                             <div
                                 ref={stage1Ref}
-                                className="absolute inset-0 flex flex-col justify-between will-change-[transform,opacity] opacity-0"
+                                className="col-start-1 row-start-1 flex flex-col justify-start will-change-[transform,opacity] opacity-0"
                             >
-                                <div>
-                                    <div className="flex items-center justify-between gap-2 mb-1.5">
-                                        <span className={`${TEAM_STAGES[1].tagColor} border-2 border-slate-900 px-2 py-0.5 font-black text-[9px] sm:text-[10px] uppercase tracking-wider rounded shadow-[2px_2px_0px_#0f172a]`}>
-                                            {TEAM_STAGES[1].tag}
-                                        </span>
-                                        <span className="font-mono font-bold text-slate-500 text-[11px]">
-                                            02 / 03
-                                        </span>
-                                    </div>
-                                    <h3 className="text-base sm:text-lg font-black uppercase text-slate-900 tracking-tight leading-tight mb-1">
-                                        {TEAM_STAGES[1].title}
-                                    </h3>
-                                    <p className="text-xs sm:text-[13px] text-slate-700 font-bold leading-snug">
-                                        {TEAM_STAGES[1].desc}
-                                    </p>
-                                </div>
-                                <div className="mt-2.5 pt-2 border-t border-slate-900/10 flex items-center gap-1.5">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-sky-400 border border-slate-900" />
-                                    <span className="text-[9px] sm:text-[10px] font-mono font-black text-slate-600 uppercase">
-                                        {TEAM_STAGES[1].highlight}
+                                <div className="flex items-center justify-between gap-2 mb-3.5">
+                                    <span className={`${TEAM_STAGES[1].tagColor} border-2 border-slate-900 px-3 py-1 font-black text-[10px] sm:text-xs uppercase tracking-wider rounded-md shadow-[2px_2px_0px_#0f172a]`}>
+                                        {TEAM_STAGES[1].tag}
+                                    </span>
+                                    <span className="font-mono font-bold text-slate-500 text-xs sm:text-sm">
+                                        02 / 03
                                     </span>
                                 </div>
+                                <h3 className="text-xl sm:text-2xl font-black uppercase text-slate-900 tracking-tight leading-tight mb-2 sm:mb-2.5">
+                                    {TEAM_STAGES[1].title}
+                                </h3>
+                                <p className="text-xs sm:text-sm md:text-[15px] text-slate-700 font-medium leading-relaxed">
+                                    {TEAM_STAGES[1].desc}
+                                </p>
                             </div>
 
                             {/* Stage 2 */}
                             <div
                                 ref={stage2Ref}
-                                className="absolute inset-0 flex flex-col justify-between will-change-[transform,opacity] opacity-0"
+                                className="col-start-1 row-start-1 flex flex-col justify-start will-change-[transform,opacity] opacity-0"
                             >
-                                <div>
-                                    <div className="flex items-center justify-between gap-2 mb-1.5">
-                                        <span className={`${TEAM_STAGES[2].tagColor} border-2 border-slate-900 px-2 py-0.5 font-black text-[9px] sm:text-[10px] uppercase tracking-wider rounded shadow-[2px_2px_0px_#0f172a]`}>
-                                            {TEAM_STAGES[2].tag}
-                                        </span>
-                                        <span className="font-mono font-bold text-slate-500 text-[11px]">
-                                            03 / 03
-                                        </span>
-                                    </div>
-                                    <h3 className="text-base sm:text-lg font-black uppercase text-slate-900 tracking-tight leading-tight mb-1">
-                                        {TEAM_STAGES[2].title}
-                                    </h3>
-                                    <p className="text-xs sm:text-[13px] text-slate-700 font-bold leading-snug">
-                                        {TEAM_STAGES[2].desc}
-                                    </p>
-                                </div>
-                                <div className="mt-2.5 pt-2 border-t border-slate-900/10 flex items-center gap-1.5">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 border border-slate-900" />
-                                    <span className="text-[9px] sm:text-[10px] font-mono font-black text-slate-600 uppercase">
-                                        {TEAM_STAGES[2].highlight}
+                                <div className="flex items-center justify-between gap-2 mb-3.5">
+                                    <span className={`${TEAM_STAGES[2].tagColor} border-2 border-slate-900 px-3 py-1 font-black text-[10px] sm:text-xs uppercase tracking-wider rounded-md shadow-[2px_2px_0px_#0f172a]`}>
+                                        {TEAM_STAGES[2].tag}
+                                    </span>
+                                    <span className="font-mono font-bold text-slate-500 text-xs sm:text-sm">
+                                        03 / 03
                                     </span>
                                 </div>
+                                <h3 className="text-xl sm:text-2xl font-black uppercase text-slate-900 tracking-tight leading-tight mb-2 sm:mb-2.5">
+                                    {TEAM_STAGES[2].title}
+                                </h3>
+                                <p className="text-xs sm:text-sm md:text-[15px] text-slate-700 font-medium leading-relaxed">
+                                    {TEAM_STAGES[2].desc}
+                                </p>
                             </div>
                         </div>
 
                         {/* Step Indicator Progress Dots */}
-                        <div className="mt-3 pt-2.5 border-t border-slate-900/10 flex items-center justify-between">
-                            <span className="text-[9px] font-mono font-black text-slate-500 uppercase">
+                        <div className="mt-8 pt-4 border-t-2 border-slate-900/10 flex items-center justify-between">
+                            <span className="text-[10px] sm:text-xs font-mono font-bold text-slate-500 uppercase tracking-wider">
                                 SCROLL TO ADVANCE
                             </span>
-                            <div className="flex items-center gap-1.5">
+                            <div className="flex items-center gap-2">
                                 <div
                                     ref={dot0Ref}
-                                    className="h-1.5 rounded-full border border-slate-900 bg-slate-900 transition-all duration-300 w-5"
+                                    className="h-2 rounded-full border border-slate-900 bg-slate-900 transition-all duration-300 w-6"
                                 />
                                 <div
                                     ref={dot1Ref}
-                                    className="h-1.5 rounded-full border border-slate-900 bg-slate-200 transition-all duration-300 w-1.5"
+                                    className="h-2 rounded-full border border-slate-900 bg-slate-200 transition-all duration-300 w-2"
                                 />
                                 <div
                                     ref={dot2Ref}
-                                    className="h-1.5 rounded-full border border-slate-900 bg-slate-200 transition-all duration-300 w-1.5"
+                                    className="h-2 rounded-full border border-slate-900 bg-slate-200 transition-all duration-300 w-2"
                                 />
                             </div>
                         </div>

@@ -149,7 +149,7 @@ export default function SubsystemDetail({ subsystemId, onBack, onSelectSubsystem
 
                     {/* Specifications Grid */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 font-mono mb-8">
-                        {currentSystem.specifications.map((spec, idx) => (
+                        {(currentSystem.specifications || []).map((spec, idx) => (
                             <div key={idx} className="p-4 bg-sky-50 border-3 border-slate-900 shadow-[4px_4px_0px_#0f172a]">
                                 <span className="text-[11px] font-bold text-slate-600 uppercase block mb-1.5 font-mono">
                                     {spec.label}
@@ -167,7 +167,7 @@ export default function SubsystemDetail({ subsystemId, onBack, onSelectSubsystem
                             KEY ENGINEERING HIGHLIGHTS:
                         </h4>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            {currentSystem.highlights.map((highlight, idx) => (
+                            {(currentSystem.highlights || []).map((highlight, idx) => (
                                 <div key={idx} className="flex items-start gap-2.5 p-3.5 bg-slate-50 border-2 border-slate-900">
                                     <span className="text-sky-600 font-black text-base leading-none">✦</span>
                                     <span className="text-xs sm:text-sm font-bold text-slate-800 leading-relaxed">{highlight}</span>
@@ -203,12 +203,12 @@ export default function SubsystemDetail({ subsystemId, onBack, onSelectSubsystem
                             </h2>
                         </div>
                         <span className="px-3 py-1 bg-sky-100 border-2 border-slate-900 font-mono font-black text-xs self-start sm:self-auto">
-                            {currentSystem.teamMembers.length} ENGINEERS ASSIGNED
+                            {(currentSystem.teamMembers || []).length} ENGINEERS ASSIGNED
                         </span>
                     </div>
 
                     <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                        {currentSystem.teamMembers.map((member, idx) => (
+                        {(currentSystem.teamMembers || []).map((member, idx) => (
                             <div
                                 key={idx}
                                 className="cyber-card p-5 flex flex-col justify-between bg-white group hover:translate-y-[-2px] transition-all"
