@@ -150,7 +150,7 @@ Stores all dynamic sections of the website in a single structured document (`{ k
 * `updates`: Team bulletins, race logs, and milestone articles.
 * `contact`: Email, address, social media URLs (Instagram, LinkedIn, GitHub).
 * `sponsorship`: Downloadable pitch deck PDF links, brochures, and institution endorsement letter links.
-* `recruitment`: Static content for the `#join` portal — intro copy, the Google Form apply link, the induction timeline (dated milestones), and the per-subsystem problem statements. Applications themselves are taken through the Google Form, not this API. See [working.md](./working.md).
+* `recruitment`: Static content for the `#join` portal — shared intro copy plus three per-subsystem tracks (Software & Perception, Powertrain, Mechanical), each carrying its own timeline (dated milestones), its own problem statement(s), and its own Google Form link. Applications themselves are taken through the Google Forms, not this API. See [working.md](./working.md).
 * `lastModified`: ISO-8601 timestamp tracking when content was last updated.
 
 ### Model 2: `User` (`users` Collection)
