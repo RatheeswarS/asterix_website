@@ -23,42 +23,53 @@ rides the same storage, sync and offline-fallback path as every other section
 (hero, gallery, story…), so the portal works from the bundled defaults even with
 no backend, and an admin edit appears on the live site within one poll.
 
+Each subsystem recruits on its own terms, so the content is **split into three
+fixed tracks** — `software-perception`, `powertrain`, `mechanical` — each with
+its own timeline, its own problem statement(s) and its own form:
+
 ```
 recruitment: {
-  headline,            // badge above the hero title
-  intro,               // hero paragraph
-  notice,              // optional highlighted banner; blank hides it
-  applyUrl,            // Google Form URL; blank falls back to hero.joinFormUrl
-  applyLabel,          // text on the Apply buttons
-  timeline: [          // induction milestones
-    { id, label, detail, date }   // date: ISO string pinned to +05:30 IST
-  ],
-  problemStatements: [
-    { id, subsystem, title, summary, body, fileUrl }
+  headline,            // badge above the hero title (shared)
+  intro,               // hero paragraph (shared)
+  notice,              // optional highlighted banner; blank hides it (shared)
+  applyUrl,            // shared fallback Google Form; blank falls back to hero.joinFormUrl
+  applyLabel,          // text on the Apply buttons (shared)
+  tracks: [            // exactly three, one per subsystem
+    {
+      id, name,        // e.g. 'powertrain' / 'Powertrain'
+      blurb,           // optional one-liner under the title
+      applyUrl,        // this subsystem's Google Form; blank uses the shared one
+      timeline: [ { id, label, detail, date } ],          // date: ISO pinned to +05:30 IST
+      problemStatements: [ { id, title, summary, body, fileUrl } ]
+    }
   ]
 }
 ```
 
-No dates are seeded. An empty `timeline` hides the countdown rather than showing
-an invented date; empty `problemStatements` shows a "stay tuned" note. The shape
-is normalised in `WebsiteDataContext` (`normalizeRecruitment`) so a document
-written before this field existed, or a restored backup, always reads back with
-both lists present.
+No dates are seeded. A track with an empty `timeline` hides its countdown rather
+than inventing a date; empty `problemStatements` shows a "stay tuned" note. The
+shape is normalised in `WebsiteDataContext` (`normalizeRecruitment`), which
+always returns the three canonical tracks merged by id — and folds a legacy flat
+`problemStatements[]` (the pre-split shape) into the track its old `subsystem`
+tag named, so an older document or restored backup is not lost.
 
 ---
 
 ## 2. What renders it
 
 - **`src/components/RecruitmentPage.jsx`** — the public portal at `#join` /
-  `#recruitment`. Reads `siteData.recruitment`, maps the timeline into the
-  countdown engine, lists the problem statements as cards, and points every
-  Apply button at the Google Form.
+  `#recruitment`. A **subsystem selector** (Software & Perception / Powertrain /
+  Mechanical) picks a track; the selected track's timeline feeds the countdown
+  engine, its problem statements render as cards, and every Apply button points
+  at that track's Google Form (falling back to the shared one).
 - **`src/components/RecruitmentCountdown.jsx`** — the countdown / timing tower
   (reused unchanged): "next deadline on the board", a per-milestone schedule,
   and a compact strip that docks under the header once the board scrolls past.
+  Fed one track's timeline at a time.
 - **`src/components/admin/RecruitmentAdmin.jsx`** — the `#admin → Recruitment
-  Portal` tab. Edits the fields above through the shared `WebsiteDataContext`;
-  there is no separate endpoint or token.
+  Portal` tab. Shared header fields at the top, then a subsystem selector to edit
+  each track's name, blurb, form, timeline and problem statements — all through
+  the shared `WebsiteDataContext`; there is no separate endpoint or token.
 - **`src/lib/istTime.js`** — converts between the stored `+05:30` ISO strings
   and the `datetime-local` inputs, and formats deadlines in IST.
 
@@ -67,14 +78,15 @@ both lists present.
 ## 3. Editing a cycle
 
 1. Open `#admin → Recruitment Portal`.
-2. Set the headline, intro and (optionally) the notice banner.
-3. Confirm the Google Form URL, or leave it blank to reuse the Hero tab's Join
-   Form URL.
-4. Add timeline milestones — at least the problem-statement submission deadline.
-   The countdown targets the next future milestone automatically.
-5. Add one problem statement per subsystem (or as many as you need). Nothing is
-   public until you add it here.
-6. Edits save through the normal debounced sync; **☁ Sync Cloud** pushes
+2. Set the shared headline, intro and (optionally) the notice banner, plus the
+   shared fallback Google Form URL.
+3. Pick a subsystem (Software & Perception / Powertrain / Mechanical). For each:
+   - set its own Google Form URL (or leave blank to use the shared/Hero one);
+   - add its timeline milestones — at least the submission deadline; its
+     countdown targets the next future milestone automatically;
+   - add its problem statement(s). Nothing is public until you add it here.
+4. Repeat for the other two subsystems.
+5. Edits save through the normal debounced sync; **☁ Sync Cloud** pushes
    immediately.
 
 ---
