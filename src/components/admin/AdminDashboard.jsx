@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useWebsiteData, AUTH_TOKEN_KEY } from '../../context/WebsiteDataContext';
+import { apiUrl } from '../../lib/api';
 import Icon from '../Icon';
 import ImageField from './ImageField';
 
