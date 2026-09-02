@@ -201,6 +201,80 @@ const initialSponsorshipData = {
     contactPhone: '+91 98765 43210'
 };
 
+/* Recruitment portal — static content only.
+   Applications run through the team's Google Form. Everything here is display
+   content the leads edit from the admin dashboard. Each subsystem recruits on
+   its own terms, so the content is split into three fixed tracks, each carrying
+   its own timeline (deadlines), its own problem statement(s) and its own form.
+   No dates are invented — an empty track timeline shows a "to be announced"
+   state, and empty problem statements show the same. */
+const RECRUITMENT_TRACKS = [
+    { id: 'software-perception', name: 'Software & Perception' },
+    { id: 'powertrain', name: 'Powertrain' },
+    { id: 'mechanical', name: 'Mechanical' }
+];
+
+const makeRecruitmentTrack = ({ id, name }) => ({
+    id,
+    name,
+    blurb: '',
+    applyUrl: '',              // per-subsystem Google Form; falls back to the shared one
+    timeline: [],             // [{ id, label, detail, date }] — date is ISO pinned to IST
+    problemStatements: []     // [{ id, title, summary, body, fileUrl }]
+});
+
+const initialRecruitment = {
+    headline: 'CREW RECRUITMENT',
+    intro: "Team Asterix recruits subsystem by subsystem, and each one selects on its own terms. Pick your subsystem below for its problem statement, its deadlines and its form.",
+    notice: '',
+    applyUrl: '',                                 // shared fallback Google Form
+    applyLabel: 'Apply on the Google Form',
+    tracks: RECRUITMENT_TRACKS.map(makeRecruitmentTrack)
+};
+
+const normalizeRecruitmentTrack = (track, canonical) => ({
+    ...makeRecruitmentTrack(canonical),
+    ...(track && typeof track === 'object' ? track : {}),
+    id: canonical.id,
+    name: track?.name || canonical.name,
+    timeline: Array.isArray(track?.timeline) ? track.timeline : [],
+    problemStatements: Array.isArray(track?.problemStatements) ? track.problemStatements : []
+});
+
+/* Guarantees the recruitment blob always carries the shared header fields and
+   exactly the three canonical tracks (merged by id), whatever a partial server
+   document or an older backup holds. As a courtesy it also folds a legacy flat
+   `problemStatements[]` — the pre-split shape — into the track its `subsystem`
+   tag names, so a blob saved before this change is not lost. */
+const normalizeRecruitment = (rec) => {
+    const source = rec && typeof rec === 'object' ? rec : {};
+    const incoming = Array.isArray(source.tracks) ? source.tracks : [];
+    const tracks = RECRUITMENT_TRACKS.map((canonical) =>
+        normalizeRecruitmentTrack(incoming.find((t) => t?.id === canonical.id), canonical)
+    );
+
+    if (!Array.isArray(source.tracks) && Array.isArray(source.problemStatements)) {
+        for (const ps of source.problemStatements) {
+            const tag = String(ps?.subsystem || '').toLowerCase();
+            const target = tracks.find(
+                (t) => tag && (t.id.includes(tag) || t.name.toLowerCase().includes(tag))
+            ) || tracks[0];
+            const rest = { ...ps };
+            delete rest.subsystem;
+            target.problemStatements = [...target.problemStatements, rest];
+        }
+    }
+
+    return {
+        headline: source.headline ?? initialRecruitment.headline,
+        intro: source.intro ?? initialRecruitment.intro,
+        notice: source.notice ?? '',
+        applyUrl: source.applyUrl ?? '',
+        applyLabel: source.applyLabel ?? initialRecruitment.applyLabel,
+        tracks
+    };
+};
+
 // Helper to ensure 4 subsystems are active without discarding user edits
 const normalizeSubsystems = (subs) => {
     if (!subs || !Array.isArray(subs) || subs.length === 0) {
@@ -260,6 +334,7 @@ export function WebsiteDataProvider({ children }) {
                     contact: parsed.contact || initialContactInfo,
                     accounts: parsed.accounts || initialAccounts,
                     sponsorship: parsed.sponsorship || initialSponsorshipData,
+                    recruitment: normalizeRecruitment(parsed.recruitment),
                     lastModified: parsed.lastModified || new Date().toISOString()
                 };
             }
@@ -275,6 +350,7 @@ export function WebsiteDataProvider({ children }) {
             contact: initialContactInfo,
             accounts: initialAccounts,
             sponsorship: initialSponsorshipData,
+            recruitment: initialRecruitment,
             lastModified: new Date().toISOString()
         };
     });
@@ -324,6 +400,7 @@ export function WebsiteDataProvider({ children }) {
                             updates: (data.updates && data.updates.length > 0) ? data.updates : prev.updates,
                             contact: data.contact || prev.contact,
                             sponsorship: data.sponsorship || prev.sponsorship || initialSponsorshipData,
+                            recruitment: normalizeRecruitment(data.recruitment || prev.recruitment),
                             lastModified: data.lastModified || prev.lastModified
                         };
                         try {
@@ -384,6 +461,7 @@ export function WebsiteDataProvider({ children }) {
             updates: dataToSync.updates,
             contact: dataToSync.contact,
             sponsorship: dataToSync.sponsorship || initialSponsorshipData,
+            recruitment: normalizeRecruitment(dataToSync.recruitment),
             lastModified: new Date().toISOString()
         };
 
@@ -661,6 +739,18 @@ export function WebsiteDataProvider({ children }) {
         }));
     };
 
+    /* One setter for the whole recruitment blob. The admin editor manages the
+       timeline and problem-statement arrays wholesale (add / edit / reorder /
+       remove) and hands the finished field back through here, so there is a
+       single path the debounced sync watches. */
+    const updateRecruitment = (fields) => {
+        setSiteData(prev => ({
+            ...prev,
+            recruitment: normalizeRecruitment({ ...(prev.recruitment || initialRecruitment), ...fields }),
+            lastModified: new Date().toISOString()
+        }));
+    };
+
     const resetToDefaults = () => {
         const defaults = {
             hero: initialHeroData,
@@ -671,6 +761,7 @@ export function WebsiteDataProvider({ children }) {
             contact: initialContactInfo,
             accounts: initialAccounts,
             sponsorship: initialSponsorshipData,
+            recruitment: initialRecruitment,
             lastModified: new Date().toISOString()
         };
         setSiteData(defaults);
@@ -716,6 +807,7 @@ export function WebsiteDataProvider({ children }) {
             updateAccount,
             deleteAccount,
             updateSponsorship,
+            updateRecruitment,
             syncState,
             syncError,
             resetToDefaults,

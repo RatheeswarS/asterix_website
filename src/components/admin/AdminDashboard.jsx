@@ -1334,11 +1334,11 @@ export default function AdminDashboard({ onExit }) {
                     )}
 
                     {/* TAB: RECRUITMENT PORTAL
-                        Extracted into its own component and pointed at
-                        /api/recruitment/*. The schedule and briefs used to be
-                        edited as part of the site-data blob, which the server
-                        cannot treat as authoritative -- any general content save
-                        could overwrite a deadline. */}
+                        Static content only — the intro, the induction timeline
+                        and the problem statements shown on #join. It edits the
+                        `recruitment` field of the site-data blob through the same
+                        context and debounced sync as every other tab; applications
+                        themselves run through the Google Form. */}
                     {activeTab === 'recruitment' && (
                         <RecruitmentAdmin showStatus={showStatus} />
                     )}
