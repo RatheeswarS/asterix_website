@@ -1,6 +1,8 @@
-import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import { useContext, useState, useEffect, useCallback, useRef } from 'react';
+import { WebsiteDataContext } from './WebsiteContext';
 import { subsystems as initialSubsystems } from '../data/subsystemsData';
 import { apiUrl } from '../lib/api';
+import { SOFTWARE_PERCEPTION_DATA, POWERTRAIN_TEST_DATA, MECHANICAL_MYSTERY_DATA } from '../data/recruitmentProblemStatements';
 
 import imgPaddock from '../assets/gallery/01_team_paddock.jpg';
 import imgWelding from '../assets/gallery/02_workshop_welding.jpg';
@@ -209,18 +211,64 @@ const initialSponsorshipData = {
    No dates are invented — an empty track timeline shows a "to be announced"
    state, and empty problem statements show the same. */
 const RECRUITMENT_TRACKS = [
-    { id: 'software-perception', name: 'Software & Perception' },
-    { id: 'powertrain', name: 'Powertrain' },
-    { id: 'mechanical', name: 'Mechanical' }
+    {
+        id: 'software-perception',
+        name: 'Software & Perception',
+        blurb: SOFTWARE_PERCEPTION_DATA.blurb,
+        applyUrl: '',
+        timeline: SOFTWARE_PERCEPTION_DATA.timeline,
+        problemStatements: [
+            {
+                id: 'ps-cv-01',
+                title: 'Problem Statement 01: Vision-Based Object Detection',
+                summary: 'Design and implement a practical 2D multi-class object detection system for our autonomous vehicle using a ZED 2i camera and NVIDIA Jetson Orin NX across Phase 1 (due 8th night 11:59 PM) and Phase 2 (due 14th night 11:59 PM).',
+                body: 'Phase 01: Research, Architecture & Proposal (Deadline: 8 September 2026, 11:59 PM IST)\nPhase 02: Implementation & Evaluation (Deadline: 14 September 2026, 11:59 PM IST)\nHardware: NVIDIA Jetson Orin NX + ZED 2i Camera\n9 Classes: Cone, Traffic barrier, Cow, Pedestrian, Bicyclist, Red traffic light, Green traffic light, Orange/amber traffic light, Two-wheeler.'
+            },
+            {
+                id: 'ps-fusion-02',
+                title: 'Problem Statement 02: Sensor Fusion & Track Reconstruction',
+                summary: 'Reconstruct a clean 2D cone map from noisy, backward-mounted (180° inverted) perception data and vehicle telemetry, handling ghost cone hallucinations across Phase 1 (offline pipeline due 8th night 11:59 PM) and Phase 2 (online streaming pipeline due 14th night 11:59 PM).',
+                body: 'Phase 01: Offline Map Reconstruction & Noise Filtering (Deadline: 8 September 2026, 11:59 PM IST)\nPhase 02: Online Streaming & Uncertainty (Deadline: 14 September 2026, 11:59 PM IST)\nTarget: aBAJA Autonomous Buggy + 180° backward-facing perception sensor.'
+            }
+        ]
+    },
+    {
+        id: 'powertrain',
+        name: 'Powertrain',
+        blurb: POWERTRAIN_TEST_DATA.blurb,
+        applyUrl: '',
+        timeline: POWERTRAIN_TEST_DATA.timeline,
+        problemStatements: [
+            {
+                id: 'pt-test-01',
+                title: 'BAJA Recruitment – Powertrain Subsystem Test',
+                summary: 'Offline written test covering Logical Reasoning (15 Qs), Network Analysis (10 Qs), Electronic Devices (10 Qs), and Digital Electronics (10 Qs). Duration: 60 mins. One handwritten A4 cheat sheet permitted.',
+                body: 'Date: 11 September 2026\nTime: 5:30 PM – 6:30 PM IST (Tentative)\nDuration: 60 minutes\nTotal Questions: 45\nMode: Offline Written Test\nCalculator: Permitted\nMobile Phones: Strictly NOT permitted\nCheat Sheet: One handwritten A4 sheet allowed (both sides).'
+            }
+        ]
+    },
+    {
+        id: 'mechanical',
+        name: 'Mechanical',
+        blurb: MECHANICAL_MYSTERY_DATA.blurb,
+        applyUrl: '',
+        timeline: MECHANICAL_MYSTERY_DATA.timeline,
+        problemStatements: MECHANICAL_MYSTERY_DATA.challenges.map((c) => ({
+            id: c.id,
+            title: c.title,
+            summary: `Teams of 2. ${c.sectionLongitudinal.title} & ${c.sectionLateral.title}.`,
+            body: `${c.title}\n- ${c.sectionLongitudinal.title}\n- ${c.sectionLateral.title}\n\nTeam Format: Teams of 2\nEvaluation: Mysterious & not announced.`
+        }))
+    }
 ];
 
-const makeRecruitmentTrack = ({ id, name }) => ({
-    id,
-    name,
-    blurb: '',
-    applyUrl: '',              // per-subsystem Google Form; falls back to the shared one
-    timeline: [],             // [{ id, label, detail, date }] — date is ISO pinned to IST
-    problemStatements: []     // [{ id, title, summary, body, fileUrl }]
+const makeRecruitmentTrack = (canonical) => ({
+    id: canonical.id,
+    name: canonical.name,
+    blurb: canonical.blurb || '',
+    applyUrl: canonical.applyUrl || '',
+    timeline: canonical.timeline || [],
+    problemStatements: canonical.problemStatements || []
 });
 
 const initialRecruitment = {
@@ -232,14 +280,21 @@ const initialRecruitment = {
     tracks: RECRUITMENT_TRACKS.map(makeRecruitmentTrack)
 };
 
-const normalizeRecruitmentTrack = (track, canonical) => ({
-    ...makeRecruitmentTrack(canonical),
-    ...(track && typeof track === 'object' ? track : {}),
-    id: canonical.id,
-    name: track?.name || canonical.name,
-    timeline: Array.isArray(track?.timeline) ? track.timeline : [],
-    problemStatements: Array.isArray(track?.problemStatements) ? track.problemStatements : []
-});
+const normalizeRecruitmentTrack = (track, canonical) => {
+    const canonicalTimeline = canonical.timeline || [];
+    const canonicalStatements = canonical.problemStatements || [];
+
+    return {
+        ...makeRecruitmentTrack(canonical),
+        ...(track && typeof track === 'object' ? track : {}),
+        id: canonical.id,
+        name: track?.name || canonical.name,
+        blurb: track?.blurb || canonical.blurb || '',
+        applyUrl: track?.applyUrl ?? canonical.applyUrl ?? '',
+        timeline: canonicalTimeline,
+        problemStatements: canonicalStatements
+    };
+};
 
 /* Guarantees the recruitment blob always carries the shared header fields and
    exactly the three canonical tracks (merged by id), whatever a partial server
@@ -329,8 +384,6 @@ const normalizeSubsystems = (subs) => {
 
     return result.length === 4 ? result : initialSubsystems;
 };
-
-const WebsiteDataContext = createContext(null);
 
 export function WebsiteDataProvider({ children }) {
     const [isServerConnected, setIsServerConnected] = useState(false);
@@ -852,10 +905,58 @@ export function WebsiteDataProvider({ children }) {
     );
 }
 
+const fallbackWebsiteData = {
+    siteData: {
+        hero: initialHeroData,
+        story: initialStoryText,
+        subsystems: initialSubsystems,
+        gallery: initialGalleryItems,
+        updates: initialUpdates,
+        contact: initialContactInfo,
+        accounts: initialAccounts,
+        sponsorship: initialSponsorshipData,
+        recruitment: initialRecruitment,
+        lastModified: '1970-01-01T00:00:00.000Z'
+    },
+    isServerConnected: false,
+    isLoading: false,
+    lastRefreshedAt: new Date(),
+    isLiveRefreshing: false,
+    forceLiveRefresh: () => {},
+    fetchFromDatabase: async () => {},
+    syncToServer: async () => {},
+    updateHero: () => {},
+    updateStory: () => {},
+    updateContact: () => {},
+    updateSubsystem: () => {},
+    addTeamMember: () => {},
+    updateTeamMember: () => {},
+    deleteTeamMember: () => {},
+    moveTeamMember: () => {},
+    addGalleryItem: () => {},
+    updateGalleryItem: () => {},
+    deleteGalleryItem: () => {},
+    addUpdate: () => {},
+    updateUpdate: () => {},
+    deleteUpdate: () => {},
+    addAccount: () => {},
+    updateAccount: () => {},
+    deleteAccount: () => {},
+    updateSponsorship: () => {},
+    updateRecruitment: () => {},
+    syncState: 'idle',
+    syncError: null,
+    resetToDefaults: () => {},
+    loadFromBackup: () => {},
+    AUTH_SESSION_KEY,
+    AUTH_TOKEN_KEY
+};
+
 export function useWebsiteData() {
     const ctx = useContext(WebsiteDataContext);
     if (!ctx) {
-        throw new Error("useWebsiteData must be used within a WebsiteDataProvider");
+        return fallbackWebsiteData;
     }
     return ctx;
 }
+

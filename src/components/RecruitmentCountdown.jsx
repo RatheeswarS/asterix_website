@@ -179,23 +179,38 @@ const ACCENT = {
     },
 };
 
-const URGENCY_NOTE = {
-    open: 'Board is green. Plenty of window left.',
-    soon: 'Under a week on the clock.',
-    final: 'Final day. Submissions close tonight.',
-    closed: 'All published stages have closed.',
+const getUrgencyNote = (urgency, active) => {
+    if (urgency === 'closed' || !active) return 'All published stages have closed.';
+
+    const isRelease = active.id?.includes('release') || active.label?.toLowerCase().includes('release');
+    const isTest = active.id?.includes('test') || active.label?.toLowerCase().includes('test');
+    const isInterview = active.id?.includes('interview') || active.label?.toLowerCase().includes('interview');
+    const isResults = active.id?.includes('results') || active.label?.toLowerCase().includes('result');
+
+    if (urgency === 'final') {
+        if (isRelease) return 'Release window opening soon.';
+        if (isTest) return 'Test day. Starting today.';
+        if (isInterview) return 'Interview day. Starting today.';
+        if (isResults) return 'Final day. Results announce tonight.';
+        return 'Final day. Submissions close tonight.';
+    }
+
+    if (urgency === 'soon') {
+        if (isRelease) return 'Release scheduled shortly.';
+        if (isTest) return 'Test date approaching this week.';
+        if (isInterview) return 'Interviews scheduled this week.';
+        if (isResults) return 'Results announcement approaching.';
+        return 'Under a week on the clock.';
+    }
+
+    if (isRelease) return 'Stage active. Release scheduled.';
+    if (isTest) return 'Test schedule confirmed.';
+    if (isInterview) return 'Interview schedule active.';
+    if (isResults) return 'Evaluation in progress. Results scheduled.';
+    return 'Board is green. Plenty of window left.';
 };
 
-/**
- * `applyLink` used to be an external Google Form URL, so both apply buttons
- * hardcoded `target="_blank"`. It is now an in-page anchor, and opening `#apply`
- * in a new tab lands the reader on a blank page. These props keep working for
- * either kind of destination.
- */
-const linkProps = (href) =>
-    href?.startsWith('#')
-        ? { href, arrow: '↓' }
-        : { href, target: '_blank', rel: 'noopener noreferrer', arrow: '↗' };
+
 
 const Tile = ({ value, unit, accent, pulse }) => (
     <div className="flex flex-col items-center">
@@ -221,7 +236,7 @@ const Tile = ({ value, unit, accent, pulse }) => (
  * re-enters the viewport so the page can dock the compact strip into the
  * sticky header.
  */
-export function RecruitmentCountdownBoard({ countdown, applyLink, onDockChange }) {
+export function RecruitmentCountdownBoard({ countdown, onDockChange }) {
     const { active, parts, elapsedPct, urgency, schedule } = countdown;
     const accent = ACCENT[urgency];
 
@@ -276,7 +291,13 @@ export function RecruitmentCountdownBoard({ countdown, applyLink, onDockChange }
                         </h2>
                         <p className="mt-3 font-mono text-xs sm:text-sm font-bold text-slate-400">
                             {active
-                                ? `Closes ${formatFull(active.at)}`
+                                ? (active.id?.includes('release') || active.label?.toLowerCase().includes('release')
+                                    ? `Unlocks ${formatFull(active.at)}`
+                                    : (active.id?.includes('results') || active.label?.toLowerCase().includes('result')
+                                        ? `Announces ${formatFull(active.at)}`
+                                        : (active.id?.includes('test') || active.id?.includes('interview') || active.label?.toLowerCase().includes('interview')
+                                            ? `Starts ${formatFull(active.at)}`
+                                            : `Closes ${formatFull(active.at)}`)))
                                 : 'Watch the results board below for the next cycle.'}
                         </p>
                         {active?.detail && (
@@ -312,7 +333,7 @@ export function RecruitmentCountdownBoard({ countdown, applyLink, onDockChange }
                             {Math.round(elapsedPct)}% of this window elapsed
                         </span>
                         <span className={`uppercase tracking-widest ${accent.note}`}>
-                            {URGENCY_NOTE[urgency]}
+                            {getUrgencyNote(urgency, active)}
                         </span>
                     </div>
                 </div>
@@ -367,19 +388,7 @@ export function RecruitmentCountdownBoard({ countdown, applyLink, onDockChange }
                     </ul>
                 </div>
 
-                {active && (() => {
-                    const { arrow, ...anchor } = linkProps(applyLink);
-                    return (
-                        <div className="mt-8">
-                            <a
-                                {...anchor}
-                                className="press inline-flex items-center gap-2 px-6 py-3.5 bg-amber-300 hover:bg-amber-400 text-slate-900 border-3 border-slate-900 font-mono font-black text-xs uppercase shadow-[4px_4px_0px_#0284c7] cursor-pointer"
-                            >
-                                <span>Apply before the flag drops {arrow}</span>
-                            </a>
-                        </div>
-                    );
-                })()}
+                {/* Board ends without apply button */}
             </div>
         </section>
     );
@@ -389,11 +398,10 @@ export function RecruitmentCountdownBoard({ countdown, applyLink, onDockChange }
  * Compact one-line version that docks under the sticky header once the board
  * has scrolled past, so the deadline stays on screen for the rest of the page.
  */
-export function RecruitmentCountdownStrip({ countdown, applyLink, docked }) {
+export function RecruitmentCountdownStrip({ countdown, docked }) {
     const { active, parts, elapsedPct, urgency } = countdown;
     const accent = ACCENT[urgency];
     const show = docked && Boolean(active);
-    const { arrow: applyArrow, ...apply } = linkProps(applyLink);
 
     return (
         <div
@@ -418,13 +426,6 @@ export function RecruitmentCountdownStrip({ countdown, applyLink, docked }) {
                     {pad(parts.minutes)}<span className="text-slate-500">m</span>{' '}
                     {pad(parts.seconds)}<span className="text-slate-500">s</span>
                 </span>
-                <a
-                    {...apply}
-                    tabIndex={show ? 0 : -1}
-                    className="press press-flat hidden sm:inline-block shrink-0 font-mono font-black text-[11px] uppercase text-amber-300 hover:text-amber-200 underline underline-offset-4 cursor-pointer"
-                >
-                    Apply {applyArrow}
-                </a>
             </div>
             <div className="h-0.5 w-full bg-slate-800">
                 <div className={`h-full ${accent.rail} countdown-rail`} style={{ width: `${elapsedPct}%` }} />
@@ -432,3 +433,4 @@ export function RecruitmentCountdownStrip({ countdown, applyLink, docked }) {
         </div>
     );
 }
+

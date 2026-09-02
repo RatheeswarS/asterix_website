@@ -1,9 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useWebsiteData, AUTH_TOKEN_KEY } from '../../context/WebsiteDataContext';
-import { apiUrl } from '../../lib/api';
-import { compressImage } from '../../lib/imageOptimizer';
 import Icon from '../Icon';
-import RecruitmentAdmin from './RecruitmentAdmin';
 import ImageField from './ImageField';
 
 export default function AdminDashboard({ onExit }) {
@@ -496,7 +493,6 @@ export default function AdminDashboard({ onExit }) {
         { id: 'story', label: 'Our Story', icon: 'book' },
         { id: 'subsystems', label: 'Subsystems & Squad', icon: 'vehicle' },
         { id: 'sponsorship', label: 'Sponsorship Portal', icon: 'folder' },
-        { id: 'recruitment', label: 'Recruitment Portal', icon: 'users' },
         { id: 'gallery', label: 'Media Gallery', icon: 'camera' },
         { id: 'updates', label: 'Team Updates', icon: 'megaphone' },
         { id: 'subscribers', label: 'Alliance Leads', icon: 'inbox' },
@@ -1329,16 +1325,6 @@ export default function AdminDashboard({ onExit }) {
                                 )}
                             </div>
                         </div>
-                    )}
-
-                    {/* TAB: RECRUITMENT PORTAL
-                        Static content only — the intro, the induction timeline
-                        and the problem statements shown on #join. It edits the
-                        `recruitment` field of the site-data blob through the same
-                        context and debounced sync as every other tab; applications
-                        themselves run through the Google Form. */}
-                    {activeTab === 'recruitment' && (
-                        <RecruitmentAdmin showStatus={showStatus} />
                     )}
 
                     {/* TAB 5: GALLERY & MEDIA */}
