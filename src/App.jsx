@@ -23,7 +23,7 @@ const RecruitmentPage = lazy(() => import("./components/RecruitmentPage"));
 function MainApp() {
     const [selectedSubsystem, setSelectedSubsystem] = useState(null);
     const [isModelPage, setIsModelPage] = useState(false);
-    const [isAdminOpen, setIsAdminOpen] = useState(() => window.location.hash === '#admin');
+    const [isAdminOpen, setIsAdminOpen] = useState(() => window.location.hash.startsWith('#admin'));
     const [isSponsorPage, setIsSponsorPage] = useState(() => window.location.hash === '#sponsor');
     const [isRecruitmentPage, setIsRecruitmentPage] = useState(() => window.location.hash === '#join' || window.location.hash === '#recruitment');
     const [lenisInstance, setLenisInstance] = useState(null);
@@ -38,7 +38,7 @@ function MainApp() {
     useEffect(() => {
         const handleHashChange = () => {
             const hash = window.location.hash;
-            setIsAdminOpen(hash === '#admin');
+            setIsAdminOpen(hash.startsWith('#admin'));
             setIsSponsorPage(hash === '#sponsor');
             setIsRecruitmentPage(hash === '#join' || hash === '#recruitment');
             if (hash === '#model') setIsModelPage(true);
@@ -70,6 +70,7 @@ function MainApp() {
             touchMultiplier: 1.5,
         });
 
+        // eslint-disable-next-line react/set-state-in-effect
         setLenisInstance(lenis);
         window.lenis = lenis;
 
@@ -133,10 +134,17 @@ function MainApp() {
         scrollToTop();
     };
 
+    const handleOpenAdmin = () => {
+        closeAll();
+        setIsAdminOpen(true);
+        window.location.hash = '#admin';
+        scrollToTop();
+    };
+
     const handleBackToHome = () => {
         closeAll();
         const hash = window.location.hash;
-        if (['#admin', '#sponsor', '#join', '#recruitment', '#model'].includes(hash)) {
+        if (hash.startsWith('#admin') || ['#sponsor', '#join', '#recruitment', '#model'].includes(hash)) {
             window.history.replaceState(null, '', window.location.pathname);
         }
         scrollToTop();
@@ -243,7 +251,7 @@ function MainApp() {
 
                 {/* 4-Column Cyberbites Brutalist Footer */}
                 <CyberFooter 
-                    onOpenAdmin={() => setIsAdminOpen(true)}
+                    onOpenAdmin={handleOpenAdmin}
                     onOpenSponsor={handleOpenSponsor}
                     onOpenRecruitment={handleOpenRecruitment}
                 />

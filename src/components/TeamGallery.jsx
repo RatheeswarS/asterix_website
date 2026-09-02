@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import DriftWall from './DriftWall';
 import { useWebsiteData } from '../context/WebsiteDataContext';
@@ -13,17 +13,15 @@ export default function TeamGallery() {
     // Read once per resize rather than once per render, so the wall actually
     // re-lays-out when the viewport changes instead of keeping whatever
     // breakpoint happened to be true on first paint.
-    const [isNarrow, setIsNarrow] = useState(
-        () => typeof window !== 'undefined' && window.innerWidth < 640
+    const isNarrow = useSyncExternalStore(
+        (callback) => {
+            const mq = window.matchMedia('(max-width: 639px)');
+            mq.addEventListener('change', callback);
+            return () => mq.removeEventListener('change', callback);
+        },
+        () => window.matchMedia('(max-width: 639px)').matches,
+        () => false
     );
-
-    useEffect(() => {
-        const mq = window.matchMedia('(max-width: 639px)');
-        const onChange = (e) => setIsNarrow(e.matches);
-        setIsNarrow(mq.matches);
-        mq.addEventListener('change', onChange);
-        return () => mq.removeEventListener('change', onChange);
-    }, []);
 
     // Disable scrolling when lightbox modal is open
     useEffect(() => {

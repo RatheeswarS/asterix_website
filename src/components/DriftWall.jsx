@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { apiUrl } from '../lib/api';
 import { framingStyle } from '../lib/imageFraming';
 
@@ -61,7 +61,15 @@ const DriftWall = ({
   const lastTsRef = useRef(null);
 
   const [containerHeight, setContainerHeight] = useState(600);
-  const [reduced, setReduced] = useState(false);
+  const reduced = useSyncExternalStore(
+    (callback) => {
+      const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+      mq.addEventListener('change', callback);
+      return () => mq.removeEventListener('change', callback);
+    },
+    prefersReducedMotion,
+    () => false
+  );
 
   // Hover state is deliberately kept out of React. A wall of five columns
   // renders on the order of a hundred tiles; putting the hovered tile in state
@@ -71,14 +79,6 @@ const DriftWall = ({
   const activeElRef = useRef(null);
   const pendingHitRef = useRef(null);
   const hitFrameRef = useRef(null);
-
-  useEffect(() => {
-    setReduced(prefersReducedMotion());
-    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const onChange = e => setReduced(e.matches);
-    mq.addEventListener('change', onChange);
-    return () => mq.removeEventListener('change', onChange);
-  }, []);
 
   const columnItems = useMemo(() => {
     const cols = Array.from({ length: columns }, () => []);

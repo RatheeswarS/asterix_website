@@ -10,13 +10,6 @@ export default function CyberHero({ onOpenModelViewer }) {
             {/* Main Hero Container - Left-aligned text content */}
             <div className="max-w-7xl mx-auto w-full my-auto z-10 pt-4 pb-8">
 
-                {/* Shrunken Intro Card Docking Anchor Slot */}
-                <div 
-                    id="hero-card-slot" 
-                    className="w-[290px] sm:w-[340px] md:w-[380px] h-[140px] sm:h-[165px] md:h-[185px] mb-5 sm:mb-6 pointer-events-none opacity-0"
-                    aria-hidden="true"
-                />
-
                 {/* Top Badges Row (Dynamic Badges) */}
                 <div data-assemble="pop" className="flex flex-wrap items-center gap-3 sm:gap-4 mb-6 z-20 relative">
                     {hero.badges.map((badge, idx) => (

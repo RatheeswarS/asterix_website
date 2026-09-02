@@ -1,8 +1,10 @@
 import mongoose from 'mongoose';
-import SiteData from '../models/SiteData.js';
+import SiteConfig from '../models/SiteConfig.js';
+import Subsystem from '../models/Subsystem.js';
+import TeamMember from '../models/TeamMember.js';
+import GalleryItem from '../models/GalleryItem.js';
+import TeamUpdate from '../models/TeamUpdate.js';
 import User from '../models/User.js';
-
-import { migrateSqliteToMongo } from '../scripts/migrateFromSqlite.js';
 
 let isConnected = false;
 
@@ -22,10 +24,10 @@ export async function connectMongoDB() {
     try {
         await mongoose.connect(uri, {
             serverSelectionTimeoutMS: 8000,
+            dbName: 'asterix'
         });
         isConnected = true;
-        console.log('🍃 Successfully connected to MongoDB Atlas!');
-        await migrateSqliteToMongo();
+        console.log('🍃 Successfully connected to MongoDB Atlas (database: asterix)!');
         await seedDatabaseIfNeeded();
         return true;
     } catch (err) {
@@ -34,11 +36,11 @@ export async function connectMongoDB() {
             console.log('🍃 Retrying MongoDB Atlas connection with system TLS fallback...');
             await mongoose.connect(uri, {
                 serverSelectionTimeoutMS: 8000,
-                tlsAllowInvalidCertificates: true
+                tlsAllowInvalidCertificates: true,
+                dbName: 'asterix'
             });
             isConnected = true;
-            console.log('🍃 Successfully connected to MongoDB Atlas (TLS fallback enabled)!');
-            await migrateSqliteToMongo();
+            console.log('🍃 Successfully connected to MongoDB Atlas (TLS fallback enabled, database: asterix)!');
             await seedDatabaseIfNeeded();
             return true;
         } catch (retryErr) {
@@ -52,7 +54,7 @@ export async function connectMongoDB() {
 
 export async function seedDatabaseIfNeeded() {
     try {
-        const count = await SiteData.countDocuments();
+        const count = await SiteConfig.countDocuments();
         if (count === 0) {
             console.log('⚡ Seeding initial SiteData into MongoDB Atlas...');
             
@@ -165,24 +167,24 @@ It was the reason a training program turned into a family of engineers who learn
                 {
                     id: "powertrain",
                     name: "Powertrain",
-                    tagline: "Continuous Variable Torque Delivery & Propulsion Dynamics",
-                    badge: "PROPULSION & TORQUE",
+                    tagline: "Power in. Torque out. Control at every stage.",
+                    badge: "PROPULSION & CONTROL",
                     color: "bg-emerald-400",
-                    stat: "380 NM WHEEL TORQUE",
-                    shortDesc: "Race-tuned high-torque powerplant coupled with custom-ratio transmission and induction-hardened reduction drives for instant rock crawl surge.",
-                    fullDesc: "Engineered to deliver relentless instantaneous torque across extreme mud bogs, steep rock ascents, and high-speed rally straights. The Powertrain team optimizes torque delivery through custom-calibrated transmission stages, lightweight drivetrain inertia reduction, and thermal-stabilized gearboxes.",
+                    stat: "48V 2000W PMSM DRIVE",
+                    shortDesc: "Our Powertrain subsystem combines motor control with autonomous braking, steering, and throttle circuits for precise real-time vehicle actuation.",
+                    fullDesc: "Our Powertrain subsystem combines motor control with autonomous braking, steering, and throttle circuits for precise real-time vehicle actuation. Built to turn electrical energy into controlled, responsive motion.",
                     specifications: [
-                        { label: "Engine / Powerplant", value: "Vanguard 305cc OHV / Tuned Output" },
-                        { label: "Peak Wheel Torque", value: "380 Nm (Final Reduction)" },
-                        { label: "Gearbox Type", value: "Custom 2-Stage Enclosed Oil-Bath" },
-                        { label: "CVT Ratio Range", value: "3.9:1 (Low) to 0.9:1 (High)" },
+                        { label: "Motor / Powerplant", value: "Datai 2000W PMSM Motor Kit" },
+                        { label: "Maximum RPM", value: "4000 RPM" },
+                        { label: "Supply Voltage", value: "48V" },
+                        { label: "Gearbox Ratio", value: "9:1" },
                         { label: "Axle Shafts", value: "4340 Induction-Hardened Chromoly" },
                         { label: "Thermal Dissipation", value: "Forced Air Cooling & IR Monitoring" }
                     ],
                     highlights: [
-                        "Custom-machined flyweights calibrated for instantaneous torque engagement under peak loads.",
-                        "Splash-lubricated enclosed reduction casing with precision heat-treated helical gears.",
-                        "Quick-disconnect paddock maintenance access for rapid belt and drive inspections."
+                        "Datai 2000W PMSM electric motor kit with 48V power architecture for instant torque delivery.",
+                        "Integrated drive-by-wire autonomous actuation for braking, steering, and throttle circuits.",
+                        "Custom 9:1 single/two-stage reduction with induction-hardened 4340 chromoly axle shafts."
                     ],
                     teamMembers: [
                         {
@@ -432,18 +434,81 @@ It was the reason a training program turned into a family of engineers who learn
             };
 
 
-            await SiteData.create({
-                key: 'main',
-                hero: initialHeroData,
-                story: initialStoryText,
-                subsystems: initialSubsystems,
-                gallery: initialGalleryItems,
-                updates: initialUpdates,
-                contact: initialContactInfo,
-                sponsorship: initialSponsorshipData,
-                lastModified: new Date().toISOString()
-            });
-            console.log('✓ SiteData successfully seeded in MongoDB.');
+            await SiteConfig.findOneAndUpdate(
+                { key: 'main' },
+                {
+                    $set: {
+                        hero: initialHeroData,
+                        story: initialStoryText,
+                        contact: initialContactInfo,
+                        sponsorship: initialSponsorshipData,
+                        lastModified: new Date().toISOString()
+                    }
+                },
+                { upsert: true }
+            );
+
+            for (let subIdx = 0; subIdx < initialSubsystems.length; subIdx++) {
+                const sub = initialSubsystems[subIdx];
+                await Subsystem.findOneAndUpdate(
+                    { id: sub.id },
+                    {
+                        $set: {
+                            name: sub.name,
+                            badge: sub.badge,
+                            tagline: sub.tagline,
+                            fullDesc: sub.fullDesc,
+                            order: subIdx
+                        }
+                    },
+                    { upsert: true }
+                );
+
+                if (Array.isArray(sub.teamMembers)) {
+                    for (let memIdx = 0; memIdx < sub.teamMembers.length; memIdx++) {
+                        const m = sub.teamMembers[memIdx];
+                        const memId = `mem-${sub.id}-${memIdx}`;
+                        await TeamMember.findOneAndUpdate(
+                            { id: memId },
+                            {
+                                $set: {
+                                    id: memId,
+                                    subsystemId: sub.id,
+                                    name: m.name,
+                                    role: m.role,
+                                    initials: m.initials,
+                                    badge: m.badge || 'SPECIALIST',
+                                    status: m.status || 'Active Member',
+                                    bio: m.bio || '',
+                                    photo: m.photo || '',
+                                    order: memIdx
+                                }
+                            },
+                            { upsert: true }
+                        );
+                    }
+                }
+            }
+
+            for (let galIdx = 0; galIdx < initialGalleryItems.length; galIdx++) {
+                const item = initialGalleryItems[galIdx];
+                await GalleryItem.findOneAndUpdate(
+                    { id: item.id },
+                    { $set: { ...item, order: galIdx } },
+                    { upsert: true }
+                );
+            }
+
+            for (let updIdx = 0; updIdx < initialUpdates.length; updIdx++) {
+                const upd = initialUpdates[updIdx];
+                await TeamUpdate.findOneAndUpdate(
+                    { id: upd.id },
+                    { $set: { ...upd, order: updIdx } },
+                    { upsert: true }
+                );
+            }
+
+            console.log('✓ Seeding complete: 5 separate collections populated in MongoDB database "asterix".');
         }
 
         // Administrator accounts are deliberately NOT seeded here any more.

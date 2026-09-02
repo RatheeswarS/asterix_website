@@ -48,6 +48,7 @@ export default function ImageField({
 }) {
     const framePresets = Array.isArray(frames) ? frames : (FRAME_PRESETS[frames] || FRAME_PRESETS.member);
     const resolved = apiUrl(value);
+    const [isUploading, setIsUploading] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
     const [showCrop, setShowCrop] = useState(false);
     /* The URL that failed to load, rather than a boolean. A boolean needed an
@@ -58,6 +59,18 @@ export default function ImageField({
     const stageRef = useRef(null);
 
     const patch = (fields) => onChange?.(fields);
+
+    const handleFileChange = async (e) => {
+        if (!e.target.files?.[0] || !onUpload) return;
+        setIsUploading(true);
+        try {
+            await onUpload(e, (url) => patch({ url }), folder);
+        } catch (err) {
+            console.error('Upload error in ImageField:', err);
+        } finally {
+            setIsUploading(false);
+        }
+    };
 
     const pointToPosition = useCallback((clientX, clientY) => {
         const node = stageRef.current;
@@ -100,16 +113,24 @@ export default function ImageField({
     return (
         <div className="bg-white border-2 border-slate-900 p-2.5 space-y-2">
 
-            {/* Resting row: what it looks like, and where it came from. */}
-            <div className="flex items-start gap-2.5">
-                <div className="w-12 h-12 shrink-0 border-2 border-slate-900 bg-slate-100 overflow-hidden">
-                    {hasImage ? (
+            {/* Resting row: photo preview, label, and action controls */}
+            <div className="flex items-center gap-3">
+                <div className="w-14 h-14 shrink-0 border-2 border-slate-900 bg-slate-100 overflow-hidden relative">
+                    {isUploading ? (
+                        <div className="absolute inset-0 bg-slate-900/85 flex flex-col items-center justify-center text-white z-10 p-0.5">
+                            <svg className="animate-spin h-4 w-4 text-sky-400 mb-0.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span className="font-mono text-[7px] font-black text-sky-300 uppercase leading-none">Saving...</span>
+                        </div>
+                    ) : hasImage ? (
                         <img
                             src={resolved}
                             alt=""
                             style={style}
                             onError={() => setFailedUrl(resolved)}
-                            className="w-full h-full"
+                            className="w-full h-full object-cover"
                         />
                     ) : (
                         <span className="w-full h-full flex items-center justify-center text-center font-mono text-[8px] font-black uppercase leading-tight text-slate-400">
@@ -118,51 +139,55 @@ export default function ImageField({
                     )}
                 </div>
 
-                <div className="flex-1 min-w-0 space-y-1">
-                    <span className="block text-[10px] font-mono font-black uppercase tracking-widest text-slate-700 truncate">
+                <div className="flex-1 min-w-0 space-y-1.5">
+                    <span className="block text-[11px] font-mono font-black uppercase tracking-wider text-slate-800 truncate">
                         {label}
                     </span>
-                    <input
-                        type="text"
-                        value={value || ''}
-                        onChange={(e) => patch({ url: e.target.value })}
-                        placeholder={placeholder}
-                        className="w-full font-mono text-[10px] border border-slate-300 px-1.5 py-1 bg-white focus:outline-none focus:border-slate-900"
-                    />
+
+                    <div className="flex flex-wrap items-center gap-1.5">
+                        <label className={`${miniBtn} ${isUploading ? 'opacity-50 pointer-events-none' : ''} bg-slate-900 hover:bg-slate-800 text-white flex items-center gap-1`}>
+                            {isUploading ? (
+                                <>
+                                    <svg className="animate-spin h-3 w-3 text-sky-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    <span>Saving...</span>
+                                </>
+                            ) : (
+                                <span>{value ? 'Replace' : 'Upload'}</span>
+                            )}
+                            <input
+                                type="file"
+                                accept="image/*"
+                                disabled={isUploading}
+                                className="hidden"
+                                onChange={handleFileChange}
+                            />
+                        </label>
+
+                        {hasImage && !isUploading && (
+                            <button
+                                type="button"
+                                onClick={() => setShowCrop((v) => !v)}
+                                aria-expanded={showCrop}
+                                className={`${miniBtn} ${showCrop ? 'bg-sky-500 text-white' : 'bg-white hover:bg-slate-100 text-slate-900'}`}
+                            >
+                                {showCrop ? 'Done ▲' : 'Adjust crop ▼'}
+                            </button>
+                        )}
+
+                        {value && !isUploading && (
+                            <button
+                                type="button"
+                                onClick={() => patch({ url: '' })}
+                                className={`${miniBtn} bg-rose-50 hover:bg-rose-100 text-rose-700`}
+                            >
+                                Remove
+                            </button>
+                        )}
+                    </div>
                 </div>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-1.5">
-                <label className={`${miniBtn} bg-slate-900 hover:bg-slate-800 text-white`}>
-                    <span>{value ? 'Replace' : 'Upload'}</span>
-                    <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={(e) => onUpload?.(e, (url) => patch({ url }), folder)}
-                    />
-                </label>
-
-                {hasImage && (
-                    <button
-                        type="button"
-                        onClick={() => setShowCrop((v) => !v)}
-                        aria-expanded={showCrop}
-                        className={`${miniBtn} ${showCrop ? 'bg-sky-500 text-white' : 'bg-white hover:bg-slate-100 text-slate-900'}`}
-                    >
-                        {showCrop ? 'Done ▲' : 'Adjust crop ▼'}
-                    </button>
-                )}
-
-                {value && (
-                    <button
-                        type="button"
-                        onClick={() => patch({ url: '' })}
-                        className={`${miniBtn} bg-rose-50 hover:bg-rose-100 text-rose-700`}
-                    >
-                        Remove
-                    </button>
-                )}
             </div>
 
             {hasImage && showCrop && (

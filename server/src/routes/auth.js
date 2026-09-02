@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import { authenticateToken, requireSuperAdmin, JWT_SECRET } from '../middleware/auth.js';
+import { isMongoConnected } from '../db/mongodb.js';
 
 const router = Router();
 
@@ -58,6 +59,10 @@ router.post('/login', async (req, res) => {
         const cleanUsername = String(username).trim().toLowerCase();
         const trimmedPass = String(password).trim();
 
+        if (!isMongoConnected()) {
+            return res.status(503).json({ error: 'Database unavailable. MONGODB_URI is not connected.' });
+        }
+
         let user = await User.findOne({ username: cleanUsername });
         if (!user) {
             user = await tryBootstrap(cleanUsername, trimmedPass);
@@ -92,6 +97,9 @@ router.post('/login', async (req, res) => {
 // GET /api/auth/me (Protected)
 router.get('/me', authenticateToken, async (req, res) => {
     try {
+        if (!isMongoConnected()) {
+            return res.status(503).json({ error: 'Database unavailable.' });
+        }
         let user = null;
         if (User.base.isValidObjectId(req.user.id)) {
             user = await User.findById(req.user.id).select('-passwordHash');
@@ -117,6 +125,9 @@ router.get('/me', authenticateToken, async (req, res) => {
 // GET /api/auth/accounts (Protected - Admin)
 router.get('/accounts', authenticateToken, async (req, res) => {
     try {
+        if (!isMongoConnected()) {
+            return res.json([]);
+        }
         const users = await User.find().sort({ createdAt: 1 }).select('-passwordHash');
         const accounts = users.map(u => ({
             id: u._id.toString(),

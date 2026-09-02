@@ -693,6 +693,19 @@ export default function Car3DCanvas() {
             const introEl = document.getElementById('intro');
             const introHeight = introEl ? introEl.offsetHeight : 0;
 
+            // Gradually reveal the 3D buggy canvas ONLY AFTER the small box
+            // has completely scrolled out of the top of the viewport.
+            if (introHandoff.active && introHeight > 0) {
+                const boxExitThreshold = introHeight - window.innerHeight * 0.25;
+                const fadeDuration = window.innerHeight * 0.45;
+                const carAlpha = Math.min(1, Math.max(0, (currentY - boxExitThreshold) / fadeDuration));
+                container.style.opacity = carAlpha.toFixed(3);
+                container.style.visibility = carAlpha > 0.001 ? 'visible' : 'hidden';
+            } else {
+                container.style.opacity = '1';
+                container.style.visibility = 'visible';
+            }
+
             const contentY = currentY - introHeight;
             const maxScroll = Math.max(
                 1,

@@ -16,13 +16,13 @@ const flagEnabled = (value) => ['true', '1', 'yes'].includes(String(value || '')
 
 const persistentUploads = Boolean(String(process.env.UPLOADS_DIR || '').trim()) || flagEnabled(process.env.ALLOW_LOCAL_UPLOADS);
 
-// GET /api/upload/status (Public - no secrets, just whether uploads can persist)
+// GET /api/upload/status (Public - whether uploads can persist via ImageKit)
 router.get('/status', (req, res) => {
     const imagekit = isImageKitConfigured();
     res.json({
         imagekit,
-        localFallback: persistentUploads,
-        persistent: imagekit || persistentUploads
+        localFallback: false,
+        persistent: imagekit
     });
 });
 
@@ -39,7 +39,7 @@ router.get('/auth', authenticateToken, (req, res) => {
     }
 });
 
-// POST /api/upload (Protected - Upload image to ImageKit or fallback to local storage)
+// POST /api/upload (Protected - Upload image exclusively to ImageKit cloud media library)
 router.post('/', authenticateToken, upload.single('image'), async (req, res) => {
     try {
         if (!req.file) {
@@ -48,59 +48,41 @@ router.post('/', authenticateToken, upload.single('image'), async (req, res) => 
 
         const folder = req.body.folder || '/asterix';
         const tags = req.body.tags ? req.body.tags.split(',').map(t => t.trim()) : ['asterix', 'website'];
+        const fileName = req.body.fileName || req.file.originalname;
 
-        // 1. Upload to ImageKit if configured
-        if (isImageKitConfigured()) {
-            try {
-                const ikResult = await uploadToImageKit({
-                    fileBuffer: req.file.buffer,
-                    fileName: req.file.originalname,
-                    folder,
-                    tags
-                });
-
-                return res.status(201).json({
-                    success: true,
-                    provider: 'imagekit',
-                    url: ikResult.url,
-                    thumbnailUrl: ikResult.thumbnailUrl,
-                    fileId: ikResult.fileId,
-                    filename: ikResult.name,
-                    size: ikResult.size,
-                    width: ikResult.width,
-                    height: ikResult.height
-                });
-            } catch (ikErr) {
-                /* This used to fall through to local disk silently. On a host
-                   without a persistent volume that turns a failed upload into a
-                   URL that works once and 404s forever after, with nothing in
-                   the response to say so. Report the failure instead. */
-                console.error('ImageKit upload failed:', ikErr.message);
-                if (!persistentUploads) {
-                    return res.status(502).json({
-                        error: 'ImageKit upload failed and there is no persistent local fallback on this host.',
-                        details: ikErr.message
-                    });
-                }
-                console.warn('Falling back to persistent local storage at UPLOADS_DIR.');
-            }
-        } else if (!persistentUploads) {
-            /* Refusing beats writing a file that is guaranteed to disappear. */
+        if (!isImageKitConfigured()) {
             return res.status(503).json({
-                error: 'Image uploads are not configured. Set IMAGEKIT_PUBLIC_KEY, IMAGEKIT_PRIVATE_KEY and IMAGEKIT_URL_ENDPOINT on the server, or mount a persistent volume and set UPLOADS_DIR.',
-                code: 'UPLOADS_NOT_PERSISTENT'
+                error: 'ImageKit is not configured in server environment variables. All photos must be stored in ImageKit.',
+                code: 'IMAGEKIT_NOT_CONFIGURED'
             });
         }
 
-        // 2. Fallback to local storage (only reached when UPLOADS_DIR is set)
-        const localResult = await saveBufferToLocal(req.file.buffer, req.file.originalname);
-        res.status(201).json({
-            success: true,
-            provider: 'local',
-            url: localResult.fileUrl,
-            filename: localResult.filename,
-            size: req.file.size
-        });
+        try {
+            const ikResult = await uploadToImageKit({
+                fileBuffer: req.file.buffer,
+                fileName,
+                folder,
+                tags
+            });
+
+            return res.status(201).json({
+                success: true,
+                provider: 'imagekit',
+                url: ikResult.url,
+                thumbnailUrl: ikResult.thumbnailUrl,
+                fileId: ikResult.fileId,
+                filename: ikResult.name,
+                size: ikResult.size,
+                width: ikResult.width,
+                height: ikResult.height
+            });
+        } catch (ikErr) {
+            console.error('ImageKit upload failed:', ikErr.message);
+            return res.status(502).json({
+                error: 'ImageKit upload failed. All photos must be stored in ImageKit.',
+                details: ikErr.message
+            });
+        }
     } catch (err) {
         console.error('File upload error:', err);
         res.status(500).json({ error: 'Failed to process image upload', details: err.message });

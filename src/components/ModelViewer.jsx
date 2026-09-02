@@ -50,8 +50,28 @@ const DesktopControls = ({ pivot, min, max, zoomEnabled }) => {
   );
 };
 
+const GLTFContent = ({ url, children }) => children(useGLTF(url).scene.clone());
+const FBXContent = ({ url, children }) => children(useFBX(url).clone());
+const OBJContent = ({ url, children }) => children(useLoader(OBJLoader, url).clone());
+const ProceduralContent = ({ children }) => children(buildBajaCarGroup());
+
+const AnyModelContent = ({ url, children }) => {
+  const ext = useMemo(() => {
+    if (!url || url === 'procedural' || url === 'stub') return 'baja';
+    return url.split('.').pop().toLowerCase();
+  }, [url]);
+
+  if (ext === 'glb' || ext === 'gltf') return <GLTFContent url={url}>{children}</GLTFContent>;
+  if (ext === 'fbx') return <FBXContent url={url}>{children}</FBXContent>;
+  if (ext === 'obj') return <OBJContent url={url}>{children}</OBJContent>;
+  if (ext === 'baja') return <ProceduralContent>{children}</ProceduralContent>;
+  
+  console.warn('Unknown 3D format, falling back to Baja Car:', ext);
+  return <ProceduralContent>{children}</ProceduralContent>;
+};
+
 const ModelInner = ({
-  url,
+  content,
   xOff,
   yOff,
   pivot,
@@ -78,22 +98,6 @@ const ModelInner = ({
   const cPar = useRef({ x: 0, y: 0 });
   const tHov = useRef({ x: 0, y: 0 });
   const cHov = useRef({ x: 0, y: 0 });
-
-  const ext = useMemo(() => {
-    if (!url) return 'baja';
-    return url.split('.').pop().toLowerCase();
-  }, [url]);
-
-  const content = useMemo(() => {
-    if (!url || url === 'procedural' || url === 'stub') {
-      return buildBajaCarGroup();
-    }
-    if (ext === 'glb' || ext === 'gltf') return useGLTF(url).scene.clone();
-    if (ext === 'fbx') return useFBX(url).clone();
-    if (ext === 'obj') return useLoader(OBJLoader, url).clone();
-    console.warn('Unknown 3D format, falling back to Baja Car:', ext);
-    return buildBajaCarGroup();
-  }, [url, ext]);
 
   const pivotW = useRef(new THREE.Vector3());
   useLayoutEffect(() => {
@@ -466,25 +470,29 @@ const ModelViewer = ({
         <ContactShadows ref={contactRef} position={[0, -0.45, 0]} opacity={0.45} scale={12} blur={2.2} />
 
         <Suspense fallback={<Loader placeholderSrc={placeholderSrc} />}>
-          <ModelInner
-            url={url}
-            xOff={modelXOffset}
-            yOff={modelYOffset}
-            pivot={pivot}
-            initYaw={initYaw}
-            initPitch={initPitch}
-            minZoom={minZoomDistance}
-            maxZoom={maxZoomDistance}
-            enableMouseParallax={enableMouseParallax}
-            enableManualRotation={enableManualRotation}
-            enableHoverRotation={enableHoverRotation}
-            enableManualZoom={enableManualZoom}
-            autoFrame={autoFrame}
-            fadeIn={fadeIn}
-            autoRotate={autoRotate}
-            autoRotateSpeed={autoRotateSpeed}
-            onLoaded={onModelLoaded}
-          />
+          <AnyModelContent url={url}>
+            {(content) => (
+              <ModelInner
+                content={content}
+                xOff={modelXOffset}
+                yOff={modelYOffset}
+                pivot={pivot}
+                initYaw={initYaw}
+                initPitch={initPitch}
+                minZoom={minZoomDistance}
+                maxZoom={maxZoomDistance}
+                enableMouseParallax={enableMouseParallax}
+                enableManualRotation={enableManualRotation}
+                enableHoverRotation={enableHoverRotation}
+                enableManualZoom={enableManualZoom}
+                autoFrame={autoFrame}
+                fadeIn={fadeIn}
+                autoRotate={autoRotate}
+                autoRotateSpeed={autoRotateSpeed}
+                onLoaded={onModelLoaded}
+              />
+            )}
+          </AnyModelContent>
         </Suspense>
 
         {!isTouch && (

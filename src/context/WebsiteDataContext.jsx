@@ -289,15 +289,36 @@ const normalizeSubsystems = (subs) => {
 
     const requiredIds = ['software-perception', 'powertrain', 'mechanical', 'leads'];
     const result = requiredIds.map(id => {
+        const defaultSys = initialSubsystems.find(s => s.id === id);
         const existing = filtered.find(s => s.id === id);
         if (existing) {
+            // If existing powertrain carries legacy combustion defaults, migrate to current spec defaults
+            if (id === 'powertrain' && (
+                existing.specifications?.[0]?.value?.includes('Vanguard') ||
+                existing.tagline?.includes('Continuous Variable')
+            )) {
+                return {
+                    ...existing,
+                    tagline: defaultSys?.tagline,
+                    badge: defaultSys?.badge,
+                    stat: defaultSys?.stat,
+                    shortDesc: defaultSys?.shortDesc,
+                    fullDesc: defaultSys?.fullDesc,
+                    specifications: defaultSys?.specifications,
+                    highlights: defaultSys?.highlights,
+                    teamMembers: (existing.teamMembers || []).map(m => ({
+                        ...m,
+                        status: m.status || 'Active Member'
+                    }))
+                };
+            }
             const teamMembers = (existing.teamMembers || []).map(m => ({
                 ...m,
                 status: m.status || 'Active Member'
             }));
             return { ...existing, teamMembers };
         }
-        return initialSubsystems.find(s => s.id === id);
+        return defaultSys;
     }).filter(Boolean);
 
     return result.length === 4 ? result : initialSubsystems;
@@ -335,7 +356,7 @@ export function WebsiteDataProvider({ children }) {
                     accounts: parsed.accounts || initialAccounts,
                     sponsorship: parsed.sponsorship || initialSponsorshipData,
                     recruitment: normalizeRecruitment(parsed.recruitment),
-                    lastModified: parsed.lastModified || new Date().toISOString()
+                    lastModified: parsed.lastModified || '1970-01-01T00:00:00.000Z'
                 };
             }
         } catch (e) {
@@ -351,7 +372,7 @@ export function WebsiteDataProvider({ children }) {
             accounts: initialAccounts,
             sponsorship: initialSponsorshipData,
             recruitment: initialRecruitment,
-            lastModified: new Date().toISOString()
+            lastModified: '1970-01-01T00:00:00.000Z'
         };
     });
 
@@ -426,7 +447,7 @@ export function WebsiteDataProvider({ children }) {
 
     useEffect(() => {
         // Initial fetch
-        fetchFromDatabase(false);
+        Promise.resolve().then(() => fetchFromDatabase(false));
 
         // Live refresh polling (every 3.5 seconds)
         const pollInterval = setInterval(() => {
@@ -448,7 +469,7 @@ export function WebsiteDataProvider({ children }) {
         };
     }, [fetchFromDatabase]);
 
-    // Save to database (Primary: Express API / MongoDB Atlas, Fallback: Firestore)
+    // Save to database (Express API / MongoDB Atlas)
     const syncToServer = useCallback(async (dataToSync) => {
         if (!dataToSync) return false;
 
@@ -486,10 +507,11 @@ export function WebsiteDataProvider({ children }) {
                 });
 
                 if (res.ok) {
+                    const respData = await res.json();
                     setIsServerConnected(true);
                     setSyncState('synced');
                     setSyncError(null);
-                    return true;
+                    return respData.lastModified || true;
                 }
             } catch (err) {
                 console.warn('Backend server save notice:', err.message);
@@ -546,13 +568,17 @@ export function WebsiteDataProvider({ children }) {
 
         // Debounce syncing manual admin edits to database
         const timer = setTimeout(() => {
-            syncToServer(siteData).then((ok) => {
-                if (ok) {
+            syncToServer(siteData).then((resData) => {
+                if (resData) {
+                    const newStamp = typeof resData === 'string' ? resData : siteData.lastModified;
                     /* Cleared only on success. A failed save keeps the poll
                        locked out, which is the right way round: the edit is the
                        only copy that exists and must not be silently replaced by
                        the stale server one. `syncError` tells the admin. */
-                    lastServerStamp.current = siteData.lastModified;
+                    lastServerStamp.current = newStamp;
+                    if (newStamp !== siteData.lastModified) {
+                        setSiteData(prev => ({ ...prev, lastModified: newStamp }));
+                    }
                     hasPendingEdit.current = false;
                 }
             });

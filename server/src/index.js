@@ -17,6 +17,10 @@ import cors from 'cors';
 import { connectMongoDB, isMongoConnected } from './db/mongodb.js';
 import { isImageKitConfigured } from './lib/imagekit.js';
 import siteDataRoutes from './routes/siteData.js';
+import memberRoutes from './routes/members.js';
+import galleryRoutes from './routes/gallery.js';
+import updateRoutes from './routes/updates.js';
+import subsystemRoutes from './routes/subsystems.js';
 import authRoutes from './routes/auth.js';
 import subscriberRoutes from './routes/subscribers.js';
 import sponsorInquiryRoutes from './routes/sponsorInquiries.js';
@@ -100,6 +104,10 @@ app.get('/api/health', (req, res) => {
 
 // Mount routes
 app.use('/api/site-data', siteDataRoutes);
+app.use('/api/members', memberRoutes);
+app.use('/api/gallery', galleryRoutes);
+app.use('/api/updates', updateRoutes);
+app.use('/api/subsystems', subsystemRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/subscribers', subscriberRoutes);
 app.use('/api/sponsor-inquiries', sponsorInquiryRoutes);

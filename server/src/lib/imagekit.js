@@ -51,7 +51,7 @@ export function isImageKitConfigured() {
 /**
  * Upload an image buffer directly to ImageKit cloud media library.
  */
-export async function uploadToImageKit({ fileBuffer, fileName, folder = '/asterix', tags = ['website'] }) {
+export async function uploadToImageKit({ fileBuffer, fileName, folder = '/asterix', tags = ['website'], useUniqueFileName = false }) {
     const ik = getImageKitClient();
     if (!ik) {
         throw new Error('ImageKit is not configured in server environment variables.');
@@ -64,7 +64,7 @@ export async function uploadToImageKit({ fileBuffer, fileName, folder = '/asteri
         fileName,
         folder,
         tags,
-        useUniqueFileName: true
+        useUniqueFileName
     });
 
     return {

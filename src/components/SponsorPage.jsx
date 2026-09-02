@@ -83,7 +83,7 @@ Ranking: AIR 13 (a-BAJA 2026) | TN Rank 1
 
 VEHICLE ARCHITECTURE:
 - Subsystem 1: Software & Perception (ROS 2 Jazzy, OpenCV, Advanced Stanley Control)
-- Subsystem 2: Powertrain (Vanguard 305cc, Custom Shift CVT, 380 Nm Wheel Torque)
+- Subsystem 2: Powertrain (Datai 2000W PMSM, 48V Architecture, 9:1 Reduction)
 - Subsystem 3: Mechanical (AISI 4130 Chromoly Spaceframe, Double Wishbone, 4-Wheel Lockup BBW)
 - Subsystem 4: Leads & Operations (Project Management, Telemetry, Safety Inspections)
 
@@ -214,7 +214,7 @@ Thank you for powering collegiate automotive innovation!
                                 Vehicle Technical Pitch
                             </h3>
                             <p className="text-xs font-medium text-slate-600 leading-relaxed mb-4">
-                                Deep dive into our ROS 2 Jazzy Stanley controller, C++ OpenCV vision pipeline, Vanguard 305cc CVT reduction, and AISI 4130 spaceframe FEA.
+                                Deep dive into our ROS 2 Jazzy Stanley controller, C++ OpenCV vision pipeline, Datai 2000W PMSM electric powertrain, and AISI 4130 spaceframe FEA.
                             </p>
                         </div>
                         <button

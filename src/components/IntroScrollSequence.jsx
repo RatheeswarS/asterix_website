@@ -39,12 +39,40 @@ gsap.registerPlugin(ScrollTrigger);
  */
 
 const FRAME_COUNT = 80;
-const SCRUB_END = 0.52;      // the turn finishes here
-const LOGO_START = 0.45;     // slight overlap so the two phases cross-fade
-const LOGO_END = 0.70;       // mark fully resolved
-const SHRINK_START = 0.60;   // shrink starts
-const SHRINK_END = 0.84;     // shrink completes
-const HANDOFF_START = 0.78;  // footage dissolves into the live 3D scene
+const SCRUB_END = 0.48;       // turntable finishes its turn here
+const SHRINK_START = 0.52;    // box starts shrinking from full-screen to compact card
+const SHRINK_END = 0.74;      // box is fully compact card size
+const LOGO_START = 0.74;      // logo starts appearing right as box reaches compact size
+const LOGO_END = 0.94;        // logo fully resolved inside compact box
+const HANDOFF_START = 0.52;   // footage dissolves into live 3D scene concurrently with shrink
+const HANDOFF_END = 0.75;     // 3D scene handoff finishes
+
+const TEAM_STAGES = [
+    {
+        step: '01',
+        tag: 'WHO WE ARE',
+        tagColor: 'bg-yellow-400 text-slate-950',
+        title: 'PASSION DRIVEN',
+        desc: 'Collegiate engineers building high-performance off-road racecars from scratch.',
+        highlight: 'STUDENT RACING CREW',
+    },
+    {
+        step: '02',
+        tag: 'WHAT WE DO',
+        tagColor: 'bg-sky-400 text-slate-950',
+        title: 'BUILT BY HAND',
+        desc: '100% in-house CAD design, chassis fabrication, machining, and custom drivetrain tuning.',
+        highlight: '100% IN-HOUSE FABRICATION',
+    },
+    {
+        step: '03',
+        tag: 'OUR MISSION',
+        tagColor: 'bg-emerald-400 text-slate-950',
+        title: 'CHASING PODIUMS',
+        desc: 'Racing SAEINDIA a-BAJA 2026. Built with grit, tested in dirt, ready to conquer.',
+        highlight: 'SAEINDIA a-BAJA 2026',
+    },
+];
 
 // Enough of the sequence to start without stalling; the rest streams in behind.
 const FRAMES_BEFORE_START = 14;
@@ -67,6 +95,16 @@ export default function IntroScrollSequence() {
     const subtitleRef = useRef(null);
     const keepScrollingRef = useRef(null);
     const scrimRef = useRef(null);
+
+    // Left-side friendly story card refs
+    const hudRef = useRef(null);
+    const hudScrimRef = useRef(null);
+    const stage0Ref = useRef(null);
+    const stage1Ref = useRef(null);
+    const stage2Ref = useRef(null);
+    const dot0Ref = useRef(null);
+    const dot1Ref = useRef(null);
+    const dot2Ref = useRef(null);
 
     const [ready, setReady] = useState(false);
     const [loadPercent, setLoadPercent] = useState(0);
@@ -297,6 +335,31 @@ export default function IntroScrollSequence() {
         };
 
         const setupTrigger = () => {
+            let currentStage = 0;
+
+            // Set initial stage visibility immediately on initial home screen (p = 0)
+            if (stage0Ref.current) gsap.set(stage0Ref.current, { opacity: 1, y: 0 });
+            if (stage1Ref.current) gsap.set(stage1Ref.current, { opacity: 0, y: 14 });
+            if (stage2Ref.current) gsap.set(stage2Ref.current, { opacity: 0, y: 14 });
+            if (hudRef.current) gsap.set(hudRef.current, { opacity: 1 });
+            if (hudScrimRef.current) gsap.set(hudScrimRef.current, { opacity: 1 });
+
+            const updateDots = (stageIdx) => {
+                const dots = [dot0Ref.current, dot1Ref.current, dot2Ref.current];
+                dots.forEach((dot, i) => {
+                    if (!dot) return;
+                    if (i === stageIdx) {
+                        dot.style.width = '20px';
+                        dot.style.backgroundColor = '#0f172a';
+                    } else {
+                        dot.style.width = '6px';
+                        dot.style.backgroundColor = '#cbd5e1';
+                    }
+                });
+            };
+
+            updateDots(0);
+
             trigger = ScrollTrigger.create({
                 trigger: section,
                 start: 'top top',
@@ -310,39 +373,62 @@ export default function IntroScrollSequence() {
                     // and cross-fades the two frames around it.
                     targetPos = Math.min(1, p / SCRUB_END) * (FRAME_COUNT - 1);
 
-                    // The mark emerges over the tail of the scroll while the
-                    // footage sinks behind a darkening scrim.
-                    const logoP = gsap.utils.clamp(
-                        0,
-                        1,
-                        (p - LOGO_START) / (LOGO_END - LOGO_START)
-                    );
-                    const eased = gsap.parseEase('power2.out')(logoP);
+                    // --- 1. Left-side friendly story card & dark backdrop fade-out before shrink ---
+                    const hudOut = 1 - gsap.utils.clamp(0, 1, (p - 0.44) / 0.06);
+                    if (hudRef.current) {
+                        gsap.set(hudRef.current, { opacity: hudOut });
+                    }
+                    if (hudScrimRef.current) {
+                        gsap.set(hudScrimRef.current, { opacity: hudOut });
+                    }
 
-                    // The closing stretch dissolves the footage into the live
-                    // 3D scene sitting behind this stage, rather than cutting
-                    // from a dark video straight into a light page. The frame
-                    // canvas and the scrim fade to transparent, which reveals
-                    // FloatingBackground underneath, and `introHandoff` tells
-                    // the WebGL scene to travel from the pose that matches this
-                    // closing frame to its normal hero mark over the same
-                    // stretch of scroll. Both halves of the cross-dissolve
-                    // therefore move together instead of swapping.
+                    // --- 2. Discrete text stage selection (NEVER gets stuck in the middle) ---
+                    let targetStage = 0;
+                    if (p >= 0.36) {
+                        targetStage = 2;
+                    } else if (p >= 0.18) {
+                        targetStage = 1;
+                    } else {
+                        targetStage = 0;
+                    }
+
+                    if (targetStage !== currentStage) {
+                        const prev = currentStage;
+                        currentStage = targetStage;
+                        updateDots(targetStage);
+
+                        const stageEls = [stage0Ref.current, stage1Ref.current, stage2Ref.current];
+                        const prevEl = stageEls[prev];
+                        const nextEl = stageEls[targetStage];
+
+                        if (prevEl) {
+                            gsap.to(prevEl, {
+                                opacity: 0,
+                                y: -12,
+                                duration: 0.22,
+                                ease: 'power2.in',
+                                overwrite: 'auto',
+                            });
+                        }
+                        if (nextEl) {
+                            gsap.fromTo(
+                                nextEl,
+                                { opacity: 0, y: 12 },
+                                { opacity: 1, y: 0, duration: 0.28, ease: 'power2.out', overwrite: 'auto' }
+                            );
+                        }
+                    }
+
+                    // --- 4. Live 3D Scene Handoff ---
                     const rawHandoff = gsap.utils.clamp(
                         0,
                         1,
-                        (p - HANDOFF_START) / (1 - HANDOFF_START)
+                        (p - HANDOFF_START) / (HANDOFF_END - HANDOFF_START)
                     );
                     const handoff = gsap.parseEase('power2.inOut')(rawHandoff);
-
                     introHandoff.progress = handoff;
 
-                    const veil = 1 - handoff;
-
-                    gsap.set(canvasRef.current, { opacity: veil });
-                    gsap.set(scrimRef.current, { opacity: eased * 0.82 * veil });
-
-                    // Calculate shrink progress
+                    // --- 3. Shrink Box First (0.52 -> 0.70) ---
                     const shrinkRaw = gsap.utils.clamp(
                         0,
                         1,
@@ -350,44 +436,34 @@ export default function IntroScrollSequence() {
                     );
                     const shrinkP = gsap.parseEase('power2.inOut')(shrinkRaw);
 
-                    const slot = document.getElementById('hero-card-slot');
                     const stage = stageRef.current;
                     const box = boxRef.current;
 
                     if (stage && box) {
                         const stageRect = stage.getBoundingClientRect();
-                        let slotRect = slot ? slot.getBoundingClientRect() : null;
-
                         const isMd = window.matchMedia('(min-width: 768px)').matches;
                         const isSm = window.matchMedia('(min-width: 640px)').matches;
-                        let fallbackW = 290;
-                        let fallbackH = 140;
-                        if (isMd) {
-                            fallbackW = 380;
-                            fallbackH = 185;
-                        } else if (isSm) {
-                            fallbackW = 340;
-                            fallbackH = 165;
-                        }
 
-                        const targetW = slotRect && slotRect.width > 0 ? slotRect.width : fallbackW;
-                        const targetH = slotRect && slotRect.height > 0 ? slotRect.height : fallbackH;
+                        let targetW = 310;
+                        let targetH = 155;
+                        if (isMd) {
+                            targetW = 380;
+                            targetH = 185;
+                        } else if (isSm) {
+                            targetW = 340;
+                            targetH = 165;
+                        }
 
                         // Lerp width and height
                         const curW = stageRect.width + (targetW - stageRect.width) * shrinkP;
                         const curH = stageRect.height + (targetH - stageRect.height) * shrinkP;
 
-                        // Start position: centered in stage
-                        const xStart = (stageRect.width - curW) / 2;
-                        const yStart = (stageRect.height - curH) / 2;
+                        // Center in stage viewport
+                        const xEnd = (stageRect.width - targetW) / 2;
+                        const yEnd = (stageRect.height - targetH) / 2;
 
-                        // End position: aligned with slot in stage coordinates
-                        const xEnd = slotRect ? (slotRect.left - stageRect.left) : (stageRect.width - targetW) / 2;
-                        const yEnd = slotRect ? (slotRect.top - stageRect.top) : (stageRect.height - targetH) / 2;
-
-                        // Lerp position
-                        const x = xStart + (xEnd - xStart) * shrinkP;
-                        const y = yStart + (yEnd - yStart) * shrinkP;
+                        const x = xEnd * shrinkP;
+                        const y = yEnd * shrinkP;
 
                         gsap.set(box, {
                             left: 0,
@@ -400,29 +476,41 @@ export default function IntroScrollSequence() {
                             borderStyle: 'solid',
                             borderColor: '#0f172a',
                             boxShadow: `${shrinkP * 6}px ${shrinkP * 6}px 0px #0f172a`,
-                            borderRadius: `${shrinkP * 8}px`,
+                            borderRadius: `${shrinkP * 12}px`,
                         });
                     }
 
-                    // Content scale and opacity transitions inside the card
-                    const isMobile = window.innerWidth < 768;
-                    const targetScale = isMobile ? 0.44 : 0.52;
-                    const contentScale = (0.82 + eased * 0.18) * (1 - (1 - targetScale) * shrinkP);
+                    // Canvas fades out during shrink, turning box into solid dark card
+                    const canvasVeil = 1 - gsap.utils.clamp(0, 1, (p - SHRINK_START) / (SHRINK_END - SHRINK_START));
+                    gsap.set(canvasRef.current, { opacity: canvasVeil });
+
+                    // Scrim inside card darkens to solid slate-950
+                    const scrimP = gsap.utils.clamp(0, 1, (p - SHRINK_START) / ((SHRINK_END - SHRINK_START) * 0.7));
+                    gsap.set(scrimRef.current, { opacity: scrimP });
+
+                    // --- 4. Logo & Details Reveal INSIDE Small Box (0.68 -> 0.84) ---
+                    const logoRaw = gsap.utils.clamp(
+                        0,
+                        1,
+                        (p - LOGO_START) / (LOGO_END - LOGO_START)
+                    );
+                    const easedLogo = gsap.parseEase('power2.out')(logoRaw);
 
                     gsap.set(logoRef.current, {
-                        opacity: eased,
+                        opacity: easedLogo,
+                        scale: 0.88 + easedLogo * 0.12,
                     });
                     gsap.set(subtitleRef.current, {
-                        opacity: gsap.utils.clamp(0, 1, (logoP - 0.2) / 0.8),
+                        opacity: gsap.utils.clamp(0, 1, (logoRaw - 0.2) / 0.8),
+                        y: (1 - easedLogo) * 8,
                     });
                     gsap.set(keepScrollingRef.current, {
-                        opacity: gsap.utils.clamp(0, 1, (logoP - 0.35) / 0.65) * (1 - shrinkP),
-                    });
-                    gsap.set(contentRef.current, {
-                        scale: contentScale,
-                        y: (1 - eased) * 20,
+                        opacity: gsap.utils.clamp(0, 1, (logoRaw - 0.4) / 0.6),
                     });
 
+                    // --- 5. Pin state ---
+                    // When p < 1, stage is fixed. Once intro completes at p = 1,
+                    // unpin so further scroll pushes the stage up naturally.
                     setPinned(p < 1);
                 },
                 // The canvas only has work to do while the section is on
@@ -465,31 +553,25 @@ export default function IntroScrollSequence() {
                 resize();
                 setReady(true);
 
-                const slot = document.getElementById('hero-card-slot');
                 const stage = stageRef.current;
                 const box = boxRef.current;
 
                 if (stage && box) {
                     const stageRect = stage.getBoundingClientRect();
-                    const slotRect = slot ? slot.getBoundingClientRect() : null;
-
                     const isMd = window.matchMedia('(min-width: 768px)').matches;
                     const isSm = window.matchMedia('(min-width: 640px)').matches;
-                    let fallbackW = 290;
-                    let fallbackH = 140;
+                    let targetW = 310;
+                    let targetH = 155;
                     if (isMd) {
-                        fallbackW = 380;
-                        fallbackH = 185;
+                        targetW = 380;
+                        targetH = 185;
                     } else if (isSm) {
-                        fallbackW = 340;
-                        fallbackH = 165;
+                        targetW = 340;
+                        targetH = 165;
                     }
 
-                    const targetW = slotRect && slotRect.width > 0 ? slotRect.width : fallbackW;
-                    const targetH = slotRect && slotRect.height > 0 ? slotRect.height : fallbackH;
-
-                    const x = slotRect ? (slotRect.left - stageRect.left) : (stageRect.width - targetW) / 2;
-                    const y = slotRect ? (slotRect.top - stageRect.top) : (stageRect.height - targetH) / 2;
+                    const x = (stageRect.width - targetW) / 2;
+                    const y = (stageRect.height - targetH) / 2;
 
                     gsap.set(box, {
                         left: 0,
@@ -502,20 +584,17 @@ export default function IntroScrollSequence() {
                         borderStyle: 'solid',
                         borderColor: '#0f172a',
                         boxShadow: '6px 6px 0px #0f172a',
-                        borderRadius: '8px',
+                        borderRadius: '12px',
                     });
                 }
 
-                gsap.set(scrimRef.current, { opacity: 0.82 });
-                gsap.set(logoRef.current, { opacity: 1 });
-                gsap.set(subtitleRef.current, { opacity: 1 });
-                gsap.set(keepScrollingRef.current, { opacity: 0 });
-                
-                const isMobile = window.innerWidth < 768;
-                gsap.set(contentRef.current, {
-                    scale: isMobile ? 0.44 : 0.52,
-                    y: 0,
-                });
+                gsap.set(scrimRef.current, { opacity: 1 });
+                gsap.set(canvasRef.current, { opacity: 0 });
+                gsap.set(logoRef.current, { opacity: 1, scale: 1 });
+                gsap.set(subtitleRef.current, { opacity: 1, y: 0 });
+                gsap.set(keepScrollingRef.current, { opacity: 1 });
+                if (hudRef.current) gsap.set(hudRef.current, { opacity: 0 });
+                if (hudScrimRef.current) gsap.set(hudScrimRef.current, { opacity: 0 });
             });
         };
 
@@ -551,7 +630,7 @@ export default function IntroScrollSequence() {
             // frame canvas itself, so fading that canvas out at the end reveals
             // the live 3D scene sitting behind this section instead of a flat
             // slate panel, which is what made the handoff read as a hard cut.
-            className="relative w-full h-[280vh] select-none"
+            className="relative w-full h-[200vh] select-none"
             aria-label="Team Asterix buggy walkaround"
         >
             {/* Fixed rather than sticky. The app root and body both set
@@ -584,29 +663,158 @@ export default function IntroScrollSequence() {
                         aria-hidden="true"
                     />
 
-                    {/* Emerging team mark */}
+                    {/* Emerging team mark inside compact card */}
                     <div
                         ref={contentRef}
-                        className="absolute inset-0 flex flex-col items-center justify-center gap-4 sm:gap-6 px-4 pointer-events-none will-change-transform"
+                        className="absolute inset-0 flex flex-col items-center justify-center p-4 sm:p-5 pointer-events-none will-change-transform select-none"
                     >
                         <img
                             ref={logoRef}
                             src={teamLogo}
                             alt="Team Asterix"
-                            className="w-56 sm:w-80 md:w-[26rem] h-auto object-contain opacity-0 [filter:brightness(0)_invert(1)_drop-shadow(0_0_28px_rgba(56,189,248,0.65))]"
+                            className="w-40 sm:w-48 md:w-52 h-auto max-h-14 sm:max-h-16 object-contain opacity-0 [filter:brightness(0)_invert(1)_drop-shadow(0_0_20px_rgba(56,189,248,0.7))]"
                         />
                         <p
                             ref={subtitleRef}
-                            className="opacity-0 text-center text-2xl sm:text-4xl md:text-5xl font-black uppercase tracking-tight text-white leading-none"
+                            className="opacity-0 mt-2 text-center text-xs sm:text-sm font-black uppercase tracking-wider text-white leading-none"
                         >
                             SAEINDIA a-BAJA 2026
                         </p>
-                        <p
+                        <div
                             ref={keepScrollingRef}
-                            className="opacity-0 mt-3 text-[10px] sm:text-xs font-mono font-black uppercase tracking-[0.35em] text-sky-400"
+                            className="opacity-0 mt-2.5 flex items-center gap-1.5 text-[9px] sm:text-[10px] font-mono font-bold uppercase tracking-[0.25em] text-sky-400"
                         >
-                            Keep scrolling
-                        </p>
+                            <span>KEEP SCROLLING</span>
+                            <span className="inline-block animate-bounce">↓</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Left-Side Ambient Dark Backdrop to blend smoothly */}
+                <div
+                    ref={hudScrimRef}
+                    className="absolute inset-0 pointer-events-none z-10"
+                    aria-hidden="true"
+                >
+                    <div className="absolute inset-y-0 left-0 w-full sm:w-4/5 md:w-3/5 bg-gradient-to-b sm:bg-gradient-to-r from-slate-950/80 via-slate-950/40 to-transparent" />
+                </div>
+
+                {/* Left-Side Friendly Colourful Team Story Card */}
+                <div
+                    ref={hudRef}
+                    className="absolute inset-y-0 left-0 flex items-center justify-start p-4 sm:p-6 md:p-10 z-20 pointer-events-none max-w-[280px] sm:max-w-[330px] w-full select-none"
+                >
+                    <div className="w-full bg-white/95 text-slate-900 border-3 border-slate-900 shadow-[6px_6px_0px_#0f172a] rounded-xl p-3.5 sm:p-4.5 backdrop-blur-md relative overflow-hidden">
+                        {/* Dynamic Stages Stack */}
+                        <div className="relative min-h-[105px] sm:min-h-[115px]">
+                            {/* Stage 0 */}
+                            <div
+                                ref={stage0Ref}
+                                className="absolute inset-0 flex flex-col justify-between will-change-[transform,opacity]"
+                            >
+                                <div>
+                                    <div className="flex items-center justify-between gap-2 mb-1.5">
+                                        <span className={`${TEAM_STAGES[0].tagColor} border-2 border-slate-900 px-2 py-0.5 font-black text-[9px] sm:text-[10px] uppercase tracking-wider rounded shadow-[2px_2px_0px_#0f172a]`}>
+                                            {TEAM_STAGES[0].tag}
+                                        </span>
+                                        <span className="font-mono font-bold text-slate-500 text-[11px]">
+                                            01 / 03
+                                        </span>
+                                    </div>
+                                    <h3 className="text-base sm:text-lg font-black uppercase text-slate-900 tracking-tight leading-tight mb-1">
+                                        {TEAM_STAGES[0].title}
+                                    </h3>
+                                    <p className="text-xs sm:text-[13px] text-slate-700 font-bold leading-snug">
+                                        {TEAM_STAGES[0].desc}
+                                    </p>
+                                </div>
+                                <div className="mt-2.5 pt-2 border-t border-slate-900/10 flex items-center gap-1.5">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 border border-slate-900" />
+                                    <span className="text-[9px] sm:text-[10px] font-mono font-black text-slate-600 uppercase">
+                                        {TEAM_STAGES[0].highlight}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Stage 1 */}
+                            <div
+                                ref={stage1Ref}
+                                className="absolute inset-0 flex flex-col justify-between will-change-[transform,opacity] opacity-0"
+                            >
+                                <div>
+                                    <div className="flex items-center justify-between gap-2 mb-1.5">
+                                        <span className={`${TEAM_STAGES[1].tagColor} border-2 border-slate-900 px-2 py-0.5 font-black text-[9px] sm:text-[10px] uppercase tracking-wider rounded shadow-[2px_2px_0px_#0f172a]`}>
+                                            {TEAM_STAGES[1].tag}
+                                        </span>
+                                        <span className="font-mono font-bold text-slate-500 text-[11px]">
+                                            02 / 03
+                                        </span>
+                                    </div>
+                                    <h3 className="text-base sm:text-lg font-black uppercase text-slate-900 tracking-tight leading-tight mb-1">
+                                        {TEAM_STAGES[1].title}
+                                    </h3>
+                                    <p className="text-xs sm:text-[13px] text-slate-700 font-bold leading-snug">
+                                        {TEAM_STAGES[1].desc}
+                                    </p>
+                                </div>
+                                <div className="mt-2.5 pt-2 border-t border-slate-900/10 flex items-center gap-1.5">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-sky-400 border border-slate-900" />
+                                    <span className="text-[9px] sm:text-[10px] font-mono font-black text-slate-600 uppercase">
+                                        {TEAM_STAGES[1].highlight}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Stage 2 */}
+                            <div
+                                ref={stage2Ref}
+                                className="absolute inset-0 flex flex-col justify-between will-change-[transform,opacity] opacity-0"
+                            >
+                                <div>
+                                    <div className="flex items-center justify-between gap-2 mb-1.5">
+                                        <span className={`${TEAM_STAGES[2].tagColor} border-2 border-slate-900 px-2 py-0.5 font-black text-[9px] sm:text-[10px] uppercase tracking-wider rounded shadow-[2px_2px_0px_#0f172a]`}>
+                                            {TEAM_STAGES[2].tag}
+                                        </span>
+                                        <span className="font-mono font-bold text-slate-500 text-[11px]">
+                                            03 / 03
+                                        </span>
+                                    </div>
+                                    <h3 className="text-base sm:text-lg font-black uppercase text-slate-900 tracking-tight leading-tight mb-1">
+                                        {TEAM_STAGES[2].title}
+                                    </h3>
+                                    <p className="text-xs sm:text-[13px] text-slate-700 font-bold leading-snug">
+                                        {TEAM_STAGES[2].desc}
+                                    </p>
+                                </div>
+                                <div className="mt-2.5 pt-2 border-t border-slate-900/10 flex items-center gap-1.5">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 border border-slate-900" />
+                                    <span className="text-[9px] sm:text-[10px] font-mono font-black text-slate-600 uppercase">
+                                        {TEAM_STAGES[2].highlight}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Step Indicator Progress Dots */}
+                        <div className="mt-3 pt-2.5 border-t border-slate-900/10 flex items-center justify-between">
+                            <span className="text-[9px] font-mono font-black text-slate-500 uppercase">
+                                SCROLL TO ADVANCE
+                            </span>
+                            <div className="flex items-center gap-1.5">
+                                <div
+                                    ref={dot0Ref}
+                                    className="h-1.5 rounded-full border border-slate-900 bg-slate-900 transition-all duration-300 w-5"
+                                />
+                                <div
+                                    ref={dot1Ref}
+                                    className="h-1.5 rounded-full border border-slate-900 bg-slate-200 transition-all duration-300 w-1.5"
+                                />
+                                <div
+                                    ref={dot2Ref}
+                                    className="h-1.5 rounded-full border border-slate-900 bg-slate-200 transition-all duration-300 w-1.5"
+                                />
+                            </div>
+                        </div>
                     </div>
                 </div>
 

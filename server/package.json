@@ -7,7 +7,7 @@
   "scripts": {
     "start": "node --use-system-ca src/index.js",
     "dev": "node --use-system-ca --watch src/index.js",
-    "migrate:mongo": "node --use-system-ca src/scripts/migrateFromSqlite.js"
+    "migrate:db": "node src/scripts/migrateTo5Collections.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

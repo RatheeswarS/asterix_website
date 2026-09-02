@@ -67,11 +67,21 @@ const CardSwap = ({
         };
 
   const childArr = useMemo(() => Children.toArray(children), [children]);
-  const refs = useMemo(
-    () => childArr.map(() => React.createRef()),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [childArr.length]
-  );
+  
+  const refsDict = useRef({});
+  const refs = useMemo(() => {
+    const nextRefs = [];
+    childArr.forEach((child) => {
+      const k = child.key;
+      if (!refsDict.current[k]) refsDict.current[k] = React.createRef();
+      nextRefs.push(refsDict.current[k]);
+    });
+    const currentKeys = new Set(childArr.map(c => c.key));
+    Object.keys(refsDict.current).forEach(k => {
+      if (!currentKeys.has(k)) delete refsDict.current[k];
+    });
+    return nextRefs;
+  }, [childArr]);
 
   const order = useRef(Array.from({ length: childArr.length }, (_, i) => i));
 
@@ -201,7 +211,7 @@ const CardSwap = ({
   const rendered = childArr.map((child, i) =>
     isValidElement(child)
       ? cloneElement(child, {
-          key: i,
+          key: child.key,
           ref: refs[i],
           style: { width, height, ...(child.props.style ?? {}) },
           onClick: e => {

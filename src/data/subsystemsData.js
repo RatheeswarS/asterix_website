@@ -63,24 +63,24 @@ export const subsystems = [
     {
         id: "powertrain",
         name: "Powertrain",
-        tagline: "Continuous Variable Torque Delivery & Propulsion Dynamics",
-        badge: "PROPULSION & TORQUE",
+        tagline: "Power in. Torque out. Control at every stage.",
+        badge: "PROPULSION & CONTROL",
         color: "bg-emerald-400",
-        stat: "380 NM WHEEL TORQUE",
-        shortDesc: "Race-tuned high-torque powerplant coupled with custom-ratio transmission and induction-hardened reduction drives for instant rock crawl surge.",
-        fullDesc: "Engineered to deliver relentless instantaneous torque across extreme mud bogs, steep rock ascents, and high-speed rally straights. The Powertrain team optimizes torque delivery through custom-calibrated transmission stages, lightweight drivetrain inertia reduction, and thermal-stabilized gearboxes.",
+        stat: "48V 2000W PMSM DRIVE",
+        shortDesc: "Our Powertrain subsystem combines motor control with autonomous braking, steering, and throttle circuits for precise real-time vehicle actuation.",
+        fullDesc: "Our Powertrain subsystem combines motor control with autonomous braking, steering, and throttle circuits for precise real-time vehicle actuation. Built to turn electrical energy into controlled, responsive motion.",
         specifications: [
-            { label: "Engine / Powerplant", value: "Vanguard 305cc OHV / Tuned Output" },
-            { label: "Peak Wheel Torque", value: "380 Nm (Final Reduction)" },
-            { label: "Gearbox Type", value: "Custom 2-Stage Enclosed Oil-Bath" },
-            { label: "CVT Ratio Range", value: "3.9:1 (Low) to 0.9:1 (High)" },
+            { label: "Motor / Powerplant", value: "Datai 2000W PMSM Motor Kit" },
+            { label: "Maximum RPM", value: "4000 RPM" },
+            { label: "Supply Voltage", value: "48V" },
+            { label: "Gearbox Ratio", value: "9:1" },
             { label: "Axle Shafts", value: "4340 Induction-Hardened Chromoly" },
             { label: "Thermal Dissipation", value: "Forced Air Cooling & IR Monitoring" }
         ],
         highlights: [
-            "Custom-machined flyweights calibrated for instantaneous torque engagement under peak loads.",
-            "Splash-lubricated enclosed reduction casing with precision heat-treated helical gears.",
-            "Quick-disconnect paddock maintenance access for rapid belt and drive inspections."
+            "Datai 2000W PMSM electric motor kit with 48V power architecture for instant torque delivery.",
+            "Integrated drive-by-wire autonomous actuation for braking, steering, and throttle circuits.",
+            "Custom 9:1 single/two-stage reduction with induction-hardened 4340 chromoly axle shafts."
         ],
         teamMembers: [
             {

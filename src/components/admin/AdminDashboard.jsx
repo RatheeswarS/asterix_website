@@ -48,8 +48,22 @@ export default function AdminDashboard({ onExit }) {
     const [loginForm, setLoginForm] = useState({ username: '', password: '' });
     const [loginError, setLoginError] = useState('');
     const [isLoggingIn, setIsLoggingIn] = useState(false);
-    const [activeTab, setActiveTab] = useState('overview');
+    const [activeTab, setActiveTab] = useState(() => {
+        try {
+            return sessionStorage.getItem('admin_active_tab') || 'overview';
+        } catch {
+            return 'overview';
+        }
+    });
     const [statusMessage, setStatusMessage] = useState('');
+
+    useEffect(() => {
+        try {
+            sessionStorage.setItem('admin_active_tab', activeTab);
+        } catch {
+            // ignore storage errors
+        }
+    }, [activeTab]);
 
     // Active subsystem selection for squad editor
     const [selectedSubsystemId, setSelectedSubsystemId] = useState(siteData.subsystems[0]?.id || 'software-perception');
@@ -121,6 +135,7 @@ export default function AdminDashboard({ onExit }) {
         setCurrentUser(null);
         sessionStorage.removeItem(AUTH_SESSION_KEY);
         sessionStorage.removeItem(AUTH_TOKEN_KEY);
+        sessionStorage.removeItem('admin_active_tab');
         setLoginForm({ username: '', password: '' });
     };
 
@@ -130,8 +145,8 @@ export default function AdminDashboard({ onExit }) {
     // simply require a real signed-in session.
     const ensureAuthToken = async () => sessionStorage.getItem(AUTH_TOKEN_KEY);
 
-    // Handle image file upload with ImageKit cloud upload & multi-tier fallback
-    const handleImageUpload = async (e, callback, folder = '/asterix') => {
+    // Handle image file upload exclusively to ImageKit Cloud CDN with custom entity naming
+    const handleImageUpload = async (e, callback, folder = '/asterix', customName = '') => {
         const file = e.target.files?.[0];
         if (!file) return;
 
@@ -140,17 +155,10 @@ export default function AdminDashboard({ onExit }) {
             return;
         }
 
-        showStatus('Processing & uploading image... ⚡');
+        showStatus('Uploading image to ImageKit... ⚡');
 
-        /* Why the failure reason is carried into the fallback below: a failed
-           CDN upload used to be a console warning while the picture still
-           appeared, so nothing on screen separated a real CDN upload from a
-           15 KB inline copy. Uploads had in fact been landing on a disk the host
-           wipes on every deploy, and the dead links were only noticed once the
-           live gallery had emptied itself. */
         let uploadFailure = '';
 
-        // 1. Try server API upload (ImageKit CDN)
         const token = await ensureAuthToken();
         if (token) {
             try {
@@ -158,6 +166,15 @@ export default function AdminDashboard({ onExit }) {
                 formData.append('image', file);
                 formData.append('folder', folder);
                 formData.append('tags', 'admin_upload,asterix');
+
+                if (customName && customName.trim()) {
+                    const extMatch = file.name.match(/\.[a-zA-Z0-9]+$/);
+                    const ext = extMatch ? extMatch[0] : '.jpg';
+                    const cleanName = customName.trim().toLowerCase().replace(/[^a-z0-9_-]+/g, '_').replace(/^_+|_+$/g, '');
+                    if (cleanName) {
+                        formData.append('fileName', `${cleanName}${ext}`);
+                    }
+                }
 
                 const res = await fetch(apiUrl('/api/upload'), {
                     method: 'POST',
@@ -170,11 +187,11 @@ export default function AdminDashboard({ onExit }) {
                     if (data.url) {
                         const finalUrl = data.url.startsWith('http') ? data.url : apiUrl(data.url);
                         callback(finalUrl);
-                        showStatus(data.provider === 'imagekit' ? 'Uploaded to ImageKit Cloud CDN! 🍃' : 'Image uploaded successfully! ✓');
+                        showStatus('Uploaded to ImageKit Cloud CDN! 🍃');
                         e.target.value = '';
-                        return;
+                        return finalUrl;
                     }
-                    uploadFailure = 'The server accepted the upload but returned no URL.';
+                    uploadFailure = 'The server accepted the upload but returned no ImageKit URL.';
                 } else {
                     const body = await res.json().catch(() => ({}));
                     uploadFailure = body.error || `The server refused the upload (HTTP ${res.status}).`;
@@ -183,32 +200,13 @@ export default function AdminDashboard({ onExit }) {
                 uploadFailure = uploadErr.message || 'Could not reach the upload server.';
             }
         } else {
-            uploadFailure = 'Not signed in, so the CDN upload was skipped.';
+            uploadFailure = 'Not signed in to admin session.';
         }
 
-        console.warn('Cloud upload unavailable, storing a compressed inline copy instead:', uploadFailure);
-
-        // 2. Ultra-compact WebP compression fallback (max 400px, 0.60 quality < 15 KB to fit safely in DB)
-        try {
-            const compressedDataUrl = await compressImage(file, 400, 400, 0.60);
-            callback(compressedDataUrl);
-            showStatus(`⚠ Saved as a low-res inline copy, not on the CDN. ${uploadFailure}`);
-            e.target.value = '';
-        } catch (err) {
-            console.warn('Compression notice, reading file:', err);
-            const reader = new FileReader();
-            reader.onload = () => {
-                if (reader.result) {
-                    callback(reader.result);
-                    showStatus('Image loaded! ✓');
-                }
-                e.target.value = '';
-            };
-            reader.onerror = () => {
-                alert('Failed to read image file.');
-            };
-            reader.readAsDataURL(file);
-        }
+        e.target.value = '';
+        alert(`ImageKit upload failed: ${uploadFailure}\nAll photos must be stored in ImageKit.`);
+        showStatus(`⚠️ Upload failed: ${uploadFailure}`);
+        throw new Error(uploadFailure);
     };
 
     // Export complete data snapshot as JSON
@@ -552,9 +550,9 @@ export default function AdminDashboard({ onExit }) {
                             showStatus('Pushing changes to Cloud Database...');
                             const ok = await syncToServer(siteData);
                             if (ok) {
-                                showStatus('All changes synced to Cloud Firestore! ✓');
+                                showStatus('All changes synced to Cloud Database! ✓');
                             } else {
-                                showStatus(syncError || 'Cloud write quota reached. Edits are preserved safely in browser.');
+                                showStatus(syncError || 'Could not save to Cloud. Edits are preserved safely in browser.');
                             }
                         }}
                         className="press px-3.5 py-1.5 bg-emerald-400 hover:bg-emerald-300 border-2 border-slate-900 text-slate-900 font-mono font-black text-xs uppercase shadow-[2px_2px_0px_#0f172a] cursor-pointer"
@@ -1035,7 +1033,7 @@ export default function AdminDashboard({ onExit }) {
                                                     position={m.photoPosition}
                                                     frames="member"
                                                     folder="/asterix/squad"
-                                                    onUpload={handleImageUpload}
+                                                    onUpload={(e, cb, f) => handleImageUpload(e, cb, f, m.name || 'specialist')}
                                                     onChange={(fields) => updateTeamMember(currentSubsystem.id, idx, {
                                                         ...(fields.url !== undefined ? { photo: fields.url } : {}),
                                                         ...(fields.fit !== undefined ? { photoFit: fields.fit } : {}),
@@ -1147,7 +1145,7 @@ export default function AdminDashboard({ onExit }) {
                                         position={newMember.photoPosition}
                                         frames="member"
                                         folder="/asterix/squad"
-                                        onUpload={handleImageUpload}
+                                        onUpload={(e, cb, f) => handleImageUpload(e, cb, f, newMember.name || 'specialist')}
                                         onChange={(fields) => setNewMember(prev => ({
                                             ...prev,
                                             ...(fields.url !== undefined ? { photo: fields.url } : {}),
@@ -1389,7 +1387,7 @@ export default function AdminDashboard({ onExit }) {
                                     position={newGallery.position}
                                     frames="gallery"
                                     folder="/asterix/gallery"
-                                    onUpload={handleImageUpload}
+                                    onUpload={(e, cb, f) => handleImageUpload(e, cb, f, newGallery.title || 'gallery_photo')}
                                     onChange={(fields) => setNewGallery(prev => ({
                                         ...prev,
                                         ...(fields.url !== undefined ? { src: fields.url } : {}),
@@ -1432,7 +1430,7 @@ export default function AdminDashboard({ onExit }) {
                                                     position={item.position}
                                                     frames="gallery"
                                                     folder="/asterix/gallery"
-                                                    onUpload={handleImageUpload}
+                                                    onUpload={(e, cb, f) => handleImageUpload(e, cb, f, item.title || 'gallery_photo')}
                                                     onChange={(fields) => updateGalleryItem(item.id, {
                                                         ...(fields.url !== undefined ? { src: fields.url } : {}),
                                                         ...(fields.fit !== undefined ? { fit: fields.fit } : {}),
@@ -1505,7 +1503,7 @@ export default function AdminDashboard({ onExit }) {
                                     position={newUpdateItem.position}
                                     frames="update"
                                     folder="/asterix/updates"
-                                    onUpload={handleImageUpload}
+                                    onUpload={(e, cb, f) => handleImageUpload(e, cb, f, newUpdateItem.label || 'team_update')}
                                     onChange={(fields) => setNewUpdateItem(prev => ({
                                         ...prev,
                                         ...(fields.url !== undefined ? { image: fields.url } : {}),
@@ -1560,7 +1558,7 @@ export default function AdminDashboard({ onExit }) {
                                             position={upd.position}
                                             frames="update"
                                             folder="/asterix/updates"
-                                            onUpload={handleImageUpload}
+                                            onUpload={(e, cb, f) => handleImageUpload(e, cb, f, upd.label || 'team_update')}
                                             onChange={(fields) => updateUpdate(upd.id, {
                                                 ...(fields.url !== undefined ? { image: fields.url } : {}),
                                                 ...(fields.fit !== undefined ? { fit: fields.fit } : {}),
@@ -1580,7 +1578,7 @@ export default function AdminDashboard({ onExit }) {
                                 <div>
                                     <h2 className="text-2xl font-black uppercase text-slate-900">Alliance Leads & Subscribers</h2>
                                     <p className="text-xs font-bold text-slate-500 font-mono mt-1">
-                                        Submissions from the "Join the Alliance" newsletter form, stored securely in SQLite.
+                                        Submissions from the "Join the Alliance" newsletter form, stored securely in MongoDB Atlas.
                                     </p>
                                 </div>
                                 <div className="flex items-center gap-2">
