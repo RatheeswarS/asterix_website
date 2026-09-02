@@ -476,6 +476,7 @@ It was the reason a training program turned into a family of engineers who learn
                                     subsystemId: sub.id,
                                     name: m.name,
                                     role: m.role,
+                                    phone: m.phone || '',
                                     initials: m.initials,
                                     badge: m.badge || 'SPECIALIST',
                                     status: m.status || 'Active Member',

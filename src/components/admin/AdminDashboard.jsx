@@ -1191,7 +1191,7 @@ export default function AdminDashboard({ onExit }) {
                                             if (!newMember.name.trim()) return alert('Please enter specialist name');
                                             const initials = newMember.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'TM';
                                             addTeamMember(currentSubsystem.id, { ...newMember, initials });
-                                            setNewMember({ name: '', role: '', initials: '', bio: '', badge: 'SPECIALIST', photo: '', photoFit: 'cover', photoPosition: '50% 50%', status: 'Active Member' });
+                                            setNewMember({ name: '', role: '', phone: '', initials: '', bio: '', badge: 'SPECIALIST', photo: '', photoFit: 'cover', photoPosition: '50% 50%', status: 'Active Member' });
                                             showStatus('New specialist added with photo & status!');
                                         }}
                                         className="press press-flat px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-mono font-black text-xs uppercase cursor-pointer"

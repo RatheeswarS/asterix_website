@@ -99,6 +99,7 @@ async function runMigration() {
                                     subsystemId: sub.id,
                                     name: m.name || '',
                                     role: m.role || '',
+                                    phone: m.phone || '',
                                     initials: m.initials || '',
                                     badge: m.badge || 'SPECIALIST',
                                     status: m.status || 'Active Member',
