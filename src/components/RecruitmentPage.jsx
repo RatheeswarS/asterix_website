@@ -13,7 +13,8 @@ import MechanicalMysteryViewer from './recruitment/MechanicalMysteryViewer';
 import SubsystemLockedCard from './recruitment/SubsystemLockedCard';
 import {
     RECRUITMENT_RELEASE_DATE_STR,
-    RECRUITMENT_RELEASE_MS
+    RECRUITMENT_RELEASE_MS,
+    SUBSYSTEM_LEADS
 } from '../data/recruitmentProblemStatements';
 import { AUTH_SESSION_KEY } from '../context/WebsiteDataContext';
 
@@ -33,7 +34,7 @@ import { AUTH_SESSION_KEY } from '../context/WebsiteDataContext';
 
 
 
-export default function RecruitmentPage({ onBack }) {
+export default function RecruitmentPage({ onBack, onSelectSubsystem }) {
     const { siteData } = useWebsiteData();
 
     const recruitment = siteData.recruitment || {};
@@ -192,7 +193,7 @@ export default function RecruitmentPage({ onBack }) {
                         Recruitment details are being prepared. Check back shortly.
                     </div>
                 ) : (
-                    <div className="flex flex-wrap gap-3">
+                    <div className="flex flex-wrap items-center gap-3">
                         {tracks.map((track) => {
                             const isActive = track.id === selectedTrack?.id;
                             return (
@@ -211,6 +212,17 @@ export default function RecruitmentPage({ onBack }) {
                                 </button>
                             );
                         })}
+
+                        {onSelectSubsystem && selectedTrack && (
+                            <button
+                                type="button"
+                                onClick={() => onSelectSubsystem(selectedTrack.id)}
+                                className="press sm:ml-auto px-4 py-3 border-3 border-slate-900 bg-sky-100 hover:bg-sky-500 hover:text-white text-slate-900 font-mono font-black text-xs uppercase tracking-wide shadow-[3px_3px_0px_#0f172a] cursor-pointer flex items-center gap-2"
+                            >
+                                <span>Overview &amp; Squad: {selectedTrack.name}</span>
+                                <span>↗</span>
+                            </button>
+                        )}
                     </div>
                 )}
             </section>
@@ -357,6 +369,59 @@ export default function RecruitmentPage({ onBack }) {
                                 )}
                             </>
                         )}
+
+                        {/* Subsystem Lead Helpdesk / Doubt Clarifications */}
+                        {(() => {
+                            const lead = selectedTrack?.lead || SUBSYSTEM_LEADS[selectedTrack?.id];
+                            if (!lead) return null;
+                            const cleanPhone = lead.phone.replace(/[^0-9+]/g, '');
+                            const rawDigits = lead.phone.replace(/[^0-9]/g, '');
+                            return (
+                                <div className="mt-8 sm:mt-10 p-5 sm:p-6 bg-white border-4 border-slate-900 shadow-[8px_8px_0px_#0f172a] flex flex-col md:flex-row md:items-center justify-between gap-5">
+                                    <div>
+                                        <div className="flex items-center gap-2 mb-1.5">
+                                            <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse" />
+                                            <span className="font-mono text-[11px] font-black uppercase text-slate-500 tracking-wider">
+                                                QUERIES &amp; DOUBT CLARIFICATION // {selectedTrack.name}
+                                            </span>
+                                        </div>
+                                        <h4 className="text-xl sm:text-2xl font-black uppercase text-slate-900 tracking-tight">
+                                            Contact Subsystem Lead: <span className="text-sky-600">{lead.name}</span>
+                                        </h4>
+                                        <p className="text-xs sm:text-sm font-bold text-slate-600 mt-1 max-w-xl leading-relaxed">
+                                            Have questions regarding problem statements, syllabus topics, rules, or submissions? Reach out directly to the team lead.
+                                        </p>
+                                    </div>
+                                    <div className="flex flex-wrap items-center gap-3 shrink-0">
+                                        {onSelectSubsystem && (
+                                            <button
+                                                type="button"
+                                                onClick={() => onSelectSubsystem(selectedTrack.id)}
+                                                className="press inline-flex items-center gap-2 px-4 py-2.5 bg-amber-300 hover:bg-amber-400 text-slate-900 border-2 border-slate-900 font-mono text-xs font-black uppercase shadow-[3px_3px_0px_#0f172a] cursor-pointer"
+                                            >
+                                                <span>🛠️ Subsystem Specs &amp; Squad</span>
+                                                <span>→</span>
+                                            </button>
+                                        )}
+                                        <a
+                                            href={`tel:${cleanPhone}`}
+                                            className="press inline-flex items-center gap-2 px-4 py-2.5 bg-slate-900 hover:bg-sky-600 text-white border-2 border-slate-900 font-mono text-xs font-black uppercase shadow-[3px_3px_0px_#0284c7]"
+                                        >
+                                            <span>📞 Call</span>
+                                            <span>{lead.phone}</span>
+                                        </a>
+                                        <a
+                                            href={`https://wa.me/${rawDigits}`}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="press inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white border-2 border-slate-900 font-mono text-xs font-black uppercase shadow-[3px_3px_0px_#0f172a]"
+                                        >
+                                            <span>💬 WhatsApp</span>
+                                        </a>
+                                    </div>
+                                </div>
+                            );
+                        })()}
                     </div>
                 </section>
             )}

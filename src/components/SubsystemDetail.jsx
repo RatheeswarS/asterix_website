@@ -287,6 +287,27 @@ export default function SubsystemDetail({ subsystemId, onBack, onSelectSubsystem
                                     <p className="text-xs text-slate-600 font-medium leading-relaxed">
                                         {member.bio}
                                     </p>
+
+                                    {member.phone && (
+                                        <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2">
+                                            <a
+                                                href={`tel:${member.phone.replace(/[^0-9+]/g, '')}`}
+                                                className="press press-flat inline-flex items-center gap-1.5 text-[11px] font-mono font-bold text-slate-700 hover:text-sky-600 cursor-pointer truncate"
+                                            >
+                                                <Icon name="phone" className="w-3 h-3 text-sky-600 shrink-0" />
+                                                <span className="truncate">{member.phone}</span>
+                                            </a>
+                                            <a
+                                                href={`https://wa.me/${member.phone.replace(/[^0-9]/g, '')}`}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="press press-flat text-[10px] font-mono font-black text-emerald-600 hover:text-emerald-700 shrink-0"
+                                                title="WhatsApp Direct"
+                                            >
+                                                WA ↗
+                                            </a>
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="mt-5 pt-3 border-t border-slate-200 text-[10px] font-mono font-bold uppercase flex items-center justify-between">

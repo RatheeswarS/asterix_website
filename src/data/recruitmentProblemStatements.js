@@ -12,11 +12,30 @@
 export const RECRUITMENT_RELEASE_DATE_STR = '2026-09-03T18:30:00+05:30';
 export const RECRUITMENT_RELEASE_MS = new Date(RECRUITMENT_RELEASE_DATE_STR).getTime();
 
+export const SUBSYSTEM_LEADS = {
+    'software-perception': {
+        name: 'Ratheeshwar',
+        role: 'Software & Perception Lead',
+        phone: '+91 86089 44644',
+    },
+    'powertrain': {
+        name: 'Joel Anto Edwin',
+        role: 'Powertrain Subsystem Lead',
+        phone: '+91 72079 60077',
+    },
+    'mechanical': {
+        name: 'Soorya Ramprakash',
+        role: 'Mechanical Subsystem Lead',
+        phone: '+91 89394 52244',
+    }
+};
+
 export const SOFTWARE_PERCEPTION_DATA = {
     id: 'software-perception',
     name: 'Software & Perception',
     headline: 'AUTONOMOUS PERCEPTION & STATE ESTIMATION',
     blurb: 'Two comprehensive recruitment challenges. Choose your domain, design your pipeline in Phase 1, and implement your solution in Phase 2.',
+    lead: SUBSYSTEM_LEADS['software-perception'],
     timeline: [
         {
             id: 'sp-release',
@@ -35,8 +54,8 @@ export const SOFTWARE_PERCEPTION_DATA = {
         {
             id: 'sp-p2',
             label: 'Phase 02 Submission Deadline',
-            detail: 'Implementation, Codebase, Model Weights & Final Evaluation due at 11:59 PM IST',
-            date: '2026-09-14T23:59:00+05:30',
+            detail: 'Implementation, Codebase, Model Weights & Final Evaluation due on 15 September at 11:59 PM IST',
+            date: '2026-09-15T23:59:00+05:30',
             opensAt: '2026-09-08T23:59:00+05:30',
         },
         {
@@ -44,7 +63,7 @@ export const SOFTWARE_PERCEPTION_DATA = {
             label: 'Final Results Announcement',
             detail: 'Final selected crew roster published on 20 September night',
             date: '2026-09-20T23:59:00+05:30',
-            opensAt: '2026-09-14T23:59:00+05:30',
+            opensAt: '2026-09-15T23:59:00+05:30',
         }
     ],
     challenges: [
@@ -129,8 +148,8 @@ export const SOFTWARE_PERCEPTION_DATA = {
                 phase2: {
                     phaseNumber: '02',
                     title: 'Implementation, Training & Evaluation',
-                    deadline: '14 September 2026 • 11:59 PM IST',
-                    deadlineDate: '2026-09-14T23:59:00+05:30',
+                    deadline: '15 September 2026 • 11:59 PM IST',
+                    deadlineDate: '2026-09-15T23:59:00+05:30',
                     tagline: 'Take the approach you developed in Phase 1 and turn it into a working 2D object-detection system. Build, test, evaluate and improve your solution.',
                     overview: 'In Phase 2, you will implement, train, and benchmark the detector proposed in Phase 1. You are not required to follow your Phase 1 proposal blindly — if experiments show a different architecture or training regime is superior, document what changed and why.',
                     environmentNote: 'You do NOT need physical access to an NVIDIA Jetson Orin NX or ZED 2i camera. You may develop and test your detector on whatever hardware is available to you (laptop, Google Colab, GPU workstation). Jetson is the target deployment platform, not a requirement for personal setup.',
@@ -256,8 +275,8 @@ export const SOFTWARE_PERCEPTION_DATA = {
                 phase2: {
                     phaseNumber: '02',
                     title: 'Online Streaming, Uncertainty & Jetson Deployment',
-                    deadline: '14 September 2026 • 11:59 PM IST',
-                    deadlineDate: '2026-09-14T23:59:00+05:30',
+                    deadline: '15 September 2026 • 11:59 PM IST',
+                    deadlineDate: '2026-09-15T23:59:00+05:30',
                     tagline: 'Take your offline pipeline and turn it into a robust, real-time online cone-mapping system fit for deployment on a moving autonomous buggy.',
                     overview: 'In Phase 1, you built an offline batch pipeline. In Phase 2, you will extend that pipeline into a streaming system that processes detections incrementally as they arrive, maintains a live cone map, reports per-cone uncertainty, and remains robust across multiple challenging test logs.',
                     environmentNote: 'Physical Jetson Orin NX is NOT required for development. You can evaluate by replaying logs in real time, generating synthetic stress-test logs, and injecting synthetic faults (dropped packets, out-of-order timestamps).',
@@ -317,6 +336,7 @@ export const POWERTRAIN_TEST_DATA = {
     name: 'Powertrain',
     headline: 'POWERTRAIN SUBSYSTEM RECRUITMENT TEST',
     blurb: 'Offline written evaluation covering Logical Reasoning, Network Analysis, Electronic Devices, and Digital Electronics.',
+    lead: SUBSYSTEM_LEADS['powertrain'],
     timeline: [
         {
             id: 'pt-release',
@@ -449,6 +469,7 @@ export const MECHANICAL_MYSTERY_DATA = {
     headline: 'CLASSIFIED • MECHANICAL DYNAMICS & CONTROL',
     badge: 'CLASSIFIED DOSSIER',
     blurb: 'Three problem statements. Longitudinal control and lateral control. Teams of 2. Evaluation criteria mysterious and not announced.',
+    lead: SUBSYSTEM_LEADS['mechanical'],
     timeline: [
         {
             id: 'mech-release',

@@ -77,6 +77,7 @@ router.post('/login', async (req, res) => {
             id: user._id.toString(),
             username: user.username,
             name: user.name,
+            phone: user.phone || '',
             role: user.role,
             accessLevel: user.accessLevel
         };
@@ -114,6 +115,7 @@ router.get('/me', authenticateToken, async (req, res) => {
             id: user._id.toString(),
             username: user.username,
             name: user.name,
+            phone: user.phone || '',
             role: user.role,
             accessLevel: user.accessLevel
         });
@@ -133,6 +135,7 @@ router.get('/accounts', authenticateToken, async (req, res) => {
             id: u._id.toString(),
             username: u.username,
             name: u.name,
+            phone: u.phone || '',
             role: u.role,
             accessLevel: u.accessLevel,
             createdAt: u.createdAt
@@ -146,7 +149,7 @@ router.get('/accounts', authenticateToken, async (req, res) => {
 // POST /api/auth/accounts (Protected - Admin/Lead)
 router.post('/accounts', authenticateToken, async (req, res) => {
     try {
-        const { username, password, name, role, accessLevel } = req.body;
+        const { username, password, name, phone, role, accessLevel } = req.body;
         if (!username || !password || !name) {
             return res.status(400).json({ error: 'Username, password, and name are required.' });
         }
@@ -165,6 +168,7 @@ router.post('/accounts', authenticateToken, async (req, res) => {
             username: cleanUsername,
             passwordHash,
             name: name.trim(),
+            phone: (phone || '').trim(),
             role: role || 'Team Member',
             accessLevel: accessLevel || 'Lead'
         });
@@ -175,6 +179,7 @@ router.post('/accounts', authenticateToken, async (req, res) => {
                 id: user._id.toString(),
                 username: user.username,
                 name: user.name,
+                phone: user.phone || '',
                 role: user.role,
                 accessLevel: user.accessLevel
             }
@@ -188,7 +193,7 @@ router.post('/accounts', authenticateToken, async (req, res) => {
 router.put('/accounts/:id', authenticateToken, async (req, res) => {
     try {
         const targetId = req.params.id;
-        const { name, role, accessLevel, password } = req.body;
+        const { name, phone, role, accessLevel, password } = req.body;
 
         const isSelf = req.user.id === targetId || req.user.username === targetId;
         const isSuperAdmin = req.user.accessLevel === 'SuperAdmin';
@@ -199,6 +204,7 @@ router.put('/accounts/:id', authenticateToken, async (req, res) => {
 
         const updateData = {};
         if (name) updateData.name = name.trim();
+        if (phone !== undefined) updateData.phone = String(phone).trim();
         if (isSuperAdmin && role) updateData.role = role;
         if (isSuperAdmin && accessLevel) updateData.accessLevel = accessLevel;
         if (password) {

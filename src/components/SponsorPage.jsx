@@ -475,12 +475,13 @@ Thank you for powering collegiate automotive innovation!
                 <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
                     <div className="p-6 bg-slate-800 border-3 border-slate-700">
                         <span className="text-xs font-mono font-black text-sky-400 uppercase block mb-1">
-                            OFFICIAL EMAIL
+                            OFFICIAL EMAIL &amp; PHONE
                         </span>
                         <h4 className="text-lg font-black uppercase text-white mb-2">Direct Communications</h4>
-                        <p className="text-xs font-mono text-slate-300">
-                            {contact.email || 'asterix.psgitech@gmail.com'}
-                        </p>
+                        <div className="text-xs font-mono text-slate-300 space-y-1">
+                            <p>✉ {contact.email || 'asterix.psgitech@gmail.com'}</p>
+                            <p>📞 {contact.phone || '+91 86089 44644'}</p>
+                        </div>
                     </div>
 
                     <div className="p-6 bg-slate-800 border-3 border-slate-700">

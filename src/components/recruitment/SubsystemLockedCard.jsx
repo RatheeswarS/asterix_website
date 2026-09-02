@@ -1,11 +1,4 @@
-import { useState, useEffect } from 'react';
-
-const SECOND = 1000;
-const MINUTE = 60 * SECOND;
-const HOUR = 60 * MINUTE;
-const DAY = 24 * HOUR;
-
-const pad = (n) => String(Math.max(0, n)).padStart(2, '0');
+import { useEffect } from 'react';
 
 export default function SubsystemLockedCard({
     title = 'Problem Statements Release Countdown',
@@ -16,27 +9,13 @@ export default function SubsystemLockedCard({
     onUnlock
 }) {
     const targetMs = new Date(releaseDate).getTime();
-    const [now, setNow] = useState(() => Date.now());
 
     useEffect(() => {
-        const id = setInterval(() => {
-            const current = Date.now();
-            setNow(current);
-            if (current >= targetMs && onUnlock) {
-                onUnlock();
-            }
-        }, 1000);
-        return () => clearInterval(id);
+        if (!onUnlock) return;
+        const remaining = Math.max(10, targetMs - Date.now());
+        const timer = setTimeout(() => onUnlock(), remaining);
+        return () => clearTimeout(timer);
     }, [targetMs, onUnlock]);
-
-    const remaining = Math.max(0, targetMs - now);
-
-    const parts = {
-        days: Math.floor(remaining / DAY),
-        hours: Math.floor((remaining % DAY) / HOUR),
-        minutes: Math.floor((remaining % HOUR) / MINUTE),
-        seconds: Math.floor((remaining % MINUTE) / 1000),
-    };
 
     return (
         <div className="bg-slate-900 text-white border-4 border-slate-900 shadow-[8px_8px_0px_#0284c7] p-6 sm:p-10 relative overflow-hidden">
@@ -66,68 +45,7 @@ export default function SubsystemLockedCard({
                 </p>
             </div>
 
-            {/* Countdown Clock - Neo-Brutalist Big Tiles */}
-            <div className="p-6 bg-slate-800/80 border-3 border-slate-700 shadow-[6px_6px_0px_#0f172a] mb-8">
-                <span className="font-mono text-[11px] font-black uppercase tracking-widest text-slate-400 block mb-4">
-                    // TIME UNTIL UNLOCK
-                </span>
 
-                <div className="flex flex-wrap items-center gap-3 sm:gap-5">
-                    {/* Days */}
-                    <div className="flex flex-col items-center">
-                        <div className="w-16 sm:w-24 py-3 sm:py-4 bg-white border-3 border-slate-900 shadow-[3px_3px_0px_#0284c7] flex items-center justify-center">
-                            <span className="font-mono font-black text-2xl sm:text-4xl text-slate-900 tabular-nums">
-                                {pad(parts.days)}
-                            </span>
-                        </div>
-                        <span className="mt-1.5 font-mono text-[10px] font-black uppercase tracking-widest text-slate-400">
-                            Days
-                        </span>
-                    </div>
-
-                    <span className="text-2xl font-black text-slate-500 hidden sm:inline">:</span>
-
-                    {/* Hours */}
-                    <div className="flex flex-col items-center">
-                        <div className="w-16 sm:w-24 py-3 sm:py-4 bg-white border-3 border-slate-900 shadow-[3px_3px_0px_#0284c7] flex items-center justify-center">
-                            <span className="font-mono font-black text-2xl sm:text-4xl text-slate-900 tabular-nums">
-                                {pad(parts.hours)}
-                            </span>
-                        </div>
-                        <span className="mt-1.5 font-mono text-[10px] font-black uppercase tracking-widest text-slate-400">
-                            Hours
-                        </span>
-                    </div>
-
-                    <span className="text-2xl font-black text-slate-500 hidden sm:inline">:</span>
-
-                    {/* Mins */}
-                    <div className="flex flex-col items-center">
-                        <div className="w-16 sm:w-24 py-3 sm:py-4 bg-white border-3 border-slate-900 shadow-[3px_3px_0px_#0284c7] flex items-center justify-center">
-                            <span className="font-mono font-black text-2xl sm:text-4xl text-slate-900 tabular-nums">
-                                {pad(parts.minutes)}
-                            </span>
-                        </div>
-                        <span className="mt-1.5 font-mono text-[10px] font-black uppercase tracking-widest text-slate-400">
-                            Mins
-                        </span>
-                    </div>
-
-                    <span className="text-2xl font-black text-slate-500 hidden sm:inline">:</span>
-
-                    {/* Secs */}
-                    <div className="flex flex-col items-center">
-                        <div className="w-16 sm:w-24 py-3 sm:py-4 bg-amber-300 border-3 border-slate-900 shadow-[3px_3px_0px_#0284c7] flex items-center justify-center">
-                            <span className="font-mono font-black text-2xl sm:text-4xl text-slate-900 tabular-nums animate-pulse">
-                                {pad(parts.seconds)}
-                            </span>
-                        </div>
-                        <span className="mt-1.5 font-mono text-[10px] font-black uppercase tracking-widest text-amber-400">
-                            Secs
-                        </span>
-                    </div>
-                </div>
-            </div>
 
             {/* Teaser Points */}
             {teaserPoints.length > 0 && (

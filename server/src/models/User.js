@@ -21,6 +21,11 @@ const UserSchema = new mongoose.Schema({
         type: String,
         default: 'Team Member'
     },
+    phone: {
+        type: String,
+        default: '',
+        trim: true
+    },
     accessLevel: {
         type: String,
         enum: ['SuperAdmin', 'Lead', 'Member'],

@@ -66,10 +66,10 @@ export default function AdminDashboard({ onExit }) {
     const [selectedSubsystemId, setSelectedSubsystemId] = useState(siteData.subsystems[0]?.id || 'software-perception');
 
     // Forms state
-    const [newMember, setNewMember] = useState({ name: '', role: '', initials: '', bio: '', badge: 'SPECIALIST', photo: '', photoFit: 'cover', photoPosition: '50% 50%', status: 'Active Member' });
+    const [newMember, setNewMember] = useState({ name: '', role: '', phone: '', initials: '', bio: '', badge: 'SPECIALIST', photo: '', photoFit: 'cover', photoPosition: '50% 50%', status: 'Active Member' });
     const [newGallery, setNewGallery] = useState({ title: '', category: 'PIT LANE', year: '2026', src: '', desc: '', fit: 'cover', position: '50% 50%' });
     const [newUpdateItem, setNewUpdateItem] = useState({ label: '', tag: 'PROVING GROUNDS', image: '', link: '#', fit: 'cover', position: '50% 50%' });
-    const [newAccount, setNewAccount] = useState({ username: '', password: '', name: '', role: 'Team Member', accessLevel: 'Lead' });
+    const [newAccount, setNewAccount] = useState({ username: '', password: '', name: '', phone: '', role: 'Team Member', accessLevel: 'Lead' });
 
     // Alliance Leads, Sponsor Inquiries & Database Accounts State
     const [subscribers, setSubscribers] = useState([]);
@@ -795,6 +795,16 @@ export default function AdminDashboard({ onExit }) {
                                             />
                                         </div>
                                         <div>
+                                            <label className="block text-[11px] font-mono font-bold text-slate-600 mb-1">Official Phone / Helpline</label>
+                                            <input
+                                                type="text"
+                                                value={siteData.contact.phone || ''}
+                                                onChange={e => updateContact({ phone: e.target.value })}
+                                                placeholder="+91 86089 44644"
+                                                className="w-full px-3 py-1.5 border-2 border-slate-900 bg-slate-50 font-mono text-xs"
+                                            />
+                                        </div>
+                                        <div>
                                             <label className="block text-[11px] font-mono font-bold text-slate-600 mb-1">Campus Location</label>
                                             <input
                                                 type="text"
@@ -821,7 +831,7 @@ export default function AdminDashboard({ onExit }) {
                                                 className="w-full px-3 py-1.5 border-2 border-slate-900 bg-slate-50 font-mono text-xs"
                                             />
                                         </div>
-                                        <div className="sm:col-span-2">
+                                        <div>
                                             <label className="block text-[11px] font-mono font-bold text-slate-600 mb-1">GitHub URL</label>
                                             <input
                                                 type="text"
@@ -1051,6 +1061,13 @@ export default function AdminDashboard({ onExit }) {
                                                     placeholder="Role Title"
                                                     className="w-full font-mono text-xs text-sky-600 font-bold border-b border-slate-200 pb-0.5 focus:border-slate-900 focus:outline-none"
                                                 />
+                                                <input
+                                                    type="text"
+                                                    value={m.phone || ''}
+                                                    onChange={e => updateTeamMember(currentSubsystem.id, idx, { phone: e.target.value })}
+                                                    placeholder="Phone / Mobile (e.g. +91 98765 43210)"
+                                                    className="w-full font-mono text-xs text-slate-700 font-bold border-b border-slate-200 pb-0.5 focus:border-slate-900 focus:outline-none"
+                                                />
 
                                                 {/* The corner tag on the public member card. It was
                                                     settable when adding a specialist and then frozen
@@ -1101,7 +1118,7 @@ export default function AdminDashboard({ onExit }) {
                                     <span className="text-xs font-mono font-black uppercase text-slate-900 block">
                                         + Add New Specialist to {currentSubsystem.name}
                                     </span>
-                                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                                    <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
                                         <input
                                             type="text"
                                             value={newMember.name}
@@ -1115,6 +1132,13 @@ export default function AdminDashboard({ onExit }) {
                                             onChange={e => setNewMember({ ...newMember, role: e.target.value })}
                                             placeholder="Role / Title"
                                             className="px-3 py-1.5 border-2 border-slate-900 bg-white text-xs font-bold"
+                                        />
+                                        <input
+                                            type="text"
+                                            value={newMember.phone || ''}
+                                            onChange={e => setNewMember({ ...newMember, phone: e.target.value })}
+                                            placeholder="Phone Number"
+                                            className="px-3 py-1.5 border-2 border-slate-900 bg-white text-xs font-mono"
                                         />
                                         <input
                                             type="text"
@@ -1643,7 +1667,7 @@ export default function AdminDashboard({ onExit }) {
                                 <span className="text-xs font-mono font-black uppercase text-slate-900 block">
                                     + Add New Team Member Login
                                 </span>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                                     <input
                                         type="text"
                                         value={newAccount.username}
@@ -1667,10 +1691,17 @@ export default function AdminDashboard({ onExit }) {
                                     />
                                     <input
                                         type="text"
+                                        value={newAccount.phone || ''}
+                                        onChange={e => setNewAccount({ ...newAccount, phone: e.target.value })}
+                                        placeholder="Phone Number (e.g. +91 98765 43210)"
+                                        className="px-3 py-1.5 border-2 border-slate-900 bg-white text-xs font-mono"
+                                    />
+                                    <input
+                                        type="text"
                                         value={newAccount.role}
                                         onChange={e => setNewAccount({ ...newAccount, role: e.target.value })}
                                         placeholder="Team Role (e.g. Powertrain Lead)"
-                                        className="px-3 py-1.5 border-2 border-slate-900 bg-white text-xs font-bold"
+                                        className="px-3 py-1.5 border-2 border-slate-900 bg-white text-xs font-bold sm:col-span-2 lg:col-span-1"
                                     />
                                 </div>
                                 <button
@@ -1683,6 +1714,7 @@ export default function AdminDashboard({ onExit }) {
                                         username: cleanUsername,
                                         password: cleanPassword,
                                         name: newAccount.name.trim() || cleanUsername,
+                                        phone: (newAccount.phone || '').trim(),
                                         role: newAccount.role || 'Team Member',
                                         accessLevel: newAccount.accessLevel || 'Lead'
                                     };
@@ -1713,7 +1745,7 @@ export default function AdminDashboard({ onExit }) {
                                         }
                                     }
 
-                                    setNewAccount({ username: '', password: '', name: '', role: 'Team Member', accessLevel: 'Lead' });
+                                    setNewAccount({ username: '', password: '', name: '', phone: '', role: 'Team Member', accessLevel: 'Lead' });
                                     showStatus(`New login created for ${createdAccount.name}! ✓`);
                                 }}
                                     className="press press-flat px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-mono font-black text-xs uppercase cursor-pointer"
@@ -1729,6 +1761,7 @@ export default function AdminDashboard({ onExit }) {
                                         <tr>
                                             <th className="p-2.5">User</th>
                                             <th className="p-2.5">Username</th>
+                                            <th className="p-2.5">Phone</th>
                                             <th className="p-2.5">Role</th>
                                             <th className="p-2.5">Access</th>
                                             <th className="p-2.5 text-right">Actions</th>
@@ -1739,6 +1772,7 @@ export default function AdminDashboard({ onExit }) {
                                             <tr key={acc.id} className="hover:bg-slate-50">
                                                 <td className="p-2.5 font-bold">{acc.name}</td>
                                                 <td className="p-2.5 text-sky-600 font-bold">{acc.username}</td>
+                                                <td className="p-2.5 text-slate-700 font-bold">{acc.phone || '—'}</td>
                                                 <td className="p-2.5">{acc.role}</td>
                                                 <td className="p-2.5">
                                                     <span className="px-2 py-0.5 bg-slate-100 border border-slate-400 text-[10px]">

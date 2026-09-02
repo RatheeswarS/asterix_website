@@ -188,7 +188,10 @@ function MainApp() {
     if (isRecruitmentPage) {
         return (
             <Suspense fallback={pageFallback}>
-                <RecruitmentPage onBack={handleBackToHome} />
+                <RecruitmentPage
+                    onBack={handleBackToHome}
+                    onSelectSubsystem={handleSelectSubsystem}
+                />
             </Suspense>
         );
     }

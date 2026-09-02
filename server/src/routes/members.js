@@ -19,7 +19,7 @@ router.get('/', async (req, res) => {
 // POST /api/members (Protected - Create new team member)
 router.post('/', authenticateToken, async (req, res) => {
     try {
-        const { subsystemId, name, role, initials, badge, status, bio, photo, photoFit, photoPosition, order } = req.body;
+        const { subsystemId, name, role, phone, initials, badge, status, bio, photo, photoFit, photoPosition, order } = req.body;
         if (!name || !subsystemId) {
             return res.status(400).json({ error: 'Name and subsystemId are required.' });
         }
@@ -30,6 +30,7 @@ router.post('/', authenticateToken, async (req, res) => {
             subsystemId,
             name,
             role: role || '',
+            phone: phone || '',
             initials: initials || (name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'TM'),
             badge: badge || 'SPECIALIST',
             status: status || 'Active Member',

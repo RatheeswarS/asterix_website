@@ -159,6 +159,7 @@ const initialUpdates = [
 // Initial default contact info
 const initialContactInfo = {
     email: "asterix.psgitech@gmail.com",
+    phone: "+91 86089 44644",
     address: "PSG iTech, Neelambur, Coimbatore, Tamil Nadu",
     category: "Autonomous All-Terrain Vehicle Development",
     instagramUrl: "https://www.instagram.com/asterix_itech/",
@@ -176,21 +177,24 @@ const initialAccounts = [
         id: "acc-1",
         username: "admin",
         name: "Ratheeswar",
+        phone: "+91 86089 44644",
         role: "System Administrator & Software Lead",
         accessLevel: "SuperAdmin"
     },
     {
         id: "acc-2",
         username: "powertrain_lead",
-        name: "Powertrain Lead",
-        role: "Subsystem Lead",
+        name: "Joel Anto Edwin",
+        phone: "+91 72079 60077",
+        role: "Powertrain Subsystem Lead",
         accessLevel: "Lead"
     },
     {
         id: "acc-3",
         username: "chassis_lead",
-        name: "Chassis Lead",
-        role: "Subsystem Lead",
+        name: "Soorya Ramprakash",
+        phone: "+91 89394 52244",
+        role: "Chassis & Mechanical Lead",
         accessLevel: "Lead"
     }
 ];
@@ -215,20 +219,21 @@ const RECRUITMENT_TRACKS = [
         id: 'software-perception',
         name: 'Software & Perception',
         blurb: SOFTWARE_PERCEPTION_DATA.blurb,
+        lead: SOFTWARE_PERCEPTION_DATA.lead,
         applyUrl: '',
         timeline: SOFTWARE_PERCEPTION_DATA.timeline,
         problemStatements: [
             {
                 id: 'ps-cv-01',
                 title: 'Problem Statement 01: Vision-Based Object Detection',
-                summary: 'Design and implement a practical 2D multi-class object detection system for our autonomous vehicle using a ZED 2i camera and NVIDIA Jetson Orin NX across Phase 1 (due 8th night 11:59 PM) and Phase 2 (due 14th night 11:59 PM).',
-                body: 'Phase 01: Research, Architecture & Proposal (Deadline: 8 September 2026, 11:59 PM IST)\nPhase 02: Implementation & Evaluation (Deadline: 14 September 2026, 11:59 PM IST)\nHardware: NVIDIA Jetson Orin NX + ZED 2i Camera\n9 Classes: Cone, Traffic barrier, Cow, Pedestrian, Bicyclist, Red traffic light, Green traffic light, Orange/amber traffic light, Two-wheeler.'
+                summary: 'Design and implement a practical 2D multi-class object detection system for our autonomous vehicle using a ZED 2i camera and NVIDIA Jetson Orin NX across Phase 1 (due 8th night 11:59 PM) and Phase 2 (due 15th night 11:59 PM).',
+                body: 'Phase 01: Research, Architecture & Proposal (Deadline: 8 September 2026, 11:59 PM IST)\nPhase 02: Implementation & Evaluation (Deadline: 15 September 2026, 11:59 PM IST)\nHardware: NVIDIA Jetson Orin NX + ZED 2i Camera\n9 Classes: Cone, Traffic barrier, Cow, Pedestrian, Bicyclist, Red traffic light, Green traffic light, Orange/amber traffic light, Two-wheeler.'
             },
             {
                 id: 'ps-fusion-02',
                 title: 'Problem Statement 02: Sensor Fusion & Track Reconstruction',
-                summary: 'Reconstruct a clean 2D cone map from noisy, backward-mounted (180° inverted) perception data and vehicle telemetry, handling ghost cone hallucinations across Phase 1 (offline pipeline due 8th night 11:59 PM) and Phase 2 (online streaming pipeline due 14th night 11:59 PM).',
-                body: 'Phase 01: Offline Map Reconstruction & Noise Filtering (Deadline: 8 September 2026, 11:59 PM IST)\nPhase 02: Online Streaming & Uncertainty (Deadline: 14 September 2026, 11:59 PM IST)\nTarget: aBAJA Autonomous Buggy + 180° backward-facing perception sensor.'
+                summary: 'Reconstruct a clean 2D cone map from noisy, backward-mounted (180° inverted) perception data and vehicle telemetry, handling ghost cone hallucinations across Phase 1 (offline pipeline due 8th night 11:59 PM) and Phase 2 (online streaming pipeline due 15th night 11:59 PM).',
+                body: 'Phase 01: Offline Map Reconstruction & Noise Filtering (Deadline: 8 September 2026, 11:59 PM IST)\nPhase 02: Online Streaming & Uncertainty (Deadline: 15 September 2026, 11:59 PM IST)\nTarget: aBAJA Autonomous Buggy + 180° backward-facing perception sensor.'
             }
         ]
     },
@@ -236,6 +241,7 @@ const RECRUITMENT_TRACKS = [
         id: 'powertrain',
         name: 'Powertrain',
         blurb: POWERTRAIN_TEST_DATA.blurb,
+        lead: POWERTRAIN_TEST_DATA.lead,
         applyUrl: '',
         timeline: POWERTRAIN_TEST_DATA.timeline,
         problemStatements: [
@@ -251,6 +257,7 @@ const RECRUITMENT_TRACKS = [
         id: 'mechanical',
         name: 'Mechanical',
         blurb: MECHANICAL_MYSTERY_DATA.blurb,
+        lead: MECHANICAL_MYSTERY_DATA.lead,
         applyUrl: '',
         timeline: MECHANICAL_MYSTERY_DATA.timeline,
         problemStatements: MECHANICAL_MYSTERY_DATA.challenges.map((c) => ({
@@ -266,6 +273,7 @@ const makeRecruitmentTrack = (canonical) => ({
     id: canonical.id,
     name: canonical.name,
     blurb: canonical.blurb || '',
+    lead: canonical.lead || null,
     applyUrl: canonical.applyUrl || '',
     timeline: canonical.timeline || [],
     problemStatements: canonical.problemStatements || []
@@ -283,6 +291,7 @@ const initialRecruitment = {
 const normalizeRecruitmentTrack = (track, canonical) => {
     const canonicalTimeline = canonical.timeline || [];
     const canonicalStatements = canonical.problemStatements || [];
+    const canonicalLead = canonical.lead || null;
 
     return {
         ...makeRecruitmentTrack(canonical),
@@ -290,6 +299,7 @@ const normalizeRecruitmentTrack = (track, canonical) => {
         id: canonical.id,
         name: track?.name || canonical.name,
         blurb: track?.blurb || canonical.blurb || '',
+        lead: canonicalLead,
         applyUrl: track?.applyUrl ?? canonical.applyUrl ?? '',
         timeline: canonicalTimeline,
         problemStatements: canonicalStatements
@@ -363,13 +373,15 @@ const normalizeSubsystems = (subs) => {
                     highlights: defaultSys?.highlights,
                     teamMembers: (existing.teamMembers || []).map(m => ({
                         ...m,
-                        status: m.status || 'Active Member'
+                        status: m.status || 'Active Member',
+                        phone: m.phone || ''
                     }))
                 };
             }
             const teamMembers = (existing.teamMembers || []).map(m => ({
                 ...m,
-                status: m.status || 'Active Member'
+                status: m.status || 'Active Member',
+                phone: m.phone || ''
             }));
             return {
                 ...defaultSys,

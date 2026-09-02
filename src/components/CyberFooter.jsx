@@ -30,6 +30,10 @@ export default function CyberFooter({ onOpenAdmin, onOpenRecruitment, onOpenSpon
                         </p>
 
                         <div className="flex flex-col gap-2 pt-2 text-xs font-mono font-bold text-slate-700">
+                            <a href={`tel:${(contact.phone || '+91 86089 44644').replace(/[^0-9+]/g, '')}`} className="press press-flat flex items-center gap-2 hover:text-sky-600">
+                                <span className="p-1 bg-sky-100 border border-slate-900 flex items-center"><Icon name="phone" className="w-3.5 h-3.5" /></span>
+                                <span>{contact.phone || '+91 86089 44644'}</span>
+                            </a>
                             <a href={`mailto:${contact.email || 'asterix.psgitech@gmail.com'}`} className="press press-flat flex items-center gap-2 hover:text-sky-600">
                                 <span className="p-1 bg-sky-100 border border-slate-900 flex items-center"><Icon name="mail" className="w-3.5 h-3.5" /></span>
                                 <span>{contact.email || 'asterix.psgitech@gmail.com'}</span>

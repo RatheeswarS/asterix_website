@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import teamLogo from '../assets/Screenshot 2026-08-26 232320.png';
 import TextDock, { DockTextItem } from './Dock';
 import { useWebsiteData } from '../context/WebsiteDataContext';
+import Icon from './Icon';
 
 export default function CyberNavbar({ onSelectSubsystem, isDetailPage, onBackToHome, onOpenSponsor, onOpenRecruitment }) {
     const { siteData } = useWebsiteData();
@@ -352,12 +353,19 @@ export default function CyberNavbar({ onSelectSubsystem, isDetailPage, onBackToH
                                                     ))}
                                                 </div>
 
-                                                <div className="mt-2.5 pt-2 border-t border-slate-200">
+                                                <div className="mt-2.5 pt-2 border-t border-slate-200 flex flex-col gap-1.5">
+                                                    <a
+                                                        href={`tel:${(contact.phone || '+91 86089 44644').replace(/[^0-9+]/g, '')}`}
+                                                        className="text-[10px] font-mono font-bold text-slate-700 hover:text-sky-600 flex items-center gap-1.5"
+                                                    >
+                                                        <span className="p-0.5 bg-sky-100 border border-slate-900 flex items-center justify-center w-4 h-4"><Icon name="phone" className="w-2.5 h-2.5" /></span>
+                                                        <span>{contact.phone || '+91 86089 44644'}</span>
+                                                    </a>
                                                     <a
                                                         href={`mailto:${contact.email || 'asterix.psgitech@gmail.com'}`}
                                                         className="text-[10px] font-mono font-bold text-slate-600 hover:text-sky-600 flex items-center gap-1.5"
                                                     >
-                                                        <span>✉</span>
+                                                        <span className="p-0.5 bg-sky-100 border border-slate-900 flex items-center justify-center w-4 h-4"><Icon name="mail" className="w-2.5 h-2.5" /></span>
                                                         <span className="truncate">{contact.email || 'asterix.psgitech@gmail.com'}</span>
                                                     </a>
                                                 </div>
@@ -533,10 +541,17 @@ export default function CyberNavbar({ onSelectSubsystem, isDetailPage, onBackToH
                                         </a>
                                     ))}
                                     <a
+                                        href={`tel:${(contact.phone || '+91 86089 44644').replace(/[^0-9+]/g, '')}`}
+                                        className="p-2 bg-white border border-slate-900 font-mono text-[10px] font-bold text-slate-700 flex items-center gap-1.5"
+                                    >
+                                        <span className="p-0.5 bg-sky-100 border border-slate-900 flex items-center justify-center w-4 h-4"><Icon name="phone" className="w-2.5 h-2.5" /></span>
+                                        <span>{contact.phone || '+91 86089 44644'}</span>
+                                    </a>
+                                    <a
                                         href={`mailto:${contact.email || 'asterix.psgitech@gmail.com'}`}
                                         className="p-2 bg-white border border-slate-900 font-mono text-[10px] font-bold text-slate-700 flex items-center gap-1.5 truncate"
                                     >
-                                        <span>✉</span>
+                                        <span className="p-0.5 bg-sky-100 border border-slate-900 flex items-center justify-center w-4 h-4"><Icon name="mail" className="w-2.5 h-2.5" /></span>
                                         <span className="truncate">{contact.email || 'asterix.psgitech@gmail.com'}</span>
                                     </a>
                                 </div>

@@ -20,6 +20,11 @@ const TeamMemberSchema = new mongoose.Schema({
         type: String,
         default: ''
     },
+    phone: {
+        type: String,
+        default: '',
+        trim: true
+    },
     initials: {
         type: String,
         default: ''
