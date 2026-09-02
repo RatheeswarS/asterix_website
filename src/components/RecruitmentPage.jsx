@@ -28,9 +28,23 @@ const btnPrimary =
 /* Renders nothing when there is no form URL, so the page never shows a dead
    "Apply" anchor. Declared at module scope so it keeps its identity. */
 function ApplyButton({ applyUrl, applyLabel, className = btnPrimary, children }) {
-    if (!applyUrl) return null;
+    const raw = (typeof applyUrl === 'string' ? applyUrl.trim() : '');
+    if (!raw) return null;
+
+    const href = (() => {
+        if (raw.startsWith('#')) return raw;
+        try {
+            const url = new URL(raw);
+            return (url.protocol === 'http:' || url.protocol === 'https:') ? url.toString() : '';
+        } catch {
+            return '';
+        }
+    })();
+
+    if (!href) return null;
+
     return (
-        <a href={applyUrl} target="_blank" rel="noopener noreferrer" className={className}>
+        <a href={href} target="_blank" rel="noopener noreferrer" className={className}>
             {children || `${applyLabel} ↗`}
         </a>
     );
