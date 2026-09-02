@@ -201,6 +201,35 @@ const initialSponsorshipData = {
     contactPhone: '+91 98765 43210'
 };
 
+/* Recruitment portal — static content only.
+   Applications themselves run through the team's Google Form (hero.joinFormUrl
+   by default). Everything here is display content the leads edit from the admin
+   dashboard: the induction timeline and the per-subsystem problem statements.
+   No dates are invented — an empty timeline shows a "to be announced" state
+   until the leads publish one, and empty problem statements show the same. */
+const initialRecruitment = {
+    headline: 'CREW RECRUITMENT',
+    intro: "Team Asterix inducts its next crew through a single Google Form. The subsystem problem statements and the submission timeline are published here — read them before you apply.",
+    notice: '',
+    applyUrl: '',
+    applyLabel: 'Apply on the Google Form',
+    // [{ id, label, detail, date }] — date is an ISO string pinned to IST.
+    timeline: [],
+    // [{ id, subsystem, title, summary, body, fileUrl }]
+    problemStatements: []
+};
+
+/* Guarantees the recruitment blob always carries every field and that the two
+   list fields are always arrays, whatever a partial server document or an older
+   backup happens to hold. Both the portal and the admin editor can then read it
+   without defending against missing keys. */
+const normalizeRecruitment = (rec) => ({
+    ...initialRecruitment,
+    ...(rec && typeof rec === 'object' ? rec : {}),
+    timeline: Array.isArray(rec?.timeline) ? rec.timeline : [],
+    problemStatements: Array.isArray(rec?.problemStatements) ? rec.problemStatements : []
+});
+
 // Helper to ensure 4 subsystems are active without discarding user edits
 const normalizeSubsystems = (subs) => {
     if (!subs || !Array.isArray(subs) || subs.length === 0) {
@@ -260,6 +289,7 @@ export function WebsiteDataProvider({ children }) {
                     contact: parsed.contact || initialContactInfo,
                     accounts: parsed.accounts || initialAccounts,
                     sponsorship: parsed.sponsorship || initialSponsorshipData,
+                    recruitment: normalizeRecruitment(parsed.recruitment),
                     lastModified: parsed.lastModified || new Date().toISOString()
                 };
             }
@@ -275,6 +305,7 @@ export function WebsiteDataProvider({ children }) {
             contact: initialContactInfo,
             accounts: initialAccounts,
             sponsorship: initialSponsorshipData,
+            recruitment: initialRecruitment,
             lastModified: new Date().toISOString()
         };
     });
@@ -324,6 +355,7 @@ export function WebsiteDataProvider({ children }) {
                             updates: (data.updates && data.updates.length > 0) ? data.updates : prev.updates,
                             contact: data.contact || prev.contact,
                             sponsorship: data.sponsorship || prev.sponsorship || initialSponsorshipData,
+                            recruitment: normalizeRecruitment(data.recruitment || prev.recruitment),
                             lastModified: data.lastModified || prev.lastModified
                         };
                         try {
@@ -384,6 +416,7 @@ export function WebsiteDataProvider({ children }) {
             updates: dataToSync.updates,
             contact: dataToSync.contact,
             sponsorship: dataToSync.sponsorship || initialSponsorshipData,
+            recruitment: normalizeRecruitment(dataToSync.recruitment),
             lastModified: new Date().toISOString()
         };
 
@@ -661,6 +694,18 @@ export function WebsiteDataProvider({ children }) {
         }));
     };
 
+    /* One setter for the whole recruitment blob. The admin editor manages the
+       timeline and problem-statement arrays wholesale (add / edit / reorder /
+       remove) and hands the finished field back through here, so there is a
+       single path the debounced sync watches. */
+    const updateRecruitment = (fields) => {
+        setSiteData(prev => ({
+            ...prev,
+            recruitment: normalizeRecruitment({ ...(prev.recruitment || initialRecruitment), ...fields }),
+            lastModified: new Date().toISOString()
+        }));
+    };
+
     const resetToDefaults = () => {
         const defaults = {
             hero: initialHeroData,
@@ -671,6 +716,7 @@ export function WebsiteDataProvider({ children }) {
             contact: initialContactInfo,
             accounts: initialAccounts,
             sponsorship: initialSponsorshipData,
+            recruitment: initialRecruitment,
             lastModified: new Date().toISOString()
         };
         setSiteData(defaults);
@@ -716,6 +762,7 @@ export function WebsiteDataProvider({ children }) {
             updateAccount,
             deleteAccount,
             updateSponsorship,
+            updateRecruitment,
             syncState,
             syncError,
             resetToDefaults,

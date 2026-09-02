@@ -21,7 +21,6 @@ import authRoutes from './routes/auth.js';
 import subscriberRoutes from './routes/subscribers.js';
 import sponsorInquiryRoutes from './routes/sponsorInquiries.js';
 import uploadRoutes from './routes/upload.js';
-import recruitmentRoutes from './routes/recruitment.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -105,7 +104,6 @@ app.use('/api/auth', authRoutes);
 app.use('/api/subscribers', subscriberRoutes);
 app.use('/api/sponsor-inquiries', sponsorInquiryRoutes);
 app.use('/api/upload', uploadRoutes);
-app.use('/api/recruitment', recruitmentRoutes);
 
 // Global error handler
 app.use((err, req, res, _next) => {
