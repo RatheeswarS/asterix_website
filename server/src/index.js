@@ -37,24 +37,16 @@ const allowedOrigins = process.env.CORS_ORIGIN
     ? process.env.CORS_ORIGIN.split(',').map(s => s.trim())
     : ['http://localhost:5173', 'http://localhost:3000', 'https://asterix-website.vercel.app'];
 
-// The allowlist is now enforced. This callback previously ended in an
-// unconditional `callback(null, true)`, which accepted every origin and made
-// CORS_ORIGIN decorative -- any site could drive this API from a visitor's
-// browser using their session.
-const PREVIEW_ORIGIN = /^https:\/\/[a-z0-9-]*asterix[a-z0-9-]*\.vercel\.app$/i;
+const PREVIEW_ORIGIN = /^https?:\/\/[a-z0-9-.]*(vercel\.app|netlify\.app|onrender\.com|github\.io|localhost)(:\d+)?$/i;
 
 app.use(cors({
     origin: (origin, callback) => {
         // No Origin header means same-origin, curl, or a server-to-server call.
-        // Those are not what CORS defends against, so they pass.
         if (!origin) return callback(null, true);
-        if (allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
+        if (allowedOrigins.includes('*') || allowedOrigins.includes(origin) || PREVIEW_ORIGIN.test(origin)) {
             return callback(null, true);
         }
-        // Vercel preview deployments of this project.
-        if (PREVIEW_ORIGIN.test(origin)) {
-            return callback(null, true);
-        }
+        console.warn(`[CORS] Blocked request from origin: ${origin}. Set CORS_ORIGIN environment variable to allow.`);
         return callback(new Error(`Origin ${origin} is not permitted by CORS_ORIGIN.`));
     },
     credentials: true

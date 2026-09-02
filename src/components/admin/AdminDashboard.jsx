@@ -100,8 +100,10 @@ export default function AdminDashboard({ onExit }) {
         const username = (loginForm.username || '').trim();
         const password = (loginForm.password || '').trim();
 
+        const targetUrl = apiUrl('/api/auth/login');
         try {
-            const res = await fetch(apiUrl('/api/auth/login'), {
+            console.log(`[Admin Auth] Attempting login to: ${targetUrl}`);
+            const res = await fetch(targetUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username, password })
@@ -109,6 +111,7 @@ export default function AdminDashboard({ onExit }) {
 
             if (!res.ok) {
                 const body = await res.json().catch(() => ({}));
+                console.warn('[Admin Auth] Login rejected with status:', res.status, body);
                 setLoginError(body.error || 'Invalid username or password.');
                 setIsLoggingIn(false);
                 return;
@@ -121,8 +124,9 @@ export default function AdminDashboard({ onExit }) {
 
             showStatus(`Welcome back, ${data.user.name}!`);
             fetchFromDatabase?.();
-        } catch {
-            setLoginError('Could not reach the server. Check your connection and try again.');
+        } catch (err) {
+            console.error('[Admin Auth] Network / Connection error:', err);
+            setLoginError(`Could not reach backend at ${targetUrl}. If the server is on Render free tier, it may be waking up from sleep (wait ~30-60s and try again) or verify VITE_API_URL in your hosting settings.`);
         } finally {
             setIsLoggingIn(false);
         }
