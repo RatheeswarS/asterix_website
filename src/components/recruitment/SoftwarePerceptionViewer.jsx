@@ -636,6 +636,38 @@ export default function SoftwarePerceptionViewer({ isAdmin = false }) {
                                 </tbody>
                             </table>
                         </div>
+
+                        {/* Phase 1 Submission Instructions & Drive Portal Notice */}
+                        <div className="p-4 bg-sky-50 border-2 border-slate-900 shadow-[3px_3px_0px_#0f172a] space-y-2.5">
+                            <div className="flex items-center gap-2">
+                                <span className="px-2 py-0.5 bg-slate-900 text-sky-300 font-mono text-xs font-black uppercase">
+                                    📁 SUBMISSION PROTOCOL
+                                </span>
+                                <span className="font-mono text-xs font-bold text-sky-800">
+                                    Google Drive Link &amp; On-Site Portal
+                                </span>
+                            </div>
+                            <ul className="space-y-1.5 text-xs font-bold text-slate-800 leading-relaxed">
+                                <li className="flex items-start gap-2">
+                                    <span className="text-sky-600 font-black mt-0.5">✦</span>
+                                    <span>
+                                        <strong>Google Drive Folder:</strong> All required documents (System Architecture Proposal PDF, calculations, block diagrams, code files) must be compiled inside a dedicated Google Drive folder for your duo.
+                                    </span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <span className="text-sky-600 font-black mt-0.5">✦</span>
+                                    <span>
+                                        <strong>Access Permissions:</strong> Ensure link access is set to <strong>&quot;Anyone with the link can view&quot;</strong> before submission so evaluators can inspect your work.
+                                    </span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <span className="text-sky-600 font-black mt-0.5">✦</span>
+                                    <span>
+                                        <strong>Website Submission Portal:</strong> Your Google Drive link must be submitted through the <strong>dedicated submission portal on this same website</strong>, which will be <strong>opened soon</strong> prior to the deadline.
+                                    </span>
+                                </li>
+                            </ul>
+                        </div>
                     </div>
                 )}
 
@@ -701,7 +733,7 @@ export default function SoftwarePerceptionViewer({ isAdmin = false }) {
                         Phase {phase.phaseNumber} Deadline: <strong className="text-slate-900">{phase.deadline}</strong>
                     </div>
                     <div className="text-sky-700 font-black">
-                        Timeline &amp; submission portal open tomorrow at 6:30 PM IST
+                        Submission portal will be opened soon on this website (Upload Google Drive link)
                     </div>
                 </div>
             </div>

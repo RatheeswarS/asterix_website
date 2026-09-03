@@ -305,6 +305,53 @@ export default function MechanicalMysteryViewer() {
                         </div>
                     ))}
                 </div>
+
+                {/* Phase 1 Submission Protocol & Drive Portal Notice */}
+                <div className="mt-6 p-5 bg-sky-50 border-3 border-slate-900 shadow-[4px_4px_0px_#0f172a] space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                            <span className="px-2.5 py-0.5 bg-slate-900 text-sky-300 font-mono text-xs font-black uppercase">
+                                📁 ROUND 1 / PHASE 1 SUBMISSION PROTOCOL
+                            </span>
+                            <span className="font-mono text-xs font-bold text-sky-800">
+                                Google Drive &amp; Website Portal
+                            </span>
+                        </div>
+                        <span className="font-mono text-xs font-bold text-rose-600">
+                            Deadline: 16 September 2026, 11:59 PM IST
+                        </span>
+                    </div>
+
+                    <h4 className="text-base sm:text-lg font-black uppercase text-slate-900 tracking-tight">
+                        Required Documents &amp; Submission Workflow
+                    </h4>
+
+                    <ul className="space-y-2 text-xs font-bold text-slate-800 leading-relaxed">
+                        <li className="flex items-start gap-2">
+                            <span className="text-sky-600 font-black mt-0.5">✦</span>
+                            <span>
+                                <strong>Google Drive Folder:</strong> Each of the required presentation slides, engineering calculation sheets, CAD / simulation files, and mechanism block diagrams must be organized inside a single Google Drive folder created by your team.
+                            </span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                            <span className="text-sky-600 font-black mt-0.5">✦</span>
+                            <span>
+                                <strong>Link Permissions:</strong> Set the folder sharing access to <strong>&quot;Anyone with the link can view&quot;</strong> so the faculty and lead evaluators can access your submission seamlessly.
+                            </span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                            <span className="text-sky-600 font-black mt-0.5">✦</span>
+                            <span>
+                                <strong>On-Site Submission Portal:</strong> Your Google Drive folder link must be submitted directly through a dedicated portal hosted right here on this website. <strong>The submission portal will be opened soon</strong> prior to the deadline.
+                            </span>
+                        </li>
+                    </ul>
+
+                    <div className="pt-2 border-t border-slate-200 flex flex-wrap items-center justify-between text-[11px] font-mono font-bold text-slate-600 gap-2">
+                        <span>Portal Status: <strong className="text-amber-700 uppercase">Opening Soon on this Website</strong></span>
+                        <span>Prepare your presentation slides &amp; Google Drive link in advance</span>
+                    </div>
+                </div>
             </div>
         </div>
     );
