@@ -3,12 +3,12 @@ import { MECHANICAL_MYSTERY_DATA } from '../../data/recruitmentProblemStatements
 
 export default function MechanicalMysteryViewer() {
     const data = MECHANICAL_MYSTERY_DATA;
-    const [activePsId, setActivePsId] = useState(data.challenges[0].id);
+    const [activePsId, setActivePsId] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [isTeamListExpanded, setIsTeamListExpanded] = useState(false);
     const [copiedPs, setCopiedPs] = useState(false);
 
-    const activePs = data.challenges.find((c) => c.id === activePsId) || data.challenges[0];
+    const activePs = activePsId ? data.challenges.find((c) => c.id === activePsId) : null;
 
     const filterTeams = (teams) => {
         if (!searchQuery.trim()) return teams;
@@ -16,12 +16,19 @@ export default function MechanicalMysteryViewer() {
         return teams.filter(
             (t) =>
                 t.group.toLowerCase().includes(q) ||
-                t.member1.toLowerCase().includes(q) ||
-                t.member2.toLowerCase().includes(q)
+                t.members?.some(
+                    (m) =>
+                        m.name.toLowerCase().includes(q) ||
+                        m.dept.toLowerCase().includes(q) ||
+                        m.phone.includes(q)
+                ) ||
+                t.member1?.toLowerCase().includes(q) ||
+                t.member2?.toLowerCase().includes(q)
         );
     };
 
     const handleCopyPs = () => {
+        if (!activePs) return;
         const text = `Asterix Autonomous Vehicle — Mechanical Presentation\n${activePs.title}\n\n` +
             activePs.parts.map((p) => `${p.partLabel}\nTarget: ${p.target}\nRequirements:\n` + p.checklist.map((c, i) => `  ${i + 1}. ${c}`).join('\n')).join('\n\n');
         navigator.clipboard?.writeText?.(text);
@@ -119,24 +126,40 @@ export default function MechanicalMysteryViewer() {
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                             {filterTeams(data.teamFormat.teams).map((grp) => (
-                                <div key={grp.group} className="bg-white border-2 border-slate-900 p-3.5 shadow-[3px_3px_0px_#0f172a]">
+                                <div key={grp.group} className="bg-white border-2 border-slate-900 p-3 shadow-[3px_3px_0px_#0f172a]">
                                     <div className="flex items-center justify-between gap-2 mb-2">
-                                        <span className="px-2 py-0.5 bg-amber-200 border border-slate-900 font-mono text-[11px] font-black uppercase">
+                                        <span className="px-2 py-0.5 bg-amber-200 border border-slate-900 font-mono text-[10px] font-black uppercase">
                                             {grp.group}
                                         </span>
                                         <span className="font-mono text-[10px] font-bold text-slate-500">
                                             DUO PAIR
                                         </span>
                                     </div>
-                                    <div className="space-y-1 text-xs">
-                                        <div className="flex items-center gap-1.5">
-                                            <span className="text-slate-400 font-mono">1.</span>
-                                            <strong className="text-slate-900 uppercase font-black">{grp.member1}</strong>
-                                        </div>
-                                        <div className="flex items-center gap-1.5">
-                                            <span className="text-slate-400 font-mono">2.</span>
-                                            <strong className="text-slate-900 uppercase font-black">{grp.member2}</strong>
-                                        </div>
+                                    <div className="space-y-2">
+                                        {grp.members ? (
+                                            grp.members.map((m, idx) => (
+                                                <div key={idx} className="flex items-start justify-between gap-2 text-xs border-b border-slate-100 last:border-b-0 pb-1 last:pb-0">
+                                                    <div>
+                                                        <strong className="text-slate-900 block leading-tight">{m.name}</strong>
+                                                        <span className="font-mono text-[10px] text-slate-500 uppercase">{m.dept}</span>
+                                                    </div>
+                                                    <a href={`tel:${m.phone}`} className="font-mono text-[11px] font-bold text-sky-700 hover:underline shrink-0">
+                                                        {m.phone}
+                                                    </a>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <div className="space-y-1 text-xs">
+                                                <div className="flex items-center gap-1.5">
+                                                    <span className="text-slate-400 font-mono">1.</span>
+                                                    <strong className="text-slate-900 uppercase font-black">{grp.member1}</strong>
+                                                </div>
+                                                <div className="flex items-center gap-1.5">
+                                                    <span className="text-slate-400 font-mono">2.</span>
+                                                    <strong className="text-slate-900 uppercase font-black">{grp.member2}</strong>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             ))}
@@ -201,12 +224,12 @@ export default function MechanicalMysteryViewer() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {data.challenges.map((ps) => {
-                        const isActive = ps.id === activePs.id;
+                        const isActive = activePs && ps.id === activePs.id;
                         return (
                             <button
                                 key={ps.id}
                                 type="button"
-                                onClick={() => setActivePsId(ps.id)}
+                                onClick={() => setActivePsId(activePsId === ps.id ? null : ps.id)}
                                 className={`text-left p-5 border-3 border-slate-900 cursor-pointer transition-all duration-150 relative ${
                                     isActive
                                         ? 'bg-slate-900 text-white shadow-[6px_6px_0px_#0284c7] -translate-y-0.5'
@@ -234,13 +257,32 @@ export default function MechanicalMysteryViewer() {
                                 <p className={`text-xs font-bold mt-2 leading-relaxed ${isActive ? 'text-slate-300' : 'text-slate-600'}`}>
                                     {ps.tagline}
                                 </p>
+                                <div className="mt-3 pt-2 border-t border-slate-200 flex items-center justify-between text-[11px] font-mono font-bold">
+                                    <span className={isActive ? 'text-amber-300' : 'text-sky-600'}>
+                                        {isActive ? '✓ Statement Selected (Details Shown Below)' : 'Click to View Problem Statement →'}
+                                    </span>
+                                </div>
                             </button>
                         );
                     })}
                 </div>
             </div>
 
-            {/* Active Problem Statement Detail Viewer */}
+            {/* If no challenge selected: show informative placeholder */}
+            {!activePs && (
+                <div className="p-8 sm:p-12 bg-white border-4 border-dashed border-slate-400 text-center space-y-3 shadow-[6px_6px_0px_#0f172a]">
+                    <span className="text-4xl block">👇</span>
+                    <h3 className="text-xl sm:text-2xl font-black uppercase text-slate-900 font-mono">
+                        CHOOSE A PROBLEM STATEMENT ABOVE
+                    </h3>
+                    <p className="text-xs sm:text-sm font-bold text-slate-600 max-w-lg mx-auto leading-relaxed">
+                        Click on either <strong>PS1: Actuator Selection</strong> or <strong>PS2: Manual Override And Sensors Integration</strong> above to view detailed engineering targets (BBW &amp; SBW), design checklists, and the Phase 1 submission protocol.
+                    </p>
+                </div>
+            )}
+
+            {/* Active Problem Statement Detail Viewer — Only shown when a statement is selected */}
+            {activePs && (
             <div className="bg-white border-4 border-slate-900 shadow-[8px_8px_0px_#0f172a] p-5 sm:p-7 space-y-6">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b-3 border-slate-900 pb-4">
                     <div>
@@ -353,6 +395,7 @@ export default function MechanicalMysteryViewer() {
                     </div>
                 </div>
             </div>
+            )}
         </div>
     );
 }

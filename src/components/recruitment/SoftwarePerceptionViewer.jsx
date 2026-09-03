@@ -6,7 +6,7 @@ const PHASE_1_DEADLINE_MS = new Date('2026-09-08T23:59:00+05:30').getTime();
 export default function SoftwarePerceptionViewer({ isAdmin = false }) {
     const data = SOFTWARE_PERCEPTION_DATA;
     const [isPhase2Unlocked, setIsPhase2Unlocked] = useState(() => isAdmin || Date.now() > PHASE_1_DEADLINE_MS);
-    const [activeChallengeId, setActiveChallengeId] = useState(data.challenges[0].id);
+    const [activeChallengeId, setActiveChallengeId] = useState(null);
     const [activePhaseKey, setActivePhaseKey] = useState('phase1');
     const [activeSectionTab, setActiveSectionTab] = useState('overview');
     const [copiedDeliverables, setCopiedDeliverables] = useState(false);
@@ -21,11 +21,12 @@ export default function SoftwarePerceptionViewer({ isAdmin = false }) {
     }, [isPhase2Unlocked]);
 
 
-    const challenge = data.challenges.find((c) => c.id === activeChallengeId) || data.challenges[0];
-    const currentPhaseKey = isPhase2Unlocked ? activePhaseKey : 'phase1';
-    const phase = challenge.phases[currentPhaseKey];
+    const challenge = activeChallengeId ? data.challenges.find((c) => c.id === activeChallengeId) : null;
+    const currentPhaseKey = challenge && isPhase2Unlocked ? activePhaseKey : 'phase1';
+    const phase = challenge ? challenge.phases[currentPhaseKey] : null;
 
     const handleCopyDeliverables = () => {
+        if (!phase) return;
         const text = phase.deliverables
             .map((d, i) => `${i + 1}. ${d.name} (${d.format}): ${d.description}`)
             .join('\n');
@@ -45,73 +46,7 @@ export default function SoftwarePerceptionViewer({ isAdmin = false }) {
 
     return (
         <div className="space-y-8">
-            {/* Header / Challenge Picker */}
-            <div className="bg-white border-4 border-slate-900 shadow-[8px_8px_0px_#0f172a] p-5 sm:p-7">
-                <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-                    <span className="px-3 py-1 bg-sky-300 text-slate-900 border-2 border-slate-900 font-mono text-xs font-black uppercase shadow-[2px_2px_0px_#0f172a]">
-                        ⚡ {data.headline}
-                    </span>
-                    <span className="font-mono text-xs font-bold text-slate-600">
-                        2 Problem Statements • 2 Sequential Phases
-                    </span>
-                </div>
-
-                <h2 className="text-2xl sm:text-4xl font-black uppercase text-slate-900 tracking-tight mb-3">
-                    SELECT YOUR RECRUITMENT CHALLENGE
-                </h2>
-                <p className="text-sm font-bold text-slate-600 max-w-3xl mb-6 leading-relaxed">
-                    {data.blurb}
-                </p>
-
-                {/* Problem Statement Switcher Pills */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {data.challenges.map((c) => {
-                        const isSelected = c.id === challenge.id;
-                        return (
-                            <button
-                                key={c.id}
-                                type="button"
-                                onClick={() => {
-                                    setActiveChallengeId(c.id);
-                                    setActiveSectionTab('overview');
-                                }}
-                                className={`text-left p-4 sm:p-5 border-3 border-slate-900 cursor-pointer transition-all duration-150 ${
-                                    isSelected
-                                        ? 'bg-slate-900 text-white shadow-[6px_6px_0px_#0284c7] -translate-y-0.5'
-                                        : 'bg-white hover:bg-sky-50 text-slate-900 shadow-[3px_3px_0px_#0f172a]'
-                                }`}
-                            >
-                                <div className="flex items-center justify-between gap-2 mb-2">
-                                    <span
-                                        className={`font-mono text-[11px] font-black uppercase px-2 py-0.5 border ${
-                                            isSelected
-                                                ? 'bg-amber-400 text-slate-900 border-slate-900'
-                                                : 'bg-slate-100 text-slate-800 border-slate-300'
-                                        }`}
-                                    >
-                                        PROBLEM STATEMENT {c.number}
-                                    </span>
-                                    <span className={`font-mono text-[10px] font-bold ${isSelected ? 'text-sky-300' : 'text-slate-500'}`}>
-                                        {c.domain}
-                                    </span>
-                                </div>
-                                <h3 className="text-lg sm:text-xl font-black uppercase tracking-tight leading-snug">
-                                    {c.title}
-                                </h3>
-                                <p
-                                    className={`text-xs font-bold mt-2 line-clamp-2 leading-relaxed ${
-                                        isSelected ? 'text-slate-300' : 'text-slate-600'
-                                    }`}
-                                >
-                                    {c.tagline}
-                                </p>
-                            </button>
-                        );
-                    })}
-                </div>
-            </div>
-
-            {/* Team Allocation Notice & PDF Download Banner */}
+            {/* Team Allocation Notice & PDF Download Banner — Placed ABOVE Problem Statements */}
             <div className="bg-amber-300 border-4 border-slate-900 shadow-[8px_8px_0px_#0f172a] p-5 sm:p-6 space-y-4">
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                     <div className="space-y-1">
@@ -229,7 +164,92 @@ export default function SoftwarePerceptionViewer({ isAdmin = false }) {
                 )}
             </div>
 
-            {/* Active Challenge Banner & Phase Stepper */}
+            {/* Header / Challenge Picker */}
+            <div className="bg-white border-4 border-slate-900 shadow-[8px_8px_0px_#0f172a] p-5 sm:p-7">
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                    <span className="px-3 py-1 bg-sky-300 text-slate-900 border-2 border-slate-900 font-mono text-xs font-black uppercase shadow-[2px_2px_0px_#0f172a]">
+                        ⚡ {data.headline}
+                    </span>
+                    <span className="font-mono text-xs font-bold text-slate-600">
+                        2 Problem Statements • Select to View Details
+                    </span>
+                </div>
+
+                <h2 className="text-2xl sm:text-4xl font-black uppercase text-slate-900 tracking-tight mb-2">
+                    SELECT YOUR RECRUITMENT CHALLENGE
+                </h2>
+                <p className="text-sm font-bold text-slate-600 max-w-3xl mb-6 leading-relaxed">
+                    {data.blurb} Choose either problem statement below to review the specifications, phased requirements, and deliverables.
+                </p>
+
+                {/* Problem Statement Switcher Pills */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {data.challenges.map((c) => {
+                        const isSelected = challenge && c.id === challenge.id;
+                        return (
+                            <button
+                                key={c.id}
+                                type="button"
+                                onClick={() => {
+                                    setActiveChallengeId(activeChallengeId === c.id ? null : c.id);
+                                    setActiveSectionTab('overview');
+                                }}
+                                className={`text-left p-4 sm:p-5 border-3 border-slate-900 cursor-pointer transition-all duration-150 ${
+                                    isSelected
+                                        ? 'bg-slate-900 text-white shadow-[6px_6px_0px_#0284c7] -translate-y-0.5'
+                                        : 'bg-white hover:bg-sky-50 text-slate-900 shadow-[3px_3px_0px_#0f172a]'
+                                }`}
+                            >
+                                <div className="flex items-center justify-between gap-2 mb-2">
+                                    <span
+                                        className={`font-mono text-[11px] font-black uppercase px-2 py-0.5 border ${
+                                            isSelected
+                                                ? 'bg-amber-400 text-slate-900 border-slate-900'
+                                                : 'bg-slate-100 text-slate-800 border-slate-300'
+                                        }`}
+                                    >
+                                        PROBLEM STATEMENT {c.number}
+                                    </span>
+                                    <span className={`font-mono text-[10px] font-bold ${isSelected ? 'text-sky-300' : 'text-slate-500'}`}>
+                                        {c.domain}
+                                    </span>
+                                </div>
+                                <h3 className="text-lg sm:text-xl font-black uppercase tracking-tight leading-snug">
+                                    {c.title}
+                                </h3>
+                                <p
+                                    className={`text-xs font-bold mt-2 line-clamp-2 leading-relaxed ${
+                                        isSelected ? 'text-slate-300' : 'text-slate-600'
+                                    }`}
+                                >
+                                    {c.tagline}
+                                </p>
+                                <div className="mt-3 pt-2 border-t border-slate-200 flex items-center justify-between text-[11px] font-mono font-bold">
+                                    <span className={isSelected ? 'text-amber-300' : 'text-sky-600'}>
+                                        {isSelected ? '✓ Statement Selected (Details Shown Below)' : 'Click to View Problem Statement →'}
+                                    </span>
+                                </div>
+                            </button>
+                        );
+                    })}
+                </div>
+            </div>
+
+            {/* If no challenge selected: show informative placeholder */}
+            {!challenge && (
+                <div className="p-8 sm:p-12 bg-white border-4 border-dashed border-slate-400 text-center space-y-3 shadow-[6px_6px_0px_#0f172a]">
+                    <span className="text-4xl block">👇</span>
+                    <h3 className="text-xl sm:text-2xl font-black uppercase text-slate-900 font-mono">
+                        CHOOSE A PROBLEM STATEMENT ABOVE
+                    </h3>
+                    <p className="text-xs sm:text-sm font-bold text-slate-600 max-w-lg mx-auto leading-relaxed">
+                        Click on either <strong>Problem Statement 01 (Vision-Based Object Detection)</strong> or <strong>Problem Statement 02 (Sensor Fusion &amp; Track Reconstruction)</strong> above to reveal the complete technical specifications, sequential phases, deliverables checklist, and Phase 1 submission protocol.
+                    </p>
+                </div>
+            )}
+
+            {/* Active Challenge Banner & Phase Stepper — Only shown when a challenge is selected */}
+            {challenge && (
             <div className="bg-sky-50 border-4 border-slate-900 shadow-[8px_8px_0px_#0f172a] p-5 sm:p-7 space-y-6">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b-3 border-slate-900 pb-5">
                     <div>
@@ -341,33 +361,68 @@ export default function SoftwarePerceptionViewer({ isAdmin = false }) {
                     </div>
                 </div>
 
-                {/* Sub-navigation tabs */}
-                <div className="flex flex-wrap gap-2 pt-2 border-t-2 border-slate-300">
-                    {[
-                        { id: 'overview', label: 'Overview & Task' },
-                        { id: 'technical', label: 'Technical Scope & Questions' },
-                        { id: 'metrics', label: 'Testing & Evaluation Metrics' },
-                        { id: 'deployment', label: 'Target Jetson Deployment' },
-                        { id: 'deliverables', label: 'Final Deliverables' },
-                        { id: 'evaluation', label: 'What We Are Looking For' },
-                        { id: 'policy', label: 'AI & Tools Policy' },
-                    ].map((tab) => {
-                        const isActive = activeSectionTab === tab.id;
-                        return (
-                            <button
-                                key={tab.id}
-                                type="button"
-                                onClick={() => setActiveSectionTab(tab.id)}
-                                className={`px-3 py-1.5 font-mono font-black text-xs uppercase border-2 border-slate-900 cursor-pointer transition-all ${
-                                    isActive
-                                        ? 'bg-slate-900 text-white shadow-[2px_2px_0px_#0284c7]'
-                                        : 'bg-white hover:bg-sky-100 text-slate-800'
-                                }`}
-                            >
-                                {tab.label}
-                            </button>
-                        );
-                    })}
+                {/* Section Navigation Buttons — Neo-Brutalist Tactile Click Buttons */}
+                <div className="pt-4 border-t-3 border-slate-900 space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="font-mono text-xs font-black uppercase text-slate-900 flex items-center gap-1.5">
+                            <span className="w-2.5 h-2.5 bg-amber-400 border border-slate-900 inline-block animate-pulse"></span>
+                            SELECT SECTION DETAILS TO VIEW:
+                        </span>
+                        <span className="font-mono text-[11px] font-bold text-slate-500">
+                            Click any button below to switch content
+                        </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-3">
+                        {[
+                            { id: 'overview', icon: '📋', label: 'Overview & Task', tag: 'Core Objective' },
+                            { id: 'technical', icon: '⚙️', label: 'Technical Scope', tag: 'Specific Questions' },
+                            { id: 'metrics', icon: '📊', label: 'Testing & Metrics', tag: 'Evaluation Criteria' },
+                            { id: 'deployment', icon: '🖥️', label: 'Target Jetson Deployment', tag: 'Hardware Specs' },
+                            { id: 'deliverables', icon: '📁', label: 'Final Deliverables', tag: 'Google Drive & Portal' },
+                            { id: 'evaluation', icon: '🎯', label: 'What We Look For', tag: 'Engineering Rubric' },
+                            { id: 'policy', icon: '🤖', label: 'AI & Tools Policy', tag: 'Transparency Rules' },
+                        ].map((tab) => {
+                            const isActive = activeSectionTab === tab.id;
+                            return (
+                                <button
+                                    key={tab.id}
+                                    type="button"
+                                    onClick={() => setActiveSectionTab(tab.id)}
+                                    className={`group relative p-3 sm:p-3.5 border-3 border-slate-900 text-left transition-all duration-150 cursor-pointer flex flex-col justify-between ${
+                                        isActive
+                                            ? 'bg-slate-900 text-white shadow-[4px_4px_0px_#0284c7] -translate-y-1'
+                                            : 'bg-white hover:bg-amber-50 hover:-translate-y-0.5 text-slate-900 shadow-[3px_3px_0px_#0f172a] active:translate-y-0 active:shadow-[1px_1px_0px_#0f172a]'
+                                    }`}
+                                >
+                                    <div className="flex items-center justify-between gap-1.5 mb-2">
+                                        <span className="text-base sm:text-lg">{tab.icon}</span>
+                                        <span
+                                            className={`px-1.5 py-0.5 font-mono text-[9px] font-black uppercase tracking-wider ${
+                                                isActive
+                                                    ? 'bg-amber-300 text-slate-900 border border-slate-900'
+                                                    : 'bg-slate-100 group-hover:bg-amber-300 text-slate-700 group-hover:text-slate-900 border border-slate-300'
+                                            }`}
+                                        >
+                                            {isActive ? '✓ ACTIVE' : 'CLICK ME ↗'}
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <span className="font-mono font-black text-xs uppercase tracking-tight block leading-snug">
+                                            {tab.label}
+                                        </span>
+                                        <span
+                                            className={`font-mono text-[10px] block mt-0.5 truncate ${
+                                                isActive ? 'text-sky-300 font-bold' : 'text-slate-500 font-semibold'
+                                            }`}
+                                        >
+                                            {tab.tag}
+                                        </span>
+                                    </div>
+                                </button>
+                            );
+                        })}
+                    </div>
                 </div>
 
                 {/* Content Section: Overview & Task */}
@@ -737,6 +792,7 @@ export default function SoftwarePerceptionViewer({ isAdmin = false }) {
                     </div>
                 </div>
             </div>
+            )}
         </div>
     );
 }

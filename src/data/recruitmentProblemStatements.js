@@ -533,17 +533,83 @@ export const MECHANICAL_MYSTERY_DATA = {
         guidelinesPdfUrl: 'https://ik.imagekit.io/kitzwb4be/asterix/recruitment/mechanical_presentation_guidelines.pdf',
         guidelinesPdfLocalUrl: '/recruitment/mechanical_presentation_guidelines.pdf',
         teams: [
-            { group: 'Team 01', member1: 'Paul Sibi', member2: 'R K Trilokeshvar' },
-            { group: 'Team 02', member1: 'Raghavan', member2: 'S Muhammad Shakkeel' },
-            { group: 'Team 03', member1: 'Gokul Prashath', member2: 'D. Raghul' },
-            { group: 'Team 04', member1: 'Pritheesh C', member2: 'M. Kowshika' },
-            { group: 'Team 05', member1: 'Vishvan', member2: 'Kavin V' },
-            { group: 'Team 06', member1: 'Ram Nivash', member2: 'Dhivagar' },
-            { group: 'Team 07', member1: 'Sairam', member2: 'Sudharshan C' },
-            { group: 'Team 08', member1: 'Thamaraikannan', member2: 'Nivasini' },
-            { group: 'Team 09', member1: 'Ramesh', member2: 'Subashri' },
-            { group: 'Team 10', member1: 'Dharshan', member2: 'Sanjay Y' },
-            { group: 'Team 11', member1: 'Bharath Sri Ram', member2: 'Priyan LM' }
+            {
+                group: 'Group 01',
+                members: [
+                    { name: 'Priyan LM', dept: 'mech', phone: '6382905788' },
+                    { name: 'Bharath Sri ram', dept: 'mech', phone: '9080440516' }
+                ]
+            },
+            {
+                group: 'Group 02',
+                members: [
+                    { name: 'Dharshan', dept: 'mech', phone: '7904984217' },
+                    { name: 'Y sanjay', dept: 'mech', phone: '7708243787' }
+                ]
+            },
+            {
+                group: 'Group 03',
+                members: [
+                    { name: 'Ramesh', dept: 'mech', phone: '8925587202' },
+                    { name: 'Subhashri', dept: 'mech', phone: '9342696680' }
+                ]
+            },
+            {
+                group: 'Group 04',
+                members: [
+                    { name: 'Thamarikannan', dept: 'mech', phone: '8248015187' },
+                    { name: 'Nivasini', dept: 'mech', phone: '6381907192' }
+                ]
+            },
+            {
+                group: 'Group 05',
+                members: [
+                    { name: 'Sudharshan C', dept: 'mech', phone: '8072228334' },
+                    { name: 'Sairam', dept: 'mech', phone: '8760512744' }
+                ]
+            },
+            {
+                group: 'Group 06',
+                members: [
+                    { name: 'Dhivagar', dept: 'mech', phone: '6280999274' },
+                    { name: 'ram nivash', dept: 'mech', phone: '8608031977' }
+                ]
+            },
+            {
+                group: 'Group 07',
+                members: [
+                    { name: 'Priteesh C', dept: 'mech', phone: '6381017604' },
+                    { name: 'M.Kowshika', dept: 'ice', phone: '9025084072' }
+                ]
+            },
+            {
+                group: 'Group 08',
+                members: [
+                    { name: 'kavin v', dept: 'mech', phone: '9942312488' },
+                    { name: 'vishvan', dept: 'mech', phone: '9994847863' }
+                ]
+            },
+            {
+                group: 'Group 09',
+                members: [
+                    { name: 'd raghul', dept: 'mech', phone: '8438569107' },
+                    { name: 'gokul prashath', dept: 'mech', phone: '8870922180' }
+                ]
+            },
+            {
+                group: 'Group 10',
+                members: [
+                    { name: 'raghavan', dept: 'mech', phone: '9843539393' },
+                    { name: 'muhammad shakkeel', dept: 'ice', phone: '9353018039' }
+                ]
+            },
+            {
+                group: 'Group 11',
+                members: [
+                    { name: 'paul sibi', dept: 'mech', phone: '8015912680' },
+                    { name: 'r k trilokeshvar', dept: 'vlsi', phone: '8695755665' }
+                ]
+            }
         ]
     },
     generalInstructions: [
@@ -594,17 +660,17 @@ export const MECHANICAL_MYSTERY_DATA = {
             id: 'ps1',
             number: '01',
             title: 'PS1: Actuator Selection',
-            tagline: 'Actuator sizing, response time analysis, and mounting architecture for autonomous vehicle conversion.',
+            tagline: 'Actuator sizing, response time analysis, circular trajectory accommodation, and mounting architecture.',
             parts: [
                 {
                     partLabel: 'Part A — Brake-by-Wire (BBW)',
-                    target: 'Design a simple actuator system to generate 2000 N force at the brake master cylinder with a bore diameter (19.05mm).',
+                    target: 'Design a simple actuator system to generate 2000 N force at the brake master cylinder with a bore diameter (19.05mm)',
                     checklist: [
                         'Explain how you will control the actuator.',
                         'Show how and where you will mount the actuator on the Baja buggy.',
-                        'The mechanism should be capable of generating 2000N input force at the brake master cylinder.',
-                        'Required braking force and actuator torque/speed calculations, response time analysis.',
-                        'Comparison of different mechanisms (including the different types of motors, actuator drive mechanism, and feedback control).'
+                        'Required braking force and actuator torque/speed calculations, response time analysis',
+                        'Comparison of different mechanisms (including the different types of motors, actuator drive mechanism, and feedback control)',
+                        'The pedal travels in circular trajectory, how will you accommodate design if you choose linear actuator.'
                     ]
                 },
                 {
@@ -614,8 +680,7 @@ export const MECHANICAL_MYSTERY_DATA = {
                         'Select a suitable motor and reduction mechanism.',
                         'Explain how you will control left/right steering.',
                         'Add a method to limit steering angle.',
-                        'Show how and where you will mount the system on the Baja buggy.',
-                        'Give a method steering angle from 30 degree to 35 degree.'
+                        'Show how and where you will mount the system on the Baja buggy.'
                     ]
                 }
             ]
@@ -623,31 +688,29 @@ export const MECHANICAL_MYSTERY_DATA = {
         {
             id: 'ps2',
             number: '02',
-            title: 'PS2: Manual Override And Sensors Integration',
-            tagline: 'Driver takeover disengagement mechanisms, sensor packages, and electronic signal management.',
+            title: 'PS2: Manual Override And Sensors integration',
+            tagline: 'Autonomous takeover override, motor isolation, steering turning angle adaptation, and sensor integration.',
             parts: [
                 {
-                    partLabel: 'Part A — Brake-by-Wire (BBW)',
+                    partLabel: 'Part A — BBW',
                     target: 'Design a BBW system that allows the driver to brake normally if the actuator fails and a basic sensor system for autonomous braking.',
                     checklist: [
-                        'Suggest a mechanical/electrical disengagement mechanism.',
+                        'Explain how the autonomous braking will override.',
                         'Explain how manual braking is restored.',
                         'Show where the mechanism will be mounted on the Baja.',
-                        'Select suitable sensors for brake pressure, wheel speed and vehicle deceleration.',
-                        'Explain how the controller uses these signals.'
+                        'Select suitable sensors for brake pressure, wheel speed and vehicle deceleration.'
                     ]
                 },
                 {
-                    partLabel: 'Part B — Steer-by-Wire (SBW)',
+                    partLabel: 'Part B — SBW',
                     target: 'Design an SBW system that allows the driver to take manual control immediately when autonomous steering is switched off.',
                     checklist: [
-                        'Select a suitable disengagement mechanism.',
+                        'Explain how the autonomous control will get overrided',
                         'Explain how the motor will be isolated.',
                         'Show how the mechanism will be mounted to the steering column/chassis.',
-                        'Give a method steering angle from 30 degree to 35 degree.',
-                        'Explain how will you engage the motor and steering column.',
-                        'Select a suitable steering-angle sensor/encoder.',
-                        'Explain how steering position will be measured.'
+                        'Current steering turning angle is 30 degree, how will you change to 35 degree',
+                        'Explain how will you engage the motor and steering column',
+                        'Select a suitable steering-angle sensor/encoder.'
                     ]
                 }
             ]
