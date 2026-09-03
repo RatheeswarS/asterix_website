@@ -536,78 +536,78 @@ export const MECHANICAL_MYSTERY_DATA = {
             {
                 group: 'Group 01',
                 members: [
-                    { name: 'Priyan LM', dept: 'mech', phone: '6382905788' },
-                    { name: 'Bharath Sri ram', dept: 'mech', phone: '9080440516' }
+                    { name: 'Priyan Lm', dept: 'MECH', phone: '6382905788' },
+                    { name: 'Bharath Sri Ram', dept: 'MECH', phone: '9080440516' }
                 ]
             },
             {
                 group: 'Group 02',
                 members: [
-                    { name: 'Dharshan', dept: 'mech', phone: '7904984217' },
-                    { name: 'Y sanjay', dept: 'mech', phone: '7708243787' }
+                    { name: 'Dharshan', dept: 'MECH', phone: '7904984217' },
+                    { name: 'Y Sanjay', dept: 'MECH', phone: '7708243787' }
                 ]
             },
             {
                 group: 'Group 03',
                 members: [
-                    { name: 'Ramesh', dept: 'mech', phone: '8925587202' },
-                    { name: 'Subhashri', dept: 'mech', phone: '9342696680' }
+                    { name: 'Ramesh', dept: 'MECH', phone: '8925587202' },
+                    { name: 'Subhashri', dept: 'MECH', phone: '9342696680' }
                 ]
             },
             {
                 group: 'Group 04',
                 members: [
-                    { name: 'Thamarikannan', dept: 'mech', phone: '8248015187' },
-                    { name: 'Nivasini', dept: 'mech', phone: '6381907192' }
+                    { name: 'Thamarikannan', dept: 'MECH', phone: '8248015187' },
+                    { name: 'Nivasini', dept: 'MECH', phone: '6381907192' }
                 ]
             },
             {
                 group: 'Group 05',
                 members: [
-                    { name: 'Sudharshan C', dept: 'mech', phone: '8072228334' },
-                    { name: 'Sairam', dept: 'mech', phone: '8760512744' }
+                    { name: 'Sudharsan M', dept: 'MECH', phone: '8072228334' },
+                    { name: 'Sairam', dept: 'MECH', phone: '8760512744' }
                 ]
             },
             {
                 group: 'Group 06',
                 members: [
-                    { name: 'Dhivagar', dept: 'mech', phone: '6280999274' },
-                    { name: 'ram nivash', dept: 'mech', phone: '8608031977' }
+                    { name: 'Dhivagar', dept: 'MECH', phone: '6280999274' },
+                    { name: 'Ram Nivash', dept: 'MECH', phone: '8608031977' }
                 ]
             },
             {
                 group: 'Group 07',
                 members: [
-                    { name: 'Priteesh C', dept: 'mech', phone: '6381017604' },
-                    { name: 'M.Kowshika', dept: 'ice', phone: '9025084072' }
+                    { name: 'Priteesh C', dept: 'MECH', phone: '6381017604' },
+                    { name: 'M. Kowshika', dept: 'ICE', phone: '9025084072' }
                 ]
             },
             {
                 group: 'Group 08',
                 members: [
-                    { name: 'kavin v', dept: 'mech', phone: '9942312488' },
-                    { name: 'vishvan', dept: 'mech', phone: '9994847863' }
+                    { name: 'Kavin V', dept: 'MECH', phone: '9942312488' },
+                    { name: 'Vishvan', dept: 'MECH', phone: '9994847863' }
                 ]
             },
             {
                 group: 'Group 09',
                 members: [
-                    { name: 'd raghul', dept: 'mech', phone: '8438569107' },
-                    { name: 'gokul prashath', dept: 'mech', phone: '8870922180' }
+                    { name: 'D. Raghul', dept: 'MECH', phone: '8438569107' },
+                    { name: 'Gokul Prashath', dept: 'MECH', phone: '8870922180' }
                 ]
             },
             {
                 group: 'Group 10',
                 members: [
-                    { name: 'raghavan', dept: 'mech', phone: '9843539393' },
-                    { name: 'muhammad shakkeel', dept: 'ice', phone: '9353018039' }
+                    { name: 'Raghavan', dept: 'MECH', phone: '9843539393' },
+                    { name: 'Muhammad Shakkeel', dept: 'ICE', phone: '9353018039' }
                 ]
             },
             {
                 group: 'Group 11',
                 members: [
-                    { name: 'paul sibi', dept: 'mech', phone: '8015912680' },
-                    { name: 'r k trilokeshvar', dept: 'vlsi', phone: '8695755665' }
+                    { name: 'Paul Sibi', dept: 'MECH', phone: '8015912680' },
+                    { name: 'R K Trilokeshvar', dept: 'VLSI', phone: '8695755665' }
                 ]
             }
         ]
