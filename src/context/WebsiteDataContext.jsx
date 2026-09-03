@@ -263,8 +263,8 @@ const RECRUITMENT_TRACKS = [
         problemStatements: MECHANICAL_MYSTERY_DATA.challenges.map((c) => ({
             id: c.id,
             title: c.title,
-            summary: `Teams of 2. ${c.sectionLongitudinal.title} & ${c.sectionLateral.title}.`,
-            body: `${c.title}\n- ${c.sectionLongitudinal.title}\n- ${c.sectionLateral.title}\n\nTeam Format: Teams of 2\nEvaluation: Mysterious & not announced.`
+            summary: c.tagline || (Array.isArray(c.parts) ? c.parts.map(p => p.partLabel).join(' • ') : 'Teams of 2.'),
+            body: `${c.title}\n${c.tagline || ''}\n\n` + (Array.isArray(c.parts) ? c.parts.map(p => `${p.partLabel}: ${p.target}`).join('\n\n') : '')
         }))
     }
 ];
