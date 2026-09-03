@@ -12,6 +12,9 @@
 export const RECRUITMENT_RELEASE_DATE_STR = '2026-09-03T18:30:00+05:30';
 export const RECRUITMENT_RELEASE_MS = new Date(RECRUITMENT_RELEASE_DATE_STR).getTime();
 
+export const HARDWARE_RELEASE_DATE_STR = '2026-09-04T08:30:00+05:30';
+export const HARDWARE_RELEASE_MS = new Date(HARDWARE_RELEASE_DATE_STR).getTime();
+
 export const SUBSYSTEM_LEADS = {
     'software-perception': {
         name: 'Ratheeshwar',
@@ -36,11 +39,39 @@ export const SOFTWARE_PERCEPTION_DATA = {
     headline: 'AUTONOMOUS PERCEPTION & STATE ESTIMATION',
     blurb: 'Two comprehensive recruitment challenges. Choose your domain, design your pipeline in Phase 1, and implement your solution in Phase 2.',
     lead: SUBSYSTEM_LEADS['software-perception'],
+    teamFormat: {
+        title: 'Team Formation: Teams of 2',
+        badge: 'DUO TEAMS ALLOCATED',
+        desc: 'Candidates will be working in allocated teams of two to design the architecture, complete deliverables, and submit solutions.',
+        pdfUrl: 'https://ik.imagekit.io/kitzwb4be/asterix/recruitment/software_perception_teams.pdf',
+        pdfLocalUrl: '/recruitment/software_perception_teams.pdf',
+        teamsIIYear: [
+            { group: 'Group 1', members: [{ name: 'Dharanish V', dept: 'AIDS', phone: '9361365173' }, { name: 'Udhayanthi S', dept: 'AIDS', phone: '9443477014' }] },
+            { group: 'Group 2', members: [{ name: 'Aravinth G V', dept: 'CSE', phone: '9080158763' }, { name: 'Rithanya M', dept: 'AIDS', phone: '9865976546' }] },
+            { group: 'Group 3', members: [{ name: 'Gowshigmuthu S D', dept: 'EEE', phone: '8925681850' }, { name: 'Kanishka S', dept: 'AIDS', phone: '8072999845' }] },
+            { group: 'Group 4', members: [{ name: 'Sruthi S', dept: 'CSE', phone: '8438702606' }, { name: 'Sakarnika J', dept: 'AIDS', phone: '8807958435' }] },
+            { group: 'Group 5', members: [{ name: 'Jayashree Saravanakumar', dept: 'AIDS', phone: '9500876355' }, { name: 'M. Samvida', dept: 'VLSI', phone: '9500654772' }] },
+            { group: 'Group 6', members: [{ name: 'Abhishek Karuppusamy', dept: 'CSE', phone: '8807003699' }, { name: 'Angannan A N', dept: 'ECE', phone: '9566691403' }] },
+            { group: 'Group 7', members: [{ name: 'Vishnuram A G', dept: 'AIDS', phone: '9245805745' }, { name: 'Akash S M', dept: 'CSE', phone: '7339265715' }] },
+            { group: 'Group 8', members: [{ name: 'Kanishka Devarajan', dept: 'CSE', phone: '8870167781' }, { name: 'Nandhitha', dept: 'VLSI', phone: '8248916170' }] },
+            { group: 'Group 9', members: [{ name: 'Sathvika D V', dept: 'CSE', phone: '7010466966' }, { name: 'Darshan S', dept: 'CSE', phone: '9600688397' }] },
+            { group: 'Group 10', members: [{ name: 'Subanandhini', dept: 'CSE', phone: '9159677776' }, { name: 'Rhythami Raja', dept: 'AIDS', phone: '8015790344' }] },
+            { group: 'Group 11', members: [{ name: 'Deeshitha G J', dept: 'VLSI', phone: '9965195322' }, { name: 'V. Anushka', dept: 'ECE', phone: '9363479841' }] },
+            { group: 'Group 12', members: [{ name: 'M. Sivaprakash', dept: 'CSE', phone: '8056847102' }, { name: 'Vijay Adithiya E', dept: 'CSE', phone: '9488412780' }] },
+            { group: 'Group 13', members: [{ name: 'Shreeshanth S', dept: 'CSE', phone: '9787501016' }, { name: 'Devadharsa B', dept: 'ECE', phone: '6385431538' }] },
+            { group: 'Group 14', members: [{ name: 'S. Shreeshaa', dept: 'AIDS', phone: '6383111845' }, { name: 'Dhiya D', dept: 'VLSI', phone: '9566334833' }] }
+        ],
+        teamsIIIYear: [
+            { group: 'Group 1', members: [{ name: 'Bharath V', dept: 'ICE', phone: '9342953944' }, { name: 'Vishal S', dept: 'AIDS', phone: '8248897569' }] },
+            { group: 'Group 2', members: [{ name: 'Manikandan D', dept: 'AIDS', phone: '7305315144' }, { name: 'Swaraj Rs', dept: 'ECE', phone: '9790299906' }] },
+            { group: 'Group 3', members: [{ name: 'Arun Madav R', dept: 'CSE', phone: '6374704044' }] }
+        ]
+    },
     timeline: [
         {
             id: 'sp-release',
             label: 'Problem Statements Release',
-            detail: 'Vision & sensor fusion challenge briefs unlock tomorrow at 6:30 PM IST',
+            detail: 'Vision & sensor fusion challenge briefs and duo teams released',
             date: '2026-09-03T18:30:00+05:30',
             opensAt: '2026-09-02T18:00:00+05:30',
         },
@@ -341,8 +372,8 @@ export const POWERTRAIN_TEST_DATA = {
         {
             id: 'pt-release',
             label: 'Test Syllabus & Guidelines Release',
-            detail: 'Full 4-domain test topics, rules & cheat sheet specifications unlock tomorrow at 6:30 PM IST',
-            date: '2026-09-03T18:30:00+05:30',
+            detail: 'Full 4-domain test topics, rules & cheat sheet specifications unlock tomorrow morning at 8:30 AM IST',
+            date: '2026-09-04T08:30:00+05:30',
             opensAt: '2026-09-02T18:00:00+05:30',
         },
         {
@@ -350,7 +381,7 @@ export const POWERTRAIN_TEST_DATA = {
             label: 'Powertrain Recruitment Test',
             detail: 'Offline Written Test • 5:30 PM – 6:30 PM IST',
             date: '2026-09-11T17:30:00+05:30',
-            opensAt: '2026-09-03T18:30:00+05:30',
+            opensAt: '2026-09-04T08:30:00+05:30',
         },
         {
             id: 'pt-interview',
@@ -474,8 +505,8 @@ export const MECHANICAL_MYSTERY_DATA = {
         {
             id: 'mech-release',
             label: 'Classified Problem Dossiers Release',
-            detail: '3 Problem statements & duo team allocations unlock tomorrow at 6:30 PM IST',
-            date: '2026-09-03T18:30:00+05:30',
+            detail: '3 Problem statements & duo team allocations unlock tomorrow morning at 8:30 AM IST',
+            date: '2026-09-04T08:30:00+05:30',
             opensAt: '2026-09-02T18:00:00+05:30',
         },
         {
@@ -483,7 +514,7 @@ export const MECHANICAL_MYSTERY_DATA = {
             label: 'Mechanical Submission Deadline',
             detail: 'Duo solution proposals due on 16 September at 11:59 PM IST',
             date: '2026-09-16T23:59:00+05:30',
-            opensAt: '2026-09-03T18:30:00+05:30',
+            opensAt: '2026-09-04T08:30:00+05:30',
         },
         {
             id: 'mech-results',

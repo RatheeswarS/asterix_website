@@ -4,6 +4,8 @@ export default function SubsystemLockedCard({
     title = 'Problem Statements Release Countdown',
     badge = 'EMBARGOED CONTENT',
     releaseDate = '2026-09-03T18:30:00+05:30',
+    unlockTimeLabel = 'UNLOCKS TOMORROW • 6:30 PM IST',
+    teaserTitle = '// WHAT UNLOCKS AT RELEASE',
     description = 'Content is sealed under recruitment protocol. Full problem statements and guidelines will unlock tomorrow at 6:30 PM IST.',
     teaserPoints = [],
     onUnlock
@@ -32,7 +34,7 @@ export default function SubsystemLockedCard({
                     </span>
                 </div>
                 <span className="font-mono text-xs font-bold text-amber-400 tracking-widest uppercase">
-                    UNLOCKS TOMORROW • 6:30 PM IST
+                    {unlockTimeLabel}
                 </span>
             </div>
 
@@ -51,7 +53,7 @@ export default function SubsystemLockedCard({
             {teaserPoints.length > 0 && (
                 <div className="border-t-2 border-slate-800 pt-6">
                     <span className="font-mono text-xs font-black uppercase tracking-widest text-sky-400 block mb-3">
-                        // WHAT UNLOCKS AT 6:30 PM TOMORROW
+                        {teaserTitle}
                     </span>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         {teaserPoints.map((pt, i) => (

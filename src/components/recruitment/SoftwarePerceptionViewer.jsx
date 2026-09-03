@@ -10,6 +10,8 @@ export default function SoftwarePerceptionViewer({ isAdmin = false }) {
     const [activePhaseKey, setActivePhaseKey] = useState('phase1');
     const [activeSectionTab, setActiveSectionTab] = useState('overview');
     const [copiedDeliverables, setCopiedDeliverables] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [isTeamListExpanded, setIsTeamListExpanded] = useState(false);
 
     useEffect(() => {
         if (isPhase2Unlocked) return;
@@ -30,6 +32,15 @@ export default function SoftwarePerceptionViewer({ isAdmin = false }) {
         navigator.clipboard?.writeText?.(text);
         setCopiedDeliverables(true);
         setTimeout(() => setCopiedDeliverables(false), 2000);
+    };
+
+    const filterTeams = (teams) => {
+        if (!searchQuery.trim()) return teams;
+        const q = searchQuery.toLowerCase().trim();
+        return teams.filter(t =>
+            t.group.toLowerCase().includes(q) ||
+            t.members.some(m => m.name.toLowerCase().includes(q) || m.dept.toLowerCase().includes(q) || m.phone.includes(q))
+        );
     };
 
     return (
@@ -98,6 +109,124 @@ export default function SoftwarePerceptionViewer({ isAdmin = false }) {
                         );
                     })}
                 </div>
+            </div>
+
+            {/* Team Allocation Notice & PDF Download Banner */}
+            <div className="bg-amber-300 border-4 border-slate-900 shadow-[8px_8px_0px_#0f172a] p-5 sm:p-6 space-y-4">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                            <span className="px-2.5 py-0.5 bg-slate-900 text-amber-300 font-mono text-xs font-black uppercase">
+                                👥 {data.teamFormat?.badge || 'TEAMS OF TWO'}
+                            </span>
+                            <span className="font-mono text-xs font-bold text-slate-800">
+                                Mandatory Duo Collaboration
+                            </span>
+                        </div>
+                        <h3 className="text-xl sm:text-2xl font-black uppercase text-slate-900 tracking-tight">
+                            {data.teamFormat?.title || 'Software & Perception Team Allocations'}
+                        </h3>
+                        <p className="text-xs sm:text-sm font-bold text-slate-800 max-w-2xl leading-relaxed">
+                            {data.teamFormat?.desc || 'Candidates will be working in allocated teams of two to design the architecture, complete deliverables, and submit solutions.'}
+                        </p>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-3 shrink-0">
+                        <a
+                            href={data.teamFormat?.pdfUrl || '/recruitment/software_perception_teams.pdf'}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            download="Asterix_Software_Perception_Teams.pdf"
+                            className="press inline-flex items-center gap-2 px-4 py-2.5 bg-slate-900 text-white hover:bg-sky-600 border-2 border-slate-900 font-mono text-xs font-black uppercase shadow-[3px_3px_0px_#0284c7] no-underline cursor-pointer"
+                        >
+                            <span>📄 Download Team List (PDF)</span>
+                            <span>↗</span>
+                        </a>
+                        <button
+                            type="button"
+                            onClick={() => setIsTeamListExpanded(prev => !prev)}
+                            className="press inline-flex items-center gap-2 px-4 py-2.5 bg-white text-slate-900 hover:bg-slate-100 border-2 border-slate-900 font-mono text-xs font-black uppercase shadow-[3px_3px_0px_#0f172a] cursor-pointer"
+                        >
+                            <span>{isTeamListExpanded ? '▲ Hide Team Roster' : '▼ View Team Roster (17 Groups)'}</span>
+                        </button>
+                    </div>
+                </div>
+
+                {/* Expandable Searchable Team Roster */}
+                {isTeamListExpanded && (
+                    <div className="pt-4 border-t-2 border-slate-900/40 space-y-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <span className="font-mono text-xs font-black uppercase text-slate-900">
+                                Allocated Team Duos (14 II-Year Groups • 3 III-Year Groups)
+                            </span>
+                            <input
+                                type="text"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                placeholder="Search by name, group, or dept..."
+                                className="w-full sm:w-72 px-3 py-1.5 bg-white border-2 border-slate-900 font-mono text-xs text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-900 shadow-[2px_2px_0px_#0f172a]"
+                            />
+                        </div>
+
+                        {/* II Year Teams Grid */}
+                        <div className="space-y-2">
+                            <span className="font-mono text-xs font-black uppercase text-slate-800 tracking-wider block">
+                                — II Year Students ({data.teamFormat?.teamsIIYear?.length || 14} Groups)
+                            </span>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                {filterTeams(data.teamFormat?.teamsIIYear || []).map((grp) => (
+                                    <div key={grp.group} className="bg-white border-2 border-slate-900 p-3 shadow-[3px_3px_0px_#0f172a]">
+                                        <span className="px-2 py-0.5 bg-sky-200 border border-slate-900 font-mono text-[10px] font-black uppercase inline-block mb-2">
+                                            {grp.group}
+                                        </span>
+                                        <div className="space-y-2">
+                                            {grp.members.map((m, idx) => (
+                                                <div key={idx} className="flex items-start justify-between gap-2 text-xs border-b border-slate-100 last:border-b-0 pb-1 last:pb-0">
+                                                    <div>
+                                                        <strong className="text-slate-900 block leading-tight">{m.name}</strong>
+                                                        <span className="font-mono text-[10px] text-slate-500">{m.dept}</span>
+                                                    </div>
+                                                    <a href={`tel:${m.phone}`} className="font-mono text-[11px] font-bold text-sky-700 hover:underline shrink-0">
+                                                        {m.phone}
+                                                    </a>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* III Year Teams Grid */}
+                        <div className="space-y-2 pt-2">
+                            <span className="font-mono text-xs font-black uppercase text-slate-800 tracking-wider block">
+                                — III Year Students ({data.teamFormat?.teamsIIIYear?.length || 3} Groups)
+                            </span>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                {filterTeams(data.teamFormat?.teamsIIIYear || []).map((grp) => (
+                                    <div key={grp.group} className="bg-white border-2 border-slate-900 p-3 shadow-[3px_3px_0px_#0f172a]">
+                                        <span className="px-2 py-0.5 bg-amber-200 border border-slate-900 font-mono text-[10px] font-black uppercase inline-block mb-2">
+                                            {grp.group}
+                                        </span>
+                                        <div className="space-y-2">
+                                            {grp.members.map((m, idx) => (
+                                                <div key={idx} className="flex items-start justify-between gap-2 text-xs border-b border-slate-100 last:border-b-0 pb-1 last:pb-0">
+                                                    <div>
+                                                        <strong className="text-slate-900 block leading-tight">{m.name}</strong>
+                                                        <span className="font-mono text-[10px] text-slate-500">{m.dept}</span>
+                                                    </div>
+                                                    <a href={`tel:${m.phone}`} className="font-mono text-[11px] font-bold text-sky-700 hover:underline shrink-0">
+                                                        {m.phone}
+                                                    </a>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Active Challenge Banner & Phase Stepper */}

@@ -75,7 +75,7 @@ TEAM ASTERIX - SAEINDIA a-BAJA 2026 SPONSORSHIP PROPOSAL
 =====================================================
 Institution: PSG Institute of Technology and Applied Research (PSG iTech)
 Location: Neelambur, Coimbatore, Tamil Nadu - 641062
-Contact: asterix.psgitech@gmail.com | +91 98765 43210
+Contact: ${contact?.email || 'asterix.psgitech@gmail.com'} | ${contact?.phone || '+91 86089 44644'}
 
 ABOUT TEAM ASTERIX:
 Team Asterix is the premier collegiate autonomous and all-terrain vehicle racing team of PSG iTech.
@@ -94,8 +94,8 @@ PARTNERSHIP TIERS:
 4. Technical Partner: Material / Component / Dyno support with technical CAD endorsement.
 
 CONTACT DETAILS FOR SPONSORSHIP:
-Email: asterix.psgitech@gmail.com
-Address: PSG iTech, Neelambur, Coimbatore - 641062
+Email: ${contact?.email || 'asterix.psgitech@gmail.com'}
+Address: ${contact?.address || 'PSG iTech, Neelambur, Coimbatore - 641062'}
 Thank you for powering collegiate automotive innovation!
 =====================================================`;
         const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8' });
@@ -103,6 +103,90 @@ Thank you for powering collegiate automotive innovation!
         const a = document.createElement('a');
         a.href = url;
         a.download = 'Team_Asterix_BAJA_Sponsorship_Brochure.txt';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    };
+
+    // Download technical architecture pitch deck
+    const handleDownloadDeck = () => {
+        if (sponsorship?.deckUrl) {
+            window.open(sponsorship.deckUrl, '_blank');
+            return;
+        }
+        const textContent = `=====================================================
+TEAM ASTERIX - VEHICLE TECHNICAL ARCHITECTURE PITCH DECK
+=====================================================
+Vehicle Platform: Asterix Autonomous e-BAJA (a-BAJA 2026)
+Engineering Organization: PSG iTech Racing Division
+
+TECHNICAL SUBSYSTEM SPECIFICATIONS:
+1. AUTONOMOUS & PERCEPTION
+   - Compute Architecture: NVIDIA Jetson Orin Nano + Dual RTK-GPS GNSS
+   - Perception Sensors: Solid-State 3D LiDAR (128-Beam) + Stereo Depth Vision
+   - Trajectory & Path Planning: Stanley Non-Linear Control + Custom Costmap A*
+   - Latency: Sub-18ms End-to-End Loop Closure
+
+2. ELECTRIC PROPULSION & POWERTRAIN
+   - Motor: Datai 2000W High-Torque PMSM Drive
+   - Supply Voltage: 48V Nominal Battery Pack
+   - Peak RPM: 4,000 RPM
+   - Gearbox Reduction: 9:1 Single-Stage Precision Gearset
+   - Axle Shafts: 4340 Induction-Hardened Chromoly
+
+3. CHASSIS, BRAKES & SUSPENSION
+   - Spaceframe: AISI 4130 Seamless Seamless Aircraft Chromoly Tubing
+   - Suspension: Dual Unequal-Length A-Arms with Progressive Fox Float Air Shocks
+   - Actuation: Steer-by-Wire + Electronic Brake-by-Wire Quad Caliper Lockup
+
+SPONSORSHIP TECHNICAL BENEFIT:
+Partnering technical sponsors receive validation data, testing telemetries, and hardware stress analytics directly from our competition logs.
+=====================================================`;
+        const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'Team_Asterix_Technical_Pitch_Deck.txt';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    };
+
+    // Download formal institution endorsement letter
+    const handleDownloadLetter = () => {
+        if (sponsorship?.letterUrl) {
+            window.open(sponsorship.letterUrl, '_blank');
+            return;
+        }
+        const textContent = `=====================================================
+PSG INSTITUTE OF TECHNOLOGY AND APPLIED RESEARCH
+OFFICIAL ENDORSEMENT & CREDENTIAL CERTIFICATION
+=====================================================
+To Whom It May Concern,
+
+This document certifies that TEAM ASTERIX is the officially recognized and sanctioned collegiate autonomous off-road vehicle racing team representing PSG Institute of Technology and Applied Research (PSG iTech), Neelambur, Coimbatore.
+
+The team actively participates in the SAEINDIA National BAJA Series, designing and manufacturing high-performance autonomous all-terrain electric buggies.
+
+Institutional Endorsement Details:
+- College: PSG Institute of Technology and Applied Research
+- Affiliation: Anna University, Approved by AICTE
+- Location: Avinashi Road, Neelambur, Coimbatore, Tamil Nadu - 641062
+- Team Designation: Team Asterix (Autonomous BAJA Division)
+
+All corporate sponsorships, technical equipment donations, and financial grants are received through official institutional accounts with statutory 80G tax exemptions where applicable.
+
+Authorized Signatory,
+Faculty Advisor & Head of Institution
+PSG iTech BAJA Racing Cell
+=====================================================`;
+        const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'PSG_iTech_Team_Asterix_Endorsement_Letter.txt';
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -218,7 +302,7 @@ Thank you for powering collegiate automotive innovation!
                             </p>
                         </div>
                         <button
-                            onClick={handleDownloadBrochure}
+                            onClick={handleDownloadDeck}
                             className="press w-full py-2.5 bg-amber-300 hover:bg-amber-400 text-slate-900 font-mono font-black text-xs uppercase border-2 border-slate-900 shadow-[2px_2px_0px_#0f172a] cursor-pointer flex items-center justify-center gap-1.5"
                         >
                             <span>Download Tech Deck</span>
@@ -243,7 +327,7 @@ Thank you for powering collegiate automotive innovation!
                             </p>
                         </div>
                         <button
-                            onClick={handleDownloadBrochure}
+                            onClick={handleDownloadLetter}
                             className="press w-full py-2.5 bg-emerald-400 hover:bg-emerald-300 text-slate-900 font-mono font-black text-xs uppercase border-2 border-slate-900 shadow-[2px_2px_0px_#0f172a] cursor-pointer flex items-center justify-center gap-1.5"
                         >
                             <span>Download Letter</span>

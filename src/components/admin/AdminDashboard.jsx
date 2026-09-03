@@ -3,6 +3,7 @@ import { useWebsiteData, AUTH_TOKEN_KEY } from '../../context/WebsiteDataContext
 import { apiUrl } from '../../lib/api';
 import Icon from '../Icon';
 import ImageField from './ImageField';
+import RecruitmentAdmin from './RecruitmentAdmin';
 
 export default function AdminDashboard({ onExit }) {
     const {
@@ -147,17 +148,20 @@ export default function AdminDashboard({ onExit }) {
     // simply require a real signed-in session.
     const ensureAuthToken = async () => sessionStorage.getItem(AUTH_TOKEN_KEY);
 
-    // Handle image file upload exclusively to ImageKit Cloud CDN with custom entity naming
+    // Handle file upload (images & PDF documents) exclusively to ImageKit Cloud CDN with custom entity naming
     const handleImageUpload = async (e, callback, folder = '/asterix', customName = '') => {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        if (!file.type.startsWith('image/')) {
-            alert('Please select a valid image file (JPEG, PNG, WEBP, etc.)');
+        const isImage = file.type.startsWith('image/');
+        const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+
+        if (!isImage && !isPdf) {
+            alert('Please select a valid image or PDF document (JPEG, PNG, WEBP, PDF)');
             return;
         }
 
-        showStatus('Uploading image to ImageKit... ⚡');
+        showStatus('Uploading file to ImageKit Cloud... ⚡');
 
         let uploadFailure = '';
 
@@ -167,11 +171,11 @@ export default function AdminDashboard({ onExit }) {
                 const formData = new FormData();
                 formData.append('image', file);
                 formData.append('folder', folder);
-                formData.append('tags', 'admin_upload,asterix');
+                formData.append('tags', isPdf ? 'admin_doc,asterix' : 'admin_upload,asterix');
 
                 if (customName && customName.trim()) {
                     const extMatch = file.name.match(/\.[a-zA-Z0-9]+$/);
-                    const ext = extMatch ? extMatch[0] : '.jpg';
+                    const ext = extMatch ? extMatch[0] : (isPdf ? '.pdf' : '.jpg');
                     const cleanName = customName.trim().toLowerCase().replace(/[^a-z0-9_-]+/g, '_').replace(/^_+|_+$/g, '');
                     if (cleanName) {
                         formData.append('fileName', `${cleanName}${ext}`);
@@ -494,14 +498,15 @@ export default function AdminDashboard({ onExit }) {
 
     const tabs = [
         { id: 'overview', label: 'Overview', icon: 'overview' },
-        { id: 'hero', label: 'Hero & Banner', icon: 'edit' },
+        { id: 'hero', label: 'Hero & Branding', icon: 'edit' },
         { id: 'story', label: 'Our Story', icon: 'book' },
         { id: 'subsystems', label: 'Subsystems & Squad', icon: 'vehicle' },
         { id: 'sponsorship', label: 'Sponsorship Portal', icon: 'folder' },
+        { id: 'recruitment', label: 'Recruitment Portal', icon: 'users' },
         { id: 'gallery', label: 'Media Gallery', icon: 'camera' },
         { id: 'updates', label: 'Team Updates', icon: 'megaphone' },
         { id: 'subscribers', label: 'Alliance Leads', icon: 'inbox' },
-        { id: 'accounts', label: 'Team Accounts', icon: 'overview' },
+        { id: 'accounts', label: 'Team Accounts', icon: 'users' },
         { id: 'settings', label: 'Settings & Backup', icon: 'settings' },
     ];
 
@@ -688,6 +693,20 @@ export default function AdminDashboard({ onExit }) {
                                         <span>→</span>
                                     </button>
                                     <button
+                                        onClick={() => setActiveTab('sponsorship')}
+                                        className="press press-flat p-3 border-2 border-slate-900 bg-slate-50 hover:bg-sky-50 text-left font-mono font-bold text-xs flex items-center justify-between cursor-pointer"
+                                    >
+                                        <span>Manage Sponsorship Documents & Inquiries</span>
+                                        <span>→</span>
+                                    </button>
+                                    <button
+                                        onClick={() => setActiveTab('recruitment')}
+                                        className="press press-flat p-3 border-2 border-slate-900 bg-slate-50 hover:bg-sky-50 text-left font-mono font-bold text-xs flex items-center justify-between cursor-pointer"
+                                    >
+                                        <span>Manage Recruitment Tracks & Forms</span>
+                                        <span>→</span>
+                                    </button>
+                                    <button
                                         onClick={() => setActiveTab('accounts')}
                                         className="press press-flat p-3 border-2 border-slate-900 bg-slate-50 hover:bg-sky-50 text-left font-mono font-bold text-xs flex items-center justify-between cursor-pointer"
                                     >
@@ -744,18 +763,6 @@ export default function AdminDashboard({ onExit }) {
                                         value={siteData.hero.tagline}
                                         onChange={e => updateHero({ tagline: e.target.value })}
                                         className="w-full px-3 py-2 border-2 border-slate-900 bg-slate-50 font-bold text-sm"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-xs font-mono font-black uppercase text-slate-700 mb-1">
-                                        Join Team Google Form URL
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={siteData.hero.joinFormUrl}
-                                        onChange={e => updateHero({ joinFormUrl: e.target.value })}
-                                        className="w-full px-3 py-2 border-2 border-slate-900 bg-slate-50 font-mono text-xs"
                                     />
                                 </div>
 
@@ -1213,54 +1220,146 @@ export default function AdminDashboard({ onExit }) {
                                 </p>
                             </div>
 
-                            <div className="p-6 bg-white border-4 border-slate-900 shadow-[6px_6px_0px_#0f172a] space-y-4">
-                                <div>
-                                    <label className="block text-xs font-mono font-black uppercase text-slate-700 mb-1">
-                                        Official Sponsorship Brochure URL (PDF)
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={siteData.sponsorship?.brochureUrl || ''}
-                                        onChange={e => updateSponsorship({ brochureUrl: e.target.value })}
-                                        placeholder="https://... or /brochure.pdf (Leave blank for default auto-generated document)"
-                                        className="w-full px-3 py-2 border-2 border-slate-900 font-mono text-xs focus:outline-none"
-                                    />
+                            <div className="p-6 bg-white border-4 border-slate-900 shadow-[6px_6px_0px_#0f172a] space-y-6">
+                                {/* 1. Brochure */}
+                                <div className="p-4 bg-slate-50 border-2 border-slate-900 space-y-2">
+                                    <div className="flex items-center justify-between">
+                                        <label className="block text-xs font-mono font-black uppercase text-slate-800">
+                                            1. Official Sponsorship Proposal Brochure (PDF)
+                                        </label>
+                                        {siteData.sponsorship?.brochureUrl && (
+                                            <a
+                                                href={siteData.sponsorship.brochureUrl}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="text-[11px] font-mono font-black text-sky-600 hover:text-sky-800 underline"
+                                            >
+                                                Preview Document ↗
+                                            </a>
+                                        )}
+                                    </div>
+                                    <div className="flex flex-col sm:flex-row gap-2">
+                                        <input
+                                            type="text"
+                                            value={siteData.sponsorship?.brochureUrl || ''}
+                                            onChange={e => updateSponsorship({ brochureUrl: e.target.value })}
+                                            placeholder="Paste document URL, or upload below (blank uses default auto-generator)"
+                                            className="flex-1 px-3 py-2 border-2 border-slate-900 bg-white font-mono text-xs focus:outline-none"
+                                        />
+                                        <label className="press px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-mono font-black text-xs uppercase cursor-pointer flex items-center justify-center shrink-0">
+                                            <span>Upload PDF ↑</span>
+                                            <input
+                                                type="file"
+                                                accept=".pdf,.png,.jpg,.jpeg,.webp"
+                                                onChange={e => handleImageUpload(e, url => updateSponsorship({ brochureUrl: url }), '/asterix/docs', 'sponsorship_brochure')}
+                                                className="hidden"
+                                            />
+                                        </label>
+                                        {siteData.sponsorship?.brochureUrl && (
+                                            <button
+                                                type="button"
+                                                onClick={() => updateSponsorship({ brochureUrl: '' })}
+                                                className="press px-3 py-2 bg-rose-100 hover:bg-rose-200 border-2 border-slate-900 text-rose-800 font-mono font-black text-xs uppercase cursor-pointer shrink-0"
+                                                title="Reset to default auto-generated document"
+                                            >
+                                                Reset
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
 
-                                <div>
-                                    <label className="block text-xs font-mono font-black uppercase text-slate-700 mb-1">
-                                        Vehicle Technical Architecture Pitch Deck URL
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={siteData.sponsorship?.deckUrl || ''}
-                                        onChange={e => updateSponsorship({ deckUrl: e.target.value })}
-                                        placeholder="https://... or /deck.pdf"
-                                        className="w-full px-3 py-2 border-2 border-slate-900 font-mono text-xs focus:outline-none"
-                                    />
+                                {/* 2. Pitch Deck */}
+                                <div className="p-4 bg-slate-50 border-2 border-slate-900 space-y-2">
+                                    <div className="flex items-center justify-between">
+                                        <label className="block text-xs font-mono font-black uppercase text-slate-800">
+                                            2. Vehicle Technical Architecture Pitch Deck (PDF / Presentation)
+                                        </label>
+                                        {siteData.sponsorship?.deckUrl && (
+                                            <a
+                                                href={siteData.sponsorship.deckUrl}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="text-[11px] font-mono font-black text-sky-600 hover:text-sky-800 underline"
+                                            >
+                                                Preview Document ↗
+                                            </a>
+                                        )}
+                                    </div>
+                                    <div className="flex flex-col sm:flex-row gap-2">
+                                        <input
+                                            type="text"
+                                            value={siteData.sponsorship?.deckUrl || ''}
+                                            onChange={e => updateSponsorship({ deckUrl: e.target.value })}
+                                            placeholder="Paste deck URL, or upload file below (blank uses default tech brief)"
+                                            className="flex-1 px-3 py-2 border-2 border-slate-900 bg-white font-mono text-xs focus:outline-none"
+                                        />
+                                        <label className="press px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-mono font-black text-xs uppercase cursor-pointer flex items-center justify-center shrink-0">
+                                            <span>Upload Deck ↑</span>
+                                            <input
+                                                type="file"
+                                                accept=".pdf,.png,.jpg,.jpeg,.webp"
+                                                onChange={e => handleImageUpload(e, url => updateSponsorship({ deckUrl: url }), '/asterix/docs', 'technical_pitch_deck')}
+                                                className="hidden"
+                                            />
+                                        </label>
+                                        {siteData.sponsorship?.deckUrl && (
+                                            <button
+                                                type="button"
+                                                onClick={() => updateSponsorship({ deckUrl: '' })}
+                                                className="press px-3 py-2 bg-rose-100 hover:bg-rose-200 border-2 border-slate-900 text-rose-800 font-mono font-black text-xs uppercase cursor-pointer shrink-0"
+                                                title="Reset to default tech brief"
+                                            >
+                                                Reset
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
 
-                                <div>
-                                    <label className="block text-xs font-mono font-black uppercase text-slate-700 mb-1">
-                                        Formal Institution Endorsement Letter URL
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={siteData.sponsorship?.letterUrl || ''}
-                                        onChange={e => updateSponsorship({ letterUrl: e.target.value })}
-                                        placeholder="https://... or /institution_letter.pdf"
-                                        className="w-full px-3 py-2 border-2 border-slate-900 font-mono text-xs focus:outline-none"
-                                    />
-                                </div>
-
-                                <div className="pt-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => showStatus('Sponsorship portal settings updated successfully!')}
-                                        className="press px-6 py-2.5 bg-sky-500 hover:bg-sky-400 text-white font-mono font-black text-xs uppercase border-2 border-slate-900 shadow-[2px_2px_0px_#0f172a] cursor-pointer"
-                                    >
-                                        Save Sponsorship Settings →
-                                    </button>
+                                {/* 3. Endorsement Letter */}
+                                <div className="p-4 bg-slate-50 border-2 border-slate-900 space-y-2">
+                                    <div className="flex items-center justify-between">
+                                        <label className="block text-xs font-mono font-black uppercase text-slate-800">
+                                            3. Formal Institution Endorsement & Credential Letter (PDF)
+                                        </label>
+                                        {siteData.sponsorship?.letterUrl && (
+                                            <a
+                                                href={siteData.sponsorship.letterUrl}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="text-[11px] font-mono font-black text-sky-600 hover:text-sky-800 underline"
+                                            >
+                                                Preview Document ↗
+                                            </a>
+                                        )}
+                                    </div>
+                                    <div className="flex flex-col sm:flex-row gap-2">
+                                        <input
+                                            type="text"
+                                            value={siteData.sponsorship?.letterUrl || ''}
+                                            onChange={e => updateSponsorship({ letterUrl: e.target.value })}
+                                            placeholder="Paste endorsement letter URL, or upload file below"
+                                            className="flex-1 px-3 py-2 border-2 border-slate-900 bg-white font-mono text-xs focus:outline-none"
+                                        />
+                                        <label className="press px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-mono font-black text-xs uppercase cursor-pointer flex items-center justify-center shrink-0">
+                                            <span>Upload Letter ↑</span>
+                                            <input
+                                                type="file"
+                                                accept=".pdf,.png,.jpg,.jpeg,.webp"
+                                                onChange={e => handleImageUpload(e, url => updateSponsorship({ letterUrl: url }), '/asterix/docs', 'institution_endorsement_letter')}
+                                                className="hidden"
+                                            />
+                                        </label>
+                                        {siteData.sponsorship?.letterUrl && (
+                                            <button
+                                                type="button"
+                                                onClick={() => updateSponsorship({ letterUrl: '' })}
+                                                className="press px-3 py-2 bg-rose-100 hover:bg-rose-200 border-2 border-slate-900 text-rose-800 font-mono font-black text-xs uppercase cursor-pointer shrink-0"
+                                                title="Reset to default credential document"
+                                            >
+                                                Reset
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
 
@@ -1354,6 +1453,10 @@ export default function AdminDashboard({ onExit }) {
                                 )}
                             </div>
                         </div>
+                    )}
+
+                    {activeTab === 'recruitment' && (
+                        <RecruitmentAdmin showStatus={showStatus} />
                     )}
 
                     {/* TAB 5: GALLERY & MEDIA */}

@@ -14,14 +14,14 @@ if (!fs.existsSync(uploadDir)) {
 const storage = multer.memoryStorage();
 
 const fileFilter = (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|webp|svg|gif/;
+    const allowedTypes = /jpeg|jpg|png|webp|svg|gif|pdf/;
     const ext = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    const mime = allowedTypes.test(file.mimetype);
+    const mime = allowedTypes.test(file.mimetype) || file.mimetype === 'application/pdf';
 
     if (ext || mime) {
         return cb(null, true);
     }
-    cb(new Error('Only image files (JPEG, JPG, PNG, WEBP, SVG, GIF) are allowed.'));
+    cb(new Error('Only image and document files (JPEG, JPG, PNG, WEBP, SVG, GIF, PDF) are allowed.'));
 };
 
 export const upload = multer({

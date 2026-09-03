@@ -14,6 +14,8 @@ import SubsystemLockedCard from './recruitment/SubsystemLockedCard';
 import {
     RECRUITMENT_RELEASE_DATE_STR,
     RECRUITMENT_RELEASE_MS,
+    HARDWARE_RELEASE_DATE_STR,
+    HARDWARE_RELEASE_MS,
     SUBSYSTEM_LEADS
 } from '../data/recruitmentProblemStatements';
 import { AUTH_SESSION_KEY } from '../context/WebsiteDataContext';
@@ -48,14 +50,28 @@ export default function RecruitmentPage({ onBack, onSelectSubsystem }) {
             return false;
         }
     });
-    const [isReleased, setIsReleased] = useState(() => Date.now() >= RECRUITMENT_RELEASE_MS);
+    const [isSoftwareReleased, setIsSoftwareReleased] = useState(() => Date.now() >= RECRUITMENT_RELEASE_MS);
+    const [isHardwareReleased, setIsHardwareReleased] = useState(() => Date.now() >= HARDWARE_RELEASE_MS);
 
     useEffect(() => {
-        if (isReleased) return;
+        if (isSoftwareReleased) return;
         const remaining = Math.max(10, RECRUITMENT_RELEASE_MS - Date.now());
-        const timer = setTimeout(() => setIsReleased(true), remaining);
+        const timer = setTimeout(() => setIsSoftwareReleased(true), remaining);
         return () => clearTimeout(timer);
-    }, [isReleased]);
+    }, [isSoftwareReleased]);
+
+    useEffect(() => {
+        if (isHardwareReleased) return;
+        const remaining = Math.max(10, HARDWARE_RELEASE_MS - Date.now());
+        const timer = setTimeout(() => setIsHardwareReleased(true), remaining);
+        return () => clearTimeout(timer);
+    }, [isHardwareReleased]);
+
+    const isTrackReleased = (trackId) => {
+        if (isAdmin) return true;
+        if (trackId === 'software-perception') return isSoftwareReleased;
+        return isHardwareReleased;
+    };
 
     useEffect(() => {
         window.scrollTo(0, 0);
@@ -123,16 +139,16 @@ export default function RecruitmentPage({ onBack, onSelectSubsystem }) {
             </header>
 
             {/* Admin Bypass Notice */}
-            {isAdmin && !isReleased && (
+            {isAdmin && (!isSoftwareReleased || !isHardwareReleased) && (
                 <div className="bg-amber-400 text-slate-900 border-b-4 border-slate-900 px-4 sm:px-8 py-2.5 flex items-center justify-between font-mono font-black text-xs uppercase shadow-sm">
                     <div className="flex items-center gap-2">
                         <span className="px-2 py-0.5 bg-slate-900 text-amber-300 border border-slate-900">
                             ADMIN PREVIEW MODE
                         </span>
-                        <span>Embargo lock bypassed • Full problem statements and Phase 2 unlocked for verification</span>
+                        <span>Embargo lock bypassed • Full problem statements, test syllabus, and team allocations unlocked for verification</span>
                     </div>
                     <span className="hidden sm:inline text-[11px] text-slate-800">
-                        (Public visitors see countdown until tomorrow 6:30 PM)
+                        (Public visitors see countdowns)
                     </span>
                 </div>
             )}
@@ -239,49 +255,58 @@ export default function RecruitmentPage({ onBack, onSelectSubsystem }) {
             {selectedTrack && (
                 <section className="py-12 sm:py-16 px-4 sm:px-8 bg-sky-50/60 border-y-4 border-slate-900">
                     <div className="max-w-6xl mx-auto">
-                        {(!isReleased && !isAdmin) ? (
+                        {!isTrackReleased(selectedTrack.id) ? (
                             selectedTrack.id === 'software-perception' ? (
                                 <SubsystemLockedCard
                                     title="Problem Statements Release Countdown"
                                     badge="SOFTWARE & PERCEPTION EMBARGOED"
                                     releaseDate={RECRUITMENT_RELEASE_DATE_STR}
-                                    description="The Vision-Based Object Detection and Sensor Fusion & Track Reconstruction challenge briefs, deliverables checklists, and Phase 1 submission guidelines are sealed under recruitment protocol. The full problem statements will unlock tomorrow at 6:30 PM IST."
+                                    unlockTimeLabel="UNLOCKS TODAY • 6:30 PM IST"
+                                    teaserTitle="// WHAT UNLOCKS AT 6:30 PM TODAY"
+                                    description="The Vision-Based Object Detection and Sensor Fusion & Track Reconstruction challenge briefs, deliverables checklists, duo team allocations, and Phase 1 submission guidelines are sealed under recruitment protocol. The full problem statements and team list will unlock today at 6:30 PM IST."
                                     teaserPoints={[
                                         'Problem 01: 2D Multi-Class Object Detection (ZED 2i + Jetson Orin NX)',
                                         'Problem 02: Sensor Fusion, Cone Filtering & Track Reconstruction',
+                                        'Team Allocations: Teams of 2 (Official Downloadable PDF)',
                                     ]}
-                                    onUnlock={() => setIsReleased(true)}
+                                    onUnlock={() => setIsSoftwareReleased(true)}
                                 />
                             ) : selectedTrack.id === 'powertrain' ? (
                                 <SubsystemLockedCard
                                     title="Test Details Release Countdown"
                                     badge="POWERTRAIN SUBSYSTEM EMBARGOED"
-                                    releaseDate={RECRUITMENT_RELEASE_DATE_STR}
-                                    description="The test details will be released tomorrow. It will be an open book test."
+                                    releaseDate={HARDWARE_RELEASE_DATE_STR}
+                                    unlockTimeLabel="UNLOCKS TOMORROW • 8:30 AM IST"
+                                    teaserTitle="// WHAT UNLOCKS AT 8:30 AM TOMORROW"
+                                    description="The Powertrain written test syllabus, guidelines, and reference criteria will be released tomorrow morning at 8:30 AM IST. It will be an open book test."
                                     teaserPoints={[
-                                        'Test details will be released tomorrow at 6:30 PM IST',
-                                        'Format: Open book test',
+                                        'Test details will be released tomorrow morning at 8:30 AM IST',
+                                        'Format: Open book test (11 Sept)',
                                     ]}
-                                    onUnlock={() => setIsReleased(true)}
+                                    onUnlock={() => setIsHardwareReleased(true)}
                                 />
                             ) : selectedTrack.id === 'mechanical' ? (
                                 <SubsystemLockedCard
                                     title="Problem Statements Release Countdown"
                                     badge="MECHANICAL SUBSYSTEM EMBARGOED"
-                                    releaseDate={RECRUITMENT_RELEASE_DATE_STR}
-                                    description="The Mechanical problem statements and team allocations will be released tomorrow at 6:30 PM IST."
+                                    releaseDate={HARDWARE_RELEASE_DATE_STR}
+                                    unlockTimeLabel="UNLOCKS TOMORROW • 8:30 AM IST"
+                                    teaserTitle="// WHAT UNLOCKS AT 8:30 AM TOMORROW"
+                                    description="The Mechanical problem statements and team allocations will be released tomorrow morning at 8:30 AM IST."
                                     teaserPoints={[
-                                        '3 Problem Statements',
+                                        '3 Problem Statements (Longitudinal & Lateral Control)',
                                         'Teams of 2 each',
                                     ]}
-                                    onUnlock={() => setIsReleased(true)}
+                                    onUnlock={() => setIsHardwareReleased(true)}
                                 />
                             ) : (
                                 <SubsystemLockedCard
                                     title="Recruitment Brief Release Countdown"
                                     badge="CHALLENGE EMBARGOED"
-                                    releaseDate={RECRUITMENT_RELEASE_DATE_STR}
-                                    onUnlock={() => setIsReleased(true)}
+                                    releaseDate={HARDWARE_RELEASE_DATE_STR}
+                                    unlockTimeLabel="UNLOCKS TOMORROW • 8:30 AM IST"
+                                    teaserTitle="// WHAT UNLOCKS AT 8:30 AM TOMORROW"
+                                    onUnlock={() => setIsHardwareReleased(true)}
                                 />
                             )
                         ) : selectedTrack.id === 'software-perception' ? (
