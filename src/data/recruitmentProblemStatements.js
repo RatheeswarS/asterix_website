@@ -12,7 +12,7 @@
 export const RECRUITMENT_RELEASE_DATE_STR = '2026-09-03T18:30:00+05:30';
 export const RECRUITMENT_RELEASE_MS = new Date(RECRUITMENT_RELEASE_DATE_STR).getTime();
 
-export const HARDWARE_RELEASE_DATE_STR = '2026-09-04T08:30:00+05:30';
+export const HARDWARE_RELEASE_DATE_STR = '2026-09-03T19:00:00+05:30';
 export const HARDWARE_RELEASE_MS = new Date(HARDWARE_RELEASE_DATE_STR).getTime();
 
 export const SUBSYSTEM_LEADS = {
@@ -372,8 +372,8 @@ export const POWERTRAIN_TEST_DATA = {
         {
             id: 'pt-release',
             label: 'Test Syllabus & Guidelines Release',
-            detail: 'Full 4-domain test topics, rules & cheat sheet specifications unlock tomorrow morning at 8:30 AM IST',
-            date: '2026-09-04T08:30:00+05:30',
+            detail: 'Full 4-domain test topics, rules & cheat sheet specifications unlock today at 7:00 PM IST',
+            date: '2026-09-03T19:00:00+05:30',
             opensAt: '2026-09-02T18:00:00+05:30',
         },
         {
@@ -381,7 +381,7 @@ export const POWERTRAIN_TEST_DATA = {
             label: 'Powertrain Recruitment Test',
             detail: 'Offline Written Test • 5:30 PM – 6:30 PM IST',
             date: '2026-09-11T17:30:00+05:30',
-            opensAt: '2026-09-04T08:30:00+05:30',
+            opensAt: '2026-09-03T19:00:00+05:30',
         },
         {
             id: 'pt-interview',
@@ -497,24 +497,24 @@ export const POWERTRAIN_TEST_DATA = {
 export const MECHANICAL_MYSTERY_DATA = {
     id: 'mechanical',
     name: 'Mechanical',
-    headline: 'CLASSIFIED • MECHANICAL DYNAMICS & CONTROL',
-    badge: 'CLASSIFIED DOSSIER',
-    blurb: 'Three problem statements. Longitudinal control and lateral control. Teams of 2. Evaluation criteria mysterious and not announced.',
+    headline: 'MECHANICAL PRESENTATION GUIDELINES & PROBLEM STATEMENTS',
+    badge: 'ROUND 1: PRESENTATION',
+    blurb: 'Evaluate technical understanding, research capability, and design approach towards converting our existing electric BAJA buggy into an autonomous vehicle.',
     lead: SUBSYSTEM_LEADS['mechanical'],
     timeline: [
         {
             id: 'mech-release',
-            label: 'Classified Problem Dossiers Release',
-            detail: '3 Problem statements & duo team allocations unlock tomorrow morning at 8:30 AM IST',
-            date: '2026-09-04T08:30:00+05:30',
+            label: 'Presentation Guidelines & Problem Statements Release',
+            detail: 'Round 1 presentation guidelines, BBW & SBW problem statements & duo teams unlock today at 7:00 PM IST',
+            date: '2026-09-03T19:00:00+05:30',
             opensAt: '2026-09-02T18:00:00+05:30',
         },
         {
             id: 'mech-deadline',
             label: 'Mechanical Submission Deadline',
-            detail: 'Duo solution proposals due on 16 September at 11:59 PM IST',
+            detail: 'Duo solution proposals & presentations due on 16 September at 11:59 PM IST',
             date: '2026-09-16T23:59:00+05:30',
-            opensAt: '2026-09-04T08:30:00+05:30',
+            opensAt: '2026-09-03T19:00:00+05:30',
         },
         {
             id: 'mech-results',
@@ -526,51 +526,131 @@ export const MECHANICAL_MYSTERY_DATA = {
     ],
     teamFormat: {
         title: 'Team Formation: Teams of 2',
-        badge: 'TEAMS OF 2',
-        desc: 'Everyone will be split into teams of 2.'
+        badge: 'DUO TEAMS ALLOCATED',
+        desc: 'All participants will be collaborating in allocated teams of two to research, engineer, and present their proposed conversion systems.',
+        pdfUrl: 'https://ik.imagekit.io/kitzwb4be/asterix/recruitment/mechanical_teams.pdf',
+        pdfLocalUrl: '/recruitment/mechanical_teams.pdf',
+        guidelinesPdfUrl: 'https://ik.imagekit.io/kitzwb4be/asterix/recruitment/mechanical_presentation_guidelines.pdf',
+        guidelinesPdfLocalUrl: '/recruitment/mechanical_presentation_guidelines.pdf',
+        teams: [
+            { group: 'Team 01', member1: 'Paul Sibi', member2: 'R K Trilokeshvar' },
+            { group: 'Team 02', member1: 'Raghavan', member2: 'S Muhammad Shakkeel' },
+            { group: 'Team 03', member1: 'Gokul Prashath', member2: 'D. Raghul' },
+            { group: 'Team 04', member1: 'Pritheesh C', member2: 'M. Kowshika' },
+            { group: 'Team 05', member1: 'Vishvan', member2: 'Kavin V' },
+            { group: 'Team 06', member1: 'Ram Nivash', member2: 'Dhivagar' },
+            { group: 'Team 07', member1: 'Sairam', member2: 'Sudharshan C' },
+            { group: 'Team 08', member1: 'Thamaraikannan', member2: 'Nivasini' },
+            { group: 'Team 09', member1: 'Ramesh', member2: 'Subashri' },
+            { group: 'Team 10', member1: 'Dharshan', member2: 'Sanjay Y' },
+            { group: 'Team 11', member1: 'Bharath Sri Ram', member2: 'Priyan LM' }
+        ]
     },
-    evaluationNotice: {
-        status: 'MYSTERIOUS // NOT ANNOUNCED',
-        badge: 'MYSTERY EVALUATION',
-        title: 'Evaluation Criteria: Mysterious & Not Announced',
-        desc: 'Evaluation criteria for mechanical would be mysterious and not announced.'
-    },
+    generalInstructions: [
+        {
+            num: '01',
+            title: 'Understand the Existing Vehicle Systems',
+            points: [
+                'Study the current electric buggy design used in the SAE eBAJA competition.',
+                'Gain a clear understanding of the hydraulic braking system and throttle control design implemented in the vehicle.'
+            ]
+        },
+        {
+            num: '02',
+            title: 'Incorporate Safety and Reliability Principles',
+            points: [
+                'Always incorporate how manual override works for your proposed design.',
+                'Design your proposed subsystem with redundant sensors and fail-safe mechanisms to ensure reliable operation.',
+                'Refer to relevant safety standards and guidelines (ISO, IATF, SAE, etc.) applicable to your subsystem.'
+            ]
+        },
+        {
+            num: '03',
+            title: 'Consider Environmental and Protection Factors',
+            points: [
+                'Ensure proper IP (Ingress Protection) rating when selecting electronic components.',
+                'Include failsafe measures to handle system or power failures safely.'
+            ]
+        },
+        {
+            num: '04',
+            title: 'Demonstrate Research and Design Thinking',
+            points: [
+                'Show evidence of independent research, design reasoning, and practical feasibility.',
+                'Use sketches, simulations, or block diagrams to support your concept.',
+                'BONUS: Show your interest by doing research on new developments like Regenerative braking, Adaptive Cruise Control, ADAS.'
+            ]
+        },
+        {
+            num: '05',
+            title: 'Simulation & Design Evaluation Criteria',
+            points: [
+                'The simulation and design wherever applicable on top of critical thinking and logical reasoning will be considered as an important criterion for evaluation.'
+            ]
+        }
+    ],
     challenges: [
         {
-            id: 'mech-ps-01',
+            id: 'ps1',
             number: '01',
-            codename: 'PROBLEM STATEMENT 01',
-            title: 'Problem Statement 01',
-            sectionLongitudinal: {
-                title: 'Section 01: Longitudinal Control'
-            },
-            sectionLateral: {
-                title: 'Section 02: Lateral Control'
-            }
+            title: 'PS1: Actuator Selection',
+            tagline: 'Actuator sizing, response time analysis, and mounting architecture for autonomous vehicle conversion.',
+            parts: [
+                {
+                    partLabel: 'Part A — Brake-by-Wire (BBW)',
+                    target: 'Design a simple actuator system to generate 2000 N force at the brake master cylinder with a bore diameter (19.05mm).',
+                    checklist: [
+                        'Explain how you will control the actuator.',
+                        'Show how and where you will mount the actuator on the Baja buggy.',
+                        'The mechanism should be capable of generating 2000N input force at the brake master cylinder.',
+                        'Required braking force and actuator torque/speed calculations, response time analysis.',
+                        'Comparison of different mechanisms (including the different types of motors, actuator drive mechanism, and feedback control).'
+                    ]
+                },
+                {
+                    partLabel: 'Part B — Steer-by-Wire (SBW)',
+                    target: 'Design a motorized steering system capable of providing 6–7 Nm torque at the steering column.',
+                    checklist: [
+                        'Select a suitable motor and reduction mechanism.',
+                        'Explain how you will control left/right steering.',
+                        'Add a method to limit steering angle.',
+                        'Show how and where you will mount the system on the Baja buggy.',
+                        'Give a method steering angle from 30 degree to 35 degree.'
+                    ]
+                }
+            ]
         },
         {
-            id: 'mech-ps-02',
+            id: 'ps2',
             number: '02',
-            codename: 'PROBLEM STATEMENT 02',
-            title: 'Problem Statement 02',
-            sectionLongitudinal: {
-                title: 'Section 01: Longitudinal Control'
-            },
-            sectionLateral: {
-                title: 'Section 02: Lateral Control'
-            }
-        },
-        {
-            id: 'mech-ps-03',
-            number: '03',
-            codename: 'PROBLEM STATEMENT 03',
-            title: 'Problem Statement 03',
-            sectionLongitudinal: {
-                title: 'Section 01: Longitudinal Control'
-            },
-            sectionLateral: {
-                title: 'Section 02: Lateral Control'
-            }
+            title: 'PS2: Manual Override And Sensors Integration',
+            tagline: 'Driver takeover disengagement mechanisms, sensor packages, and electronic signal management.',
+            parts: [
+                {
+                    partLabel: 'Part A — Brake-by-Wire (BBW)',
+                    target: 'Design a BBW system that allows the driver to brake normally if the actuator fails and a basic sensor system for autonomous braking.',
+                    checklist: [
+                        'Suggest a mechanical/electrical disengagement mechanism.',
+                        'Explain how manual braking is restored.',
+                        'Show where the mechanism will be mounted on the Baja.',
+                        'Select suitable sensors for brake pressure, wheel speed and vehicle deceleration.',
+                        'Explain how the controller uses these signals.'
+                    ]
+                },
+                {
+                    partLabel: 'Part B — Steer-by-Wire (SBW)',
+                    target: 'Design an SBW system that allows the driver to take manual control immediately when autonomous steering is switched off.',
+                    checklist: [
+                        'Select a suitable disengagement mechanism.',
+                        'Explain how the motor will be isolated.',
+                        'Show how the mechanism will be mounted to the steering column/chassis.',
+                        'Give a method steering angle from 30 degree to 35 degree.',
+                        'Explain how will you engage the motor and steering column.',
+                        'Select a suitable steering-angle sensor/encoder.',
+                        'Explain how steering position will be measured.'
+                    ]
+                }
+            ]
         }
     ]
 };

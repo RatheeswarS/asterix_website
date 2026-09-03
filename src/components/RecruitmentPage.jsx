@@ -276,26 +276,27 @@ export default function RecruitmentPage({ onBack, onSelectSubsystem }) {
                                     title="Test Details Release Countdown"
                                     badge="POWERTRAIN SUBSYSTEM EMBARGOED"
                                     releaseDate={HARDWARE_RELEASE_DATE_STR}
-                                    unlockTimeLabel="UNLOCKS TOMORROW • 8:30 AM IST"
-                                    teaserTitle="// WHAT UNLOCKS AT 8:30 AM TOMORROW"
-                                    description="The Powertrain written test syllabus, guidelines, and reference criteria will be released tomorrow morning at 8:30 AM IST. It will be an open book test."
+                                    unlockTimeLabel="UNLOCKS TODAY • 7:00 PM IST"
+                                    teaserTitle="// WHAT UNLOCKS AT 7:00 PM TODAY"
+                                    description="The Powertrain written test syllabus, guidelines, and reference criteria will be released today at 7:00 PM IST. It will be an open book test."
                                     teaserPoints={[
-                                        'Test details will be released tomorrow morning at 8:30 AM IST',
+                                        'Test details will be released today at 7:00 PM IST',
                                         'Format: Open book test (11 Sept)',
                                     ]}
                                     onUnlock={() => setIsHardwareReleased(true)}
                                 />
                             ) : selectedTrack.id === 'mechanical' ? (
                                 <SubsystemLockedCard
-                                    title="Problem Statements Release Countdown"
+                                    title="Presentation Guidelines & Problem Statements Release Countdown"
                                     badge="MECHANICAL SUBSYSTEM EMBARGOED"
                                     releaseDate={HARDWARE_RELEASE_DATE_STR}
-                                    unlockTimeLabel="UNLOCKS TOMORROW • 8:30 AM IST"
-                                    teaserTitle="// WHAT UNLOCKS AT 8:30 AM TOMORROW"
-                                    description="The Mechanical problem statements and team allocations will be released tomorrow morning at 8:30 AM IST."
+                                    unlockTimeLabel="UNLOCKS TODAY • 7:00 PM IST"
+                                    teaserTitle="// WHAT UNLOCKS AT 7:00 PM TODAY"
+                                    description="Round 1 presentation guidelines, BBW & SBW problem statements, and 11 duo team allocations will unlock today at 7:00 PM IST."
                                     teaserPoints={[
-                                        '3 Problem Statements (Longitudinal & Lateral Control)',
-                                        'Teams of 2 each',
+                                        'PS1: Actuator Selection (Brake-by-Wire & Steer-by-Wire)',
+                                        'PS2: Manual Override & Sensors Integration',
+                                        '11 Allocated Duo Teams (Official Downloadable PDF)',
                                     ]}
                                     onUnlock={() => setIsHardwareReleased(true)}
                                 />
@@ -304,8 +305,8 @@ export default function RecruitmentPage({ onBack, onSelectSubsystem }) {
                                     title="Recruitment Brief Release Countdown"
                                     badge="CHALLENGE EMBARGOED"
                                     releaseDate={HARDWARE_RELEASE_DATE_STR}
-                                    unlockTimeLabel="UNLOCKS TOMORROW • 8:30 AM IST"
-                                    teaserTitle="// WHAT UNLOCKS AT 8:30 AM TOMORROW"
+                                    unlockTimeLabel="UNLOCKS TODAY • 7:00 PM IST"
+                                    teaserTitle="// WHAT UNLOCKS AT 7:00 PM TODAY"
                                     onUnlock={() => setIsHardwareReleased(true)}
                                 />
                             )
