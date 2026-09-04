@@ -100,7 +100,9 @@ export default function SubmissionsAdmin({ showStatus }) {
                 sub.group.toLowerCase().includes(q) ||
                 sub.submitterName.toLowerCase().includes(q) ||
                 sub.submitterPhone.includes(q) ||
+                (sub.problemStatement && sub.problemStatement.toLowerCase().includes(q)) ||
                 (sub.partnerName && sub.partnerName.toLowerCase().includes(q)) ||
+                (sub.githubUrl && sub.githubUrl.toLowerCase().includes(q)) ||
                 sub.driveUrl.toLowerCase().includes(q)
             );
         });
@@ -127,10 +129,12 @@ export default function SubmissionsAdmin({ showStatus }) {
             'Subsystem',
             'Cohort',
             'Group',
+            'Problem Statement',
             'Submitter Name',
             'Submitter Phone',
             'Partner Name',
             'Google Drive Link',
+            'GitHub Link',
             'Notes',
             'Submitted At (IST)',
             'Submission ID'
@@ -140,10 +144,12 @@ export default function SubmissionsAdmin({ showStatus }) {
             `"${s.subsystem.toUpperCase()}"`,
             `"${s.cohort}"`,
             `"${s.group}"`,
+            `"${s.problemStatement ? s.problemStatement.toUpperCase() : 'PS1'}"`,
             `"${s.submitterName}"`,
             `"${s.submitterPhone}"`,
             `"${s.partnerName || ''}"`,
             `"${s.driveUrl}"`,
+            `"${s.githubUrl || ''}"`,
             `"${(s.notes || '').replace(/"/g, '""')}"`,
             `"${new Date(s.createdAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}"`,
             `"${s._id}"`
@@ -163,10 +169,10 @@ export default function SubmissionsAdmin({ showStatus }) {
     const handleCopyAllLinks = () => {
         if (filteredSubmissions.length === 0) return;
         const text = filteredSubmissions
-            .map((s) => `${s.subsystem.toUpperCase()} - ${s.group} (${s.submitterName}): ${s.driveUrl}`)
+            .map((s) => `${s.subsystem.toUpperCase()} [${(s.problemStatement || 'PS1').toUpperCase()}] - ${s.group} (${s.submitterName}): Drive: ${s.driveUrl}${s.githubUrl ? ` | GitHub: ${s.githubUrl}` : ''}`)
             .join('\n');
         navigator.clipboard?.writeText?.(text);
-        if (showStatus) showStatus(`✓ Copied ${filteredSubmissions.length} Drive links to clipboard!`);
+        if (showStatus) showStatus(`✓ Copied ${filteredSubmissions.length} submission links to clipboard!`);
     };
 
     return (
@@ -353,9 +359,16 @@ export default function SubmissionsAdmin({ showStatus }) {
                                                 }`}
                                             >
                                                 <td className="p-3 border-r border-slate-200">
-                                                    <span className="px-2 py-0.5 bg-amber-200 border border-slate-900 font-mono text-[10px] font-black uppercase block w-fit mb-1">
-                                                        {sub.subsystem}
-                                                    </span>
+                                                    <div className="flex flex-wrap items-center gap-1.5 mb-1">
+                                                        <span className="px-2 py-0.5 bg-amber-200 border border-slate-900 font-mono text-[10px] font-black uppercase block w-fit">
+                                                            {sub.subsystem}
+                                                        </span>
+                                                        {sub.problemStatement && (
+                                                            <span className="px-1.5 py-0.5 bg-sky-200 border border-slate-900 font-mono text-[10px] font-black uppercase block w-fit">
+                                                                {sub.problemStatement.toUpperCase()}
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                     <strong className="text-slate-900 block font-mono text-xs">{sub.group}</strong>
                                                     {sub.cohort && sub.cohort !== 'General' && (
                                                         <span className="text-[10px] font-bold text-slate-500 font-mono">
@@ -389,7 +402,7 @@ export default function SubmissionsAdmin({ showStatus }) {
                                                     </a>
                                                 </td>
 
-                                                <td className="p-3 border-r border-slate-200 max-w-xs truncate">
+                                                <td className="p-3 border-r border-slate-200 max-w-xs space-y-1.5">
                                                     <div className="flex items-center gap-2">
                                                         <a
                                                             href={sub.driveUrl}
@@ -404,6 +417,22 @@ export default function SubmissionsAdmin({ showStatus }) {
                                                             {sub.driveUrl}
                                                         </span>
                                                     </div>
+                                                    {sub.githubUrl && (
+                                                        <div className="flex items-center gap-2">
+                                                            <a
+                                                                href={sub.githubUrl}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="press px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-amber-300 font-mono text-[11px] font-black uppercase flex items-center gap-1.5 shadow-[2px_2px_0px_#f59e0b] shrink-0"
+                                                            >
+                                                                <span>🐙 GitHub</span>
+                                                                <span>↗</span>
+                                                            </a>
+                                                            <span className="text-[11px] text-slate-500 truncate select-all" title={sub.githubUrl}>
+                                                                {sub.githubUrl}
+                                                            </span>
+                                                        </div>
+                                                    )}
                                                 </td>
 
                                                 <td className="p-3 border-r border-slate-200 font-mono text-slate-700 whitespace-nowrap">
@@ -457,6 +486,11 @@ export default function SubmissionsAdmin({ showStatus }) {
                                                                         <span className="px-1.5 py-0.5 bg-slate-900 text-white text-[9px] font-black uppercase">
                                                                             Version #{arr.length - hIdx}
                                                                         </span>
+                                                                        {h.problemStatement && (
+                                                                            <span className="px-1.5 py-0.5 bg-sky-100 text-sky-800 border border-sky-300 text-[9px] font-black uppercase">
+                                                                                {h.problemStatement.toUpperCase()}
+                                                                            </span>
+                                                                        )}
                                                                         <span>
                                                                             <strong>{h.submitterName}</strong> ({h.submitterPhone})
                                                                         </span>
@@ -467,7 +501,7 @@ export default function SubmissionsAdmin({ showStatus }) {
                                                                         )}
                                                                     </div>
 
-                                                                    <div className="flex items-center gap-3">
+                                                                    <div className="flex items-center gap-2">
                                                                         <span className="text-slate-500 text-[10px]">
                                                                             {new Date(h.createdAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}
                                                                         </span>
@@ -477,8 +511,18 @@ export default function SubmissionsAdmin({ showStatus }) {
                                                                             rel="noopener noreferrer"
                                                                             className="px-2 py-0.5 bg-sky-600 hover:bg-sky-700 text-white font-bold text-[10px] uppercase"
                                                                         >
-                                                                            Open Drive ↗
+                                                                            Drive ↗
                                                                         </a>
+                                                                        {h.githubUrl && (
+                                                                            <a
+                                                                                href={h.githubUrl}
+                                                                                target="_blank"
+                                                                                rel="noopener noreferrer"
+                                                                                className="px-2 py-0.5 bg-slate-900 hover:bg-slate-800 text-amber-300 font-bold text-[10px] uppercase"
+                                                                            >
+                                                                                GitHub ↗
+                                                                            </a>
+                                                                        )}
                                                                     </div>
                                                                 </div>
                                                             ))}

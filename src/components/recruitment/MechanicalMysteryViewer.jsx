@@ -372,6 +372,12 @@ export default function MechanicalMysteryViewer() {
                         <li className="flex items-start gap-2">
                             <span className="text-sky-600 font-black mt-0.5">✦</span>
                             <span>
+                                <strong>Final Submission Format (PPT / PDF):</strong> For both Problem Statement 1 and Problem Statement 2, your team&apos;s primary final deliverable is a <strong>Technical Presentation (PPT / PDF)</strong> covering system design, engineering calculations, mounting locations, safety redundancy, and manual override mechanisms.
+                            </span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                            <span className="text-sky-600 font-black mt-0.5">✦</span>
+                            <span>
                                 <strong>Google Drive Folder:</strong> Each of the required presentation slides, engineering calculation sheets, CAD / simulation files, and mechanism block diagrams must be organized inside a single Google Drive folder created by your team.
                             </span>
                         </li>
@@ -393,9 +399,6 @@ export default function MechanicalMysteryViewer() {
                         <div>
                             <span className="font-mono text-xs font-bold text-slate-600 block">
                                 Portal Status: <strong className="text-emerald-700 uppercase">● LIVE &amp; ACCEPTING SUBMISSIONS</strong>
-                            </span>
-                            <span className="font-mono text-[11px] text-slate-500">
-                                Protected by immutable append-only version logging
                             </span>
                         </div>
                         <a

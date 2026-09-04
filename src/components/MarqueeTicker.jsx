@@ -15,8 +15,8 @@ export default function MarqueeTicker() {
     return (
         <div className="marquee-hold w-full overflow-hidden bg-slate-900 border-y-4 border-slate-900 select-none relative z-20">
             
-            {/* Top Marquee Ribbon (Sky Blue Background - Moving Left) */}
-            <div data-assemble="left" className="bg-sky-500 py-3 border-b-2 border-slate-900 flex overflow-hidden">
+            {/* Top Marquee Ribbon (Sky Blue Background - Moving Left with Scroll Counter-Parallax) */}
+            <div data-assemble="left" data-parallax="counter-x-left" className="bg-sky-500 py-3 border-b-2 border-slate-900 flex overflow-hidden will-change-transform">
                 <div className="animate-marquee-left text-white font-black text-sm sm:text-base tracking-widest uppercase">
                     {[...items, ...items].map((text, idx) => (
                         <div key={idx} className="flex items-center gap-8 pr-8 whitespace-nowrap">
@@ -27,8 +27,8 @@ export default function MarqueeTicker() {
                 </div>
             </div>
 
-            {/* Bottom Marquee Ribbon (Slate Black Background - Moving Right) */}
-            <div data-assemble="right" className="bg-slate-900 py-3 flex overflow-hidden">
+            {/* Bottom Marquee Ribbon (Slate Black Background - Moving Right with Scroll Counter-Parallax) */}
+            <div data-assemble="right" data-parallax="counter-x-right" className="bg-slate-900 py-3 flex overflow-hidden will-change-transform">
                 <div className="animate-marquee-right text-sky-400 font-black text-sm sm:text-base tracking-widest uppercase">
                     {[...items, ...items].map((text, idx) => (
                         <div key={idx} className="flex items-center gap-8 pr-8 whitespace-nowrap">

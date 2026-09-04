@@ -29,14 +29,30 @@ export default function OurStoryCurvedWave({ onOpenRecruitment }) {
     return (
         <section id="story" className="py-28 px-4 sm:px-8 bg-slate-900 text-white border-t-4 border-slate-900 relative overflow-hidden z-10 select-none">
 
-            {/* Animated SVG Sinusoidal Wave Text Path (Cyberbites Exact Signature Effect) */}
-            {/* The text runs along a path far wider than the viewBox, so it is
-                always cut at the frame edge -- mid-word, which reads as broken
-                rather than continuous on a narrow screen. Fading both edges
-                turns the cut into a ribbon running off into the margin. */}
+            {/* Background Parallax Watermark (Option A: Slow layer) */}
+            <div
+                data-parallax="slow"
+                className="absolute right-4 sm:right-10 top-10 text-[6rem] sm:text-[11rem] md:text-[13rem] font-black text-white/[0.03] select-none pointer-events-none font-mono leading-none z-0 will-change-transform"
+                aria-hidden="true"
+            >
+                // 05 ORIGIN
+            </div>
+
+            {/* Floating Kinetic Decal (Option D) */}
+            <div
+                data-parallax="sticker"
+                data-parallax-rotate="-5"
+                className="hidden lg:flex absolute left-6 sm:left-12 top-12 z-20 bg-yellow-400 text-slate-950 border-3 border-slate-900 shadow-[5px_5px_0px_#0284c7] rounded-lg px-3 py-1.5 font-mono font-black text-[11px] uppercase tracking-wider pointer-events-none will-change-transform"
+            >
+                <span>● FOUNDING LOGS</span>
+            </div>
+
+            {/* Animated SVG Sinusoidal Wave Text Path with Floating Parallax */}
             <div
                 data-assemble="down"
-                className="w-full overflow-hidden opacity-90 mb-14
+                data-parallax="fast"
+                data-parallax-speed="0.12"
+                className="w-full overflow-hidden opacity-90 mb-14 will-change-transform
                            [mask-image:linear-gradient(to_right,transparent_0%,#000_12%,#000_88%,transparent_100%)]
                            [-webkit-mask-image:linear-gradient(to_right,transparent_0%,#000_12%,#000_88%,transparent_100%)]"
             >
@@ -49,9 +65,6 @@ export default function OurStoryCurvedWave({ onOpenRecruitment }) {
                     <text className="font-black text-2xl sm:text-3xl tracking-widest fill-sky-400 uppercase font-mono">
                         <textPath href="#storyCurve" startOffset="0%">
                             OUR STORY ✦ FROM TRAINING PROGRAM TO CHENNAI ✦ SAEINDIA a-BAJA 2026 ✦ THE FIRST DRAFT ✦ OUR STORY ✦ FROM TRAINING PROGRAM TO CHENNAI ✦
-                            {/* A one-way 0% -> -100% sweep teleports back to
-                                the start on every repeat. Sweeping out and
-                                back with eased turnarounds never snaps. */}
                             <animate
                                 attributeName="startOffset"
                                 values="0%;-34%;0%"
@@ -66,10 +79,10 @@ export default function OurStoryCurvedWave({ onOpenRecruitment }) {
                 </svg>
             </div>
 
-            <div className="max-w-4xl mx-auto">
+            <div className="max-w-4xl mx-auto relative z-10">
 
-                {/* Main Story Box (Essay Format) */}
-                <div data-assemble="card" className="bg-white text-slate-900 border-4 border-slate-900 shadow-[12px_12px_0px_#0284c7] p-6 sm:p-12 md:p-14 relative">
+                {/* Main Story Box (Essay Format) with Subtle Elevation Parallax */}
+                <div data-assemble="card" data-parallax="fast" data-parallax-speed="0.05" className="bg-white text-slate-900 border-4 border-slate-900 shadow-[12px_12px_0px_#0284c7] p-6 sm:p-12 md:p-14 relative will-change-transform">
 
                     {/* Section Header */}
                     <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 mb-8 border-b-3 border-slate-900 pb-6">

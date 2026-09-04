@@ -4,7 +4,7 @@ import TextDock, { DockTextItem } from './Dock';
 import { useWebsiteData } from '../context/WebsiteDataContext';
 import Icon from './Icon';
 
-export default function CyberNavbar({ onSelectSubsystem, isDetailPage, onBackToHome, onOpenSponsor, onOpenRecruitment }) {
+export default function CyberNavbar({ onSelectSubsystem, isDetailPage, currentPage = 'home', onBackToHome, onOpenSponsor, onOpenRecruitment }) {
     const { siteData } = useWebsiteData();
     const subsystems = siteData.subsystems;
     const { contact } = siteData;
@@ -177,19 +177,21 @@ export default function CyberNavbar({ onSelectSubsystem, isDetailPage, onBackToH
                                         )}
                                     </div>
 
-                                    {isDetailPage ? (
+                                    {isDetailPage && (
                                         <DockTextItem
                                             mouseX={mouseX}
                                             onClick={onBackToHome}
-                                            className={`border-slate-900 bg-sky-100 text-slate-900 hover:bg-sky-500 hover:text-white ${
+                                            className={`press flex items-center gap-1 border-slate-900 bg-amber-300 text-slate-900 hover:bg-amber-400 font-bold ${
                                                 isScrolled
-                                                    ? 'px-2.5 py-1 text-[11px] rounded-md border font-bold'
-                                                    : 'px-3.5 py-1.5 text-xs border-2 shadow-[2px_2px_0px_#0f172a]'
+                                                    ? 'px-2.5 py-1 text-[11px] rounded-md border shadow-[2px_2px_0px_#0f172a]'
+                                                    : 'px-3 py-1.5 text-xs border-2 shadow-[2px_2px_0px_#0f172a]'
                                             }`}
                                         >
-                                            <span>← Overview</span>
+                                            <span>← Home</span>
                                         </DockTextItem>
-                                    ) : isScrolled ? (
+                                    )}
+
+                                    {isScrolled ? (
                                         /* Scrolled: Compact Merged Explore / Sections Dropdown */
                                         <div className="relative">
                                             <DockTextItem
@@ -373,14 +375,18 @@ export default function CyberNavbar({ onSelectSubsystem, isDetailPage, onBackToH
                                         )}
                                     </div>
 
-                                    {/* Action Buttons: In scrolled state, show a clean combined or prominent CTA */}
+                                    {/* Action Buttons: Join */}
                                     <DockTextItem
                                         mouseX={mouseX}
                                         onClick={() => {
                                             if (onOpenRecruitment) onOpenRecruitment();
                                             else window.location.hash = '#join';
                                         }}
-                                        className={`border-slate-900 bg-amber-300 text-slate-900 hover:bg-amber-400 flex items-center gap-1 cursor-pointer ${
+                                        className={`border-slate-900 flex items-center gap-1 cursor-pointer ${
+                                            currentPage === 'recruitment' || currentPage === 'submit'
+                                                ? 'bg-amber-400 font-black shadow-[inset_2px_2px_0px_#000] text-slate-950'
+                                                : 'bg-amber-300 text-slate-900 hover:bg-amber-400'
+                                        } ${
                                             isScrolled
                                                 ? 'px-2.5 py-1 text-[11px] rounded-md border font-bold hover:shadow-[2px_2px_0px_#0f172a]'
                                                 : 'px-3 py-1.5 text-xs border-2 shadow-[2px_2px_0px_#0f172a] hover:shadow-[3px_3px_0px_#0f172a]'
@@ -397,7 +403,11 @@ export default function CyberNavbar({ onSelectSubsystem, isDetailPage, onBackToH
                                             if (onOpenSponsor) onOpenSponsor();
                                             else window.location.hash = '#sponsor';
                                         }}
-                                        className={`border-slate-900 bg-sky-500 text-white hover:bg-sky-400 cursor-pointer ${
+                                        className={`border-slate-900 cursor-pointer ${
+                                            currentPage === 'sponsor'
+                                                ? 'bg-sky-600 text-white font-black shadow-[inset_2px_2px_0px_#000]'
+                                                : 'bg-sky-500 text-white hover:bg-sky-400'
+                                        } ${
                                             isScrolled
                                                 ? 'px-2.5 py-1 text-[11px] rounded-md border font-bold hover:shadow-[2px_2px_0px_#0f172a]'
                                                 : 'px-3.5 py-1.5 text-xs border-2 shadow-[2px_2px_0px_#0f172a] hover:shadow-[3px_3px_0px_#0f172a]'

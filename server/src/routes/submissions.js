@@ -28,7 +28,9 @@ router.post('/', async (req, res) => {
             submitterPhone,
             partnerName,
             partnerDept,
+            problemStatement = 'ps1',
             driveUrl,
+            githubUrl,
             notes
         } = req.body;
 
@@ -44,6 +46,21 @@ router.post('/', async (req, res) => {
             return res.status(400).json({
                 error: 'Invalid link: Please provide a valid Google Drive link (containing drive.google.com).'
             });
+        }
+
+        const cleanGithub = String(githubUrl || '').trim();
+        // For Software Problem Statement 2, GitHub repository link is required
+        if (subsystem.toLowerCase().trim() === 'software' && String(problemStatement).toLowerCase().includes('ps2')) {
+            if (!cleanGithub) {
+                return res.status(400).json({
+                    error: 'GitHub link required: Software Problem Statement 2 requires both a Google Drive link and a GitHub repository link.'
+                });
+            }
+            if (!cleanGithub.toLowerCase().includes('github.com')) {
+                return res.status(400).json({
+                    error: 'Invalid GitHub URL: Please provide a valid repository link (containing github.com).'
+                });
+            }
         }
 
         const normalizedPhone = normalizePhone(submitterPhone);
@@ -67,11 +84,13 @@ router.post('/', async (req, res) => {
             phase: String(phase).trim(),
             cohort: String(cohort).trim(),
             group: String(group).trim(),
+            problemStatement: String(problemStatement || 'ps1').trim(),
             submitterName: String(submitterName).trim(),
             submitterPhone: normalizedPhone,
             partnerName: String(partnerName || '').trim(),
             partnerDept: String(partnerDept || '').trim(),
             driveUrl: cleanUrl,
+            githubUrl: cleanGithub,
             notes: String(notes || '').trim(),
             ip: clientIp,
             userAgent,

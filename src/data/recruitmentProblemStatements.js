@@ -291,11 +291,8 @@ export const SOFTWARE_PERCEPTION_DATA = {
                         { name: 'Source Code', format: 'Complete Runnable Script/Package', description: 'Clean, runnable implementation ingesting telemetry and sensor logs and producing the cone map.' },
                         { name: 'Cleaned Cone Map', format: '2D Plot (PNG/PDF)', description: 'Plot of reconstructed track in global coordinates, with accepted cones marked and vehicle trajectory overlaid.' },
                         { name: 'Cone List Output', format: 'Structured File (CSV/JSON)', description: 'Listing of every accepted cone with its estimated global (x, y) coordinates.' },
-                        { name: 'Technical Write-up', format: 'Short Report (PDF)', description: 'Explaining pipeline: coordinate transformations, time alignment, noise reduction, and ghost rejection.' },
                         { name: 'Pipeline Diagram', format: 'Diagram (PNG/SVG)', description: 'Clear visualization showing data flow from raw logs → transformed detections → filtered → clustered → final map.' },
-                        { name: 'Method Comparison', format: 'Comparative Analysis', description: 'Comparison of association and clustering methods considered (DBSCAN vs Nearest Neighbor vs Gating).' },
-                        { name: 'Validation & Ablations', format: 'Report Section / Plots', description: 'Proof of correctness: sanity checks, sensitivity to thresholds, and ablations (e.g. filter disabled).' },
-                        { name: 'References', format: 'Citations', description: 'Robotics papers, SLAM textbooks, sensor fusion tutorials, and libraries used.' }
+                        { name: 'Comparative Analysis, Validation & References Report', format: 'Technical Report (PDF)', description: 'Comprehensive report covering: (1) Method Comparison — comparison of association and clustering methods considered (DBSCAN vs Nearest Neighbor vs Gating); (2) Validation & Ablations — proof of correctness, sanity checks, sensitivity to thresholds, and ablations (e.g. filter disabled); and (3) References — citations of robotics papers, SLAM textbooks, sensor fusion tutorials, and libraries used.' }
                     ],
                     suggestedStructure: [
                         '1. Problem Understanding',
@@ -544,7 +541,8 @@ export const MECHANICAL_MYSTERY_DATA = {
     teamFormat: {
         title: 'Team Formation: Teams of 2',
         badge: 'DUO TEAMS ALLOCATED',
-        desc: 'All participants will be collaborating in allocated teams of two to research, engineer, and present their proposed conversion systems.',
+        desc: 'All participants will be collaborating in allocated teams of two to research, engineer, and present their proposed conversion systems. For both problem statements, the final submission is a Technical Presentation (PPT / PDF).',
+        finalSubmissionFormat: 'Technical Presentation (PPT / PDF)',
         pdfUrl: 'https://ik.imagekit.io/kitzwb4be/asterix/recruitment/mechanical_teams.pdf',
         pdfLocalUrl: '/recruitment/mechanical_teams.pdf',
         guidelinesPdfUrl: 'https://ik.imagekit.io/kitzwb4be/asterix/recruitment/mechanical_presentation_guidelines.pdf',
@@ -670,6 +668,14 @@ export const MECHANICAL_MYSTERY_DATA = {
             points: [
                 'The simulation and design wherever applicable on top of critical thinking and logical reasoning will be considered as an important criterion for evaluation.'
             ]
+        },
+        {
+            num: '06',
+            title: 'Final Submission Format: Technical Presentation (PPT / PDF)',
+            points: [
+                'For both Problem Statement 1 (Actuator Selection) and Problem Statement 2 (Manual Override & Sensors Integration), the primary final deliverable is a Technical Presentation (PPT / PDF).',
+                'Ensure your presentation includes your team members, problem formulation, calculations, selection trade-offs, CAD/mounting renders, and safety fail-safes.'
+            ]
         }
     ],
     challenges: [
@@ -677,6 +683,7 @@ export const MECHANICAL_MYSTERY_DATA = {
             id: 'ps1',
             number: '01',
             title: 'PS1: Actuator Selection',
+            finalSubmissionFormat: 'Technical Presentation (PPT / PDF)',
             tagline: 'Actuator sizing, response time analysis, circular trajectory accommodation, and mounting architecture.',
             parts: [
                 {
@@ -692,7 +699,7 @@ export const MECHANICAL_MYSTERY_DATA = {
                 },
                 {
                     partLabel: 'Part B — Steer-by-Wire (SBW)',
-                    target: 'Design a motorized steering system capable of providing 6–7 Nm torque at the steering column.',
+                    target: 'Design a motorized steering system capable of providing 12 Nm torque at the steering column.',
                     checklist: [
                         'Select a suitable motor and reduction mechanism.',
                         'Explain how you will control left/right steering.',
@@ -706,6 +713,7 @@ export const MECHANICAL_MYSTERY_DATA = {
             id: 'ps2',
             number: '02',
             title: 'PS2: Manual Override And Sensors integration',
+            finalSubmissionFormat: 'Technical Presentation (PPT / PDF)',
             tagline: 'Autonomous takeover override, motor isolation, steering turning angle adaptation, and sensor integration.',
             parts: [
                 {

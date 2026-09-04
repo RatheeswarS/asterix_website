@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useWebsiteData } from '../context/WebsiteDataContext';
 import { apiUrl } from '../lib/api';
-import teamLogo from '../assets/Screenshot 2026-08-26 232320.png';
 
 
 export default function SponsorPage({ onBack }) {
@@ -196,30 +195,8 @@ PSG iTech BAJA Racing Cell
     return (
         <div className="min-h-screen bg-slate-50 text-slate-900 font-sans selection:bg-sky-500 selection:text-white">
             
-            {/* Top Navigation Bar */}
-            <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b-4 border-slate-900 px-4 sm:px-8 py-3.5 flex items-center justify-between shadow-[0_4px_0px_#0f172a]">
-                <div className="flex items-center gap-3">
-                    <img src={teamLogo} alt="Team Asterix" className="h-9 w-auto object-contain" />
-                    <div className="hidden sm:block">
-                        <span className="font-mono text-xs font-black uppercase text-sky-600 block leading-tight">
-                            OFFICIAL PARTNERSHIP PORTAL
-                        </span>
-                        <span className="font-black text-sm uppercase text-slate-900 leading-tight">
-                            TEAM ASTERIX SPONSORSHIP
-                        </span>
-                    </div>
-                </div>
-
-                <button
-                    onClick={onBack}
-                    className="press px-4 py-2 border-2 border-slate-900 bg-sky-100 hover:bg-sky-500 hover:text-white font-mono font-black text-xs uppercase shadow-[2px_2px_0px_#0f172a] cursor-pointer flex items-center gap-1.5"
-                >
-                    <span>← Back to Website</span>
-                </button>
-            </header>
-
             {/* Hero Section */}
-            <section className="py-16 sm:py-20 px-4 sm:px-8 bg-slate-900 text-white border-b-4 border-slate-900 relative overflow-hidden">
+            <section className="pt-28 pb-16 sm:pt-32 sm:pb-20 px-4 sm:px-8 bg-slate-900 text-white border-b-4 border-slate-900 relative overflow-hidden">
                 <div className="max-w-6xl mx-auto relative z-10">
                     <div className="inline-block px-3 py-1 bg-amber-300 text-slate-900 font-mono font-black text-xs uppercase border-2 border-slate-900 shadow-[3px_3px_0px_#0284c7] mb-4">
                         ★ POWER THE FIRST DRAFT • SAEINDIA a-BAJA 2026

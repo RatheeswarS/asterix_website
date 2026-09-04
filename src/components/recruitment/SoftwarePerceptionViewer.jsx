@@ -818,8 +818,16 @@ export default function SoftwarePerceptionViewer({ isAdmin = false }) {
                     <div>
                         Phase {phase.phaseNumber} Deadline: <strong className="text-slate-900">{phase.deadline}</strong>
                     </div>
-                    <div className="text-sky-700 font-black">
-                        Submission portal will be opened soon on this website (Upload Google Drive link)
+                    <div className="flex items-center gap-2">
+                        <span className="text-emerald-700 font-black">
+                            ● Submission Portal is Live!
+                        </span>
+                        <a
+                            href="#submit?track=software"
+                            className="press px-3.5 py-1.5 bg-amber-300 hover:bg-amber-400 text-slate-900 border-2 border-slate-900 font-black uppercase text-xs shadow-[2px_2px_0px_#0f172a]"
+                        >
+                            Submit Phase 01 Link ↗
+                        </a>
                     </div>
                 </div>
             </div>

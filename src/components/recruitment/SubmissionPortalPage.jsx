@@ -22,10 +22,12 @@ export default function SubmissionPortalPage({ onNavigateHome, onNavigateRecruit
 
     const [subsystem, setSubsystem] = useState(getInitialTrack);
     const [softwareCohort, setSoftwareCohort] = useState('ii'); // 'ii' or 'iii'
+    const [problemStatement, setProblemStatement] = useState('ps1'); // 'ps1' or 'ps2'
     const [selectedGroup, setSelectedGroup] = useState('');
     const [selectedSubmitterIdx, setSelectedSubmitterIdx] = useState(0);
     const [phoneInput, setPhoneInput] = useState('');
     const [driveUrl, setDriveUrl] = useState('');
+    const [githubUrl, setGithubUrl] = useState('');
     const [notes, setNotes] = useState('');
 
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -71,9 +73,11 @@ export default function SubmissionPortalPage({ onNavigateHome, onNavigateRecruit
     // Reset group selection on track/cohort change
     const handleSubsystemChange = (newSubsystem) => {
         setSubsystem(newSubsystem);
+        setProblemStatement('ps1');
         setSelectedGroup('');
         setSelectedSubmitterIdx(0);
         setPhoneInput('');
+        setGithubUrl('');
         setFormError('');
     };
 
@@ -117,6 +121,18 @@ export default function SubmissionPortalPage({ onNavigateHome, onNavigateRecruit
             return;
         }
 
+        const cleanGithub = githubUrl.trim();
+        if (subsystem === 'software' && problemStatement === 'ps2') {
+            if (!cleanGithub) {
+                setFormError('GitHub Repository required: Problem Statement 2 requires both a Google Drive link and a GitHub repository link.');
+                return;
+            }
+            if (!cleanGithub.toLowerCase().includes('github.com')) {
+                setFormError('Invalid GitHub URL: Please provide a valid repository link (must contain github.com).');
+                return;
+            }
+        }
+
         const cleanPhone = normalizePhone(phoneInput);
         if (cleanPhone.length < 10) {
             setFormError('Please enter a valid 10-digit phone number.');
@@ -142,11 +158,13 @@ export default function SubmissionPortalPage({ onNavigateHome, onNavigateRecruit
                 phase: 'phase1',
                 cohort: subsystem === 'software' ? (softwareCohort === 'ii' ? 'II Year' : 'III Year') : 'General',
                 group: activeTeam ? activeTeam.group : 'Open Submission',
+                problemStatement: subsystem === 'software' ? problemStatement : 'ps1',
                 submitterName: currentSubmitter ? currentSubmitter.name : phoneInput,
                 submitterPhone: cleanPhone,
                 partnerName: currentPartner ? currentPartner.name : '',
                 partnerDept: currentPartner ? currentPartner.dept : '',
                 driveUrl: trimmedUrl,
+                githubUrl: cleanGithub,
                 notes: notes.trim()
             };
 
@@ -168,11 +186,13 @@ export default function SubmissionPortalPage({ onNavigateHome, onNavigateRecruit
                 isUpdate: data.isUpdate || false,
                 timestamp: data.timestamp || new Date().toISOString(),
                 subsystem,
+                problemStatement: payload.problemStatement,
                 group: payload.group,
                 submitterName: payload.submitterName,
                 submitterPhone: cleanPhone,
                 partnerName: payload.partnerName,
                 driveUrl: trimmedUrl,
+                githubUrl: cleanGithub,
                 notes: payload.notes
             });
         } catch (err) {
@@ -185,14 +205,19 @@ export default function SubmissionPortalPage({ onNavigateHome, onNavigateRecruit
 
     const handleCopyReceipt = () => {
         if (!submissionReceipt) return;
+        const psLabel = submissionReceipt.subsystem === 'software'
+            ? `\nProblem Statement: ${submissionReceipt.problemStatement === 'ps2' ? 'PS2: Sensor Fusion & Reconstruction' : 'PS1: Vision Object Detection'}`
+            : '';
+        const ghLabel = submissionReceipt.githubUrl ? `\nGitHub URL: ${submissionReceipt.githubUrl}` : '';
+
         const text = `[ASTERIX RECRUITMENT PHASE 1 SUBMISSION RECEIPT]
 ID: ${submissionReceipt.submissionId}
 Version: #${submissionReceipt.version} ${submissionReceipt.isUpdate ? '(Revision)' : '(Original)'}
-Track: ${submissionReceipt.subsystem.toUpperCase()}
+Track: ${submissionReceipt.subsystem.toUpperCase()}${psLabel}
 Group: ${submissionReceipt.group}
 Submitted By: ${submissionReceipt.submitterName} (${submissionReceipt.submitterPhone})
 Partner: ${submissionReceipt.partnerName || 'None'}
-Drive URL: ${submissionReceipt.driveUrl}
+Drive URL: ${submissionReceipt.driveUrl}${ghLabel}
 Recorded At: ${new Date(submissionReceipt.timestamp).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })} IST
 Note: If multiple submissions are made, only the latest submission will be considered for evaluation.`;
 
@@ -204,54 +229,26 @@ Note: If multiple submissions are made, only the latest submission will be consi
     const handleResetForNew = () => {
         setSubmissionReceipt(null);
         setDriveUrl('');
+        setGithubUrl('');
         setNotes('');
         setFormError('');
     };
 
     return (
-        <div className="min-h-screen bg-slate-900 text-slate-100 font-sans selection:bg-amber-400 selection:text-slate-900 pb-20">
-            {/* Top Navigation Bar */}
-            <header className="border-b-3 border-slate-950 bg-slate-900/90 backdrop-blur-md sticky top-0 z-40 px-4 sm:px-8 py-3.5">
-                <div className="max-w-6xl mx-auto flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                        <a
-                            href="#recruitment"
-                            onClick={(e) => {
-                                if (onNavigateRecruitment) {
-                                    e.preventDefault();
-                                    onNavigateRecruitment();
-                                }
-                            }}
-                            className="press px-3 py-1.5 bg-white text-slate-900 border-2 border-slate-950 font-mono text-xs font-black uppercase flex items-center gap-1.5 shadow-[2px_2px_0px_#000]"
-                        >
-                            <span>←</span>
-                            <span>Recruitment Tracks</span>
-                        </a>
-                        <span className="hidden sm:inline-block font-mono text-xs font-bold text-slate-400">
-                            / Phase 01 Portal
-                        </span>
-                    </div>
-
-                    <a
-                        href="#"
-                        onClick={(e) => {
-                            if (onNavigateHome) {
-                                e.preventDefault();
-                                onNavigateHome();
-                            }
-                        }}
-                        className="font-mono text-xs font-black text-amber-400 uppercase hover:underline"
-                    >
-                        Asterix Main Site ↗
-                    </a>
-                </div>
-            </header>
-
+        <div className="min-h-screen bg-slate-900 text-slate-100 font-sans selection:bg-amber-400 selection:text-slate-900 pt-24 sm:pt-28 pb-20">
             {/* Page Header */}
-            <section className="max-w-4xl mx-auto px-4 sm:px-6 pt-8 sm:pt-12 pb-6">
-                <div className="inline-flex items-center gap-2 px-3 py-1 bg-amber-400 text-slate-950 border-2 border-slate-950 font-mono text-xs font-black uppercase tracking-wider mb-4 shadow-[3px_3px_0px_#000]">
-                    <span className="w-2 h-2 bg-slate-950 inline-block animate-pulse"></span>
-                    OFFICIAL SUBMISSION PORTAL • PHASE 01
+            <section className="max-w-4xl mx-auto px-4 sm:px-6 pb-6">
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                    <button
+                        onClick={onNavigateRecruitment}
+                        className="press px-3 py-1.5 bg-white text-slate-900 border-2 border-slate-950 font-mono text-xs font-black uppercase flex items-center gap-1.5 shadow-[2px_2px_0px_#000] cursor-pointer"
+                    >
+                        <span>← Back to Problem Statements</span>
+                    </button>
+                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-amber-400 text-slate-950 border-2 border-slate-950 font-mono text-xs font-black uppercase tracking-wider shadow-[3px_3px_0px_#000]">
+                        <span className="w-2 h-2 bg-slate-950 inline-block animate-pulse"></span>
+                        OFFICIAL SUBMISSION PORTAL • PHASE 01
+                    </div>
                 </div>
                 <h1 className="text-3xl sm:text-5xl font-black uppercase tracking-tight text-white font-mono leading-none">
                     Submit Your Team&apos;s Drive Link
@@ -304,6 +301,14 @@ Note: If multiple submissions are made, only the latest submission will be consi
                                 <span className="text-slate-500 block uppercase font-bold text-[10px]">Duo Allocation</span>
                                 <strong className="text-slate-900 text-sm uppercase">{submissionReceipt.group}</strong>
                             </div>
+                            {submissionReceipt.subsystem === 'software' && (
+                                <div className="sm:col-span-2 pt-2 border-t border-slate-200">
+                                    <span className="text-slate-500 block uppercase font-bold text-[10px]">Problem Statement</span>
+                                    <span className="inline-block mt-0.5 px-2 py-0.5 bg-amber-300 border border-slate-900 font-mono text-[11px] font-black text-slate-950 uppercase">
+                                        {submissionReceipt.problemStatement === 'ps2' ? 'PS2: Sensor Fusion & Track Reconstruction' : 'PS1: Vision-Based Object Detection'}
+                                    </span>
+                                </div>
+                            )}
                             <div>
                                 <span className="text-slate-500 block uppercase font-bold text-[10px]">Submitted By</span>
                                 <strong className="text-slate-900">{submissionReceipt.submitterName} ({submissionReceipt.submitterPhone})</strong>
@@ -322,10 +327,26 @@ Note: If multiple submissions are made, only the latest submission will be consi
                                 >
                                     <span>{submissionReceipt.driveUrl}</span>
                                     <span className="shrink-0 font-mono text-[10px] bg-sky-100 text-sky-800 px-1.5 py-0.5 border border-sky-300">
-                                        Test Link ↗
+                                        Test Drive Link ↗
                                     </span>
                                 </a>
                             </div>
+                            {submissionReceipt.githubUrl && (
+                                <div className="sm:col-span-2 pt-2 border-t border-slate-200">
+                                    <span className="text-slate-500 block uppercase font-bold text-[10px] mb-1">Submitted GitHub Repository</span>
+                                    <a
+                                        href={submissionReceipt.githubUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-sky-700 font-bold break-all hover:underline flex items-center gap-1.5"
+                                    >
+                                        <span>{submissionReceipt.githubUrl}</span>
+                                        <span className="shrink-0 font-mono text-[10px] bg-slate-900 text-amber-300 px-1.5 py-0.5 border border-slate-900">
+                                            Test GitHub ↗
+                                        </span>
+                                    </a>
+                                </div>
+                            )}
                             {submissionReceipt.notes && (
                                 <div className="sm:col-span-2 pt-2 border-t border-slate-200">
                                     <span className="text-slate-500 block uppercase font-bold text-[10px]">Notes</span>
@@ -419,33 +440,95 @@ Note: If multiple submissions are made, only the latest submission will be consi
 
                         {/* Step 2: Software Cohort Switcher (if Software) */}
                         {subsystem === 'software' && (
-                            <div className="space-y-2 pt-2 border-t-2 border-slate-200">
-                                <label className="font-mono text-xs font-black uppercase text-slate-900 block">
-                                    Select Academic Cohort
-                                </label>
-                                <div className="flex gap-3">
-                                    <button
-                                        type="button"
-                                        onClick={() => handleCohortChange('ii')}
-                                        className={`flex-1 py-2 px-3 border-2 border-slate-950 font-mono text-xs font-black uppercase cursor-pointer ${
-                                            softwareCohort === 'ii'
-                                                ? 'bg-amber-300 text-slate-950 shadow-[2px_2px_0px_#000]'
-                                                : 'bg-white hover:bg-slate-100 text-slate-700'
-                                        }`}
-                                    >
-                                        II Year Candidates (14 Groups)
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => handleCohortChange('iii')}
-                                        className={`flex-1 py-2 px-3 border-2 border-slate-950 font-mono text-xs font-black uppercase cursor-pointer ${
-                                            softwareCohort === 'iii'
-                                                ? 'bg-amber-300 text-slate-950 shadow-[2px_2px_0px_#000]'
-                                                : 'bg-white hover:bg-slate-100 text-slate-700'
-                                        }`}
-                                    >
-                                        III Year Candidates (3 Groups)
-                                    </button>
+                            <div className="space-y-4 pt-2 border-t-2 border-slate-200">
+                                <div className="space-y-2">
+                                    <label className="font-mono text-xs font-black uppercase text-slate-900 block">
+                                        Select Academic Cohort
+                                    </label>
+                                    <div className="flex gap-3">
+                                        <button
+                                            type="button"
+                                            onClick={() => handleCohortChange('ii')}
+                                            className={`flex-1 py-2 px-3 border-2 border-slate-950 font-mono text-xs font-black uppercase cursor-pointer ${
+                                                softwareCohort === 'ii'
+                                                    ? 'bg-amber-300 text-slate-950 shadow-[2px_2px_0px_#000]'
+                                                    : 'bg-white hover:bg-slate-100 text-slate-700'
+                                            }`}
+                                        >
+                                            II Year Candidates (14 Groups)
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleCohortChange('iii')}
+                                            className={`flex-1 py-2 px-3 border-2 border-slate-950 font-mono text-xs font-black uppercase cursor-pointer ${
+                                                softwareCohort === 'iii'
+                                                    ? 'bg-amber-300 text-slate-950 shadow-[2px_2px_0px_#000]'
+                                                    : 'bg-white hover:bg-slate-100 text-slate-700'
+                                            }`}
+                                        >
+                                            III Year Candidates (3 Groups)
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="font-mono text-xs font-black uppercase text-slate-900 flex items-center justify-between">
+                                        <span>Select Problem Statement</span>
+                                        <span className="font-mono text-[10px] text-slate-500 font-bold uppercase">
+                                            {problemStatement === 'ps2' ? 'Dual Submission (Drive + GitHub)' : 'Drive Submission'}
+                                        </span>
+                                    </label>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setProblemStatement('ps1');
+                                                setFormError('');
+                                            }}
+                                            className={`p-3 border-2 border-slate-950 text-left font-mono text-xs cursor-pointer transition-all ${
+                                                problemStatement === 'ps1'
+                                                    ? 'bg-amber-300 text-slate-950 font-black shadow-[3px_3px_0px_#000]'
+                                                    : 'bg-white hover:bg-slate-100 text-slate-700'
+                                            }`}
+                                        >
+                                            <div className="flex items-center justify-between mb-1">
+                                                <span className="font-black">PS1: Vision Detection</span>
+                                                <span className={`text-[10px] px-1.5 py-0.5 border ${
+                                                    problemStatement === 'ps1' ? 'bg-slate-900 text-amber-300 border-slate-900' : 'bg-slate-100 border-slate-300'
+                                                }`}>
+                                                    {problemStatement === 'ps1' ? 'ACTIVE' : 'SELECT'}
+                                                </span>
+                                            </div>
+                                            <span className="text-[10px] opacity-85 block font-bold font-sans">
+                                                Camera object detection, dataset, classes &amp; presentation
+                                            </span>
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setProblemStatement('ps2');
+                                                setFormError('');
+                                            }}
+                                            className={`p-3 border-2 border-slate-950 text-left font-mono text-xs cursor-pointer transition-all ${
+                                                problemStatement === 'ps2'
+                                                    ? 'bg-amber-300 text-slate-950 font-black shadow-[3px_3px_0px_#000]'
+                                                    : 'bg-white hover:bg-slate-100 text-slate-700'
+                                            }`}
+                                        >
+                                            <div className="flex items-center justify-between mb-1">
+                                                <span className="font-black">PS2: Sensor Fusion</span>
+                                                <span className={`text-[10px] px-1.5 py-0.5 border ${
+                                                    problemStatement === 'ps2' ? 'bg-slate-900 text-amber-300 border-slate-900' : 'bg-slate-100 border-slate-300'
+                                                }`}>
+                                                    {problemStatement === 'ps2' ? 'ACTIVE' : 'SELECT'}
+                                                </span>
+                                            </div>
+                                            <span className="text-[10px] opacity-85 block font-bold font-sans">
+                                                Transforms, noise filter, 2D map (Drive Link + GitHub Link)
+                                            </span>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         )}
@@ -565,10 +648,37 @@ Note: If multiple submissions are made, only the latest submission will be consi
                             </div>
                         </div>
 
-                        {/* Step 6: Notes (Optional) */}
-                        <div className="space-y-1.5">
+                        {/* Software PS2: Step 6 GitHub Repository Link */}
+                        {subsystem === 'software' && problemStatement === 'ps2' && (
+                            <div className="space-y-1.5 pt-2 border-t-2 border-slate-200">
+                                <label className="font-mono text-xs font-black uppercase text-slate-900 flex items-center justify-between">
+                                    <span>Step 6: GitHub Repository Link (Code Pipeline)</span>
+                                    <span className="font-mono text-[10px] text-rose-600 font-bold">REQUIRED FOR PS2</span>
+                                </label>
+                                <p className="text-[11px] font-bold text-slate-600">
+                                    For Problem Statement 2, submit your runnable source code, config files, and README replay instructions via a public or shared GitHub repository.
+                                </p>
+                                <input
+                                    type="url"
+                                    value={githubUrl}
+                                    onChange={(e) => setGithubUrl(e.target.value)}
+                                    placeholder="https://github.com/your-username/asterix-sensor-fusion"
+                                    className="w-full p-3 bg-slate-50 border-2 border-slate-950 font-mono text-sm font-bold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+                                    required
+                                />
+                                <div className="flex items-start gap-2 p-3 bg-sky-50 border border-sky-300 text-sky-950 text-xs font-bold leading-relaxed">
+                                    <span className="font-mono text-base">ℹ️</span>
+                                    <div>
+                                        <strong>Dual Submission for PS2:</strong> Your Google Drive folder stores your plots, diagram, and comparative analysis report. Your GitHub repository hosts the complete runnable script/package.
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Additional Remarks / Notes */}
+                        <div className="space-y-1.5 pt-2 border-t-2 border-slate-200">
                             <label className="font-mono text-xs font-black uppercase text-slate-900 flex items-center justify-between">
-                                <span>Additional Remarks / Submission Notes</span>
+                                <span>{subsystem === 'software' && problemStatement === 'ps2' ? 'Step 7' : 'Step 6'}: Additional Remarks / Submission Notes</span>
                                 <span className="font-mono text-[10px] text-slate-400 font-bold">OPTIONAL</span>
                             </label>
                             <textarea
@@ -600,7 +710,11 @@ Note: If multiple submissions are made, only the latest submission will be consi
                                     isSubmitting ? 'opacity-70 cursor-wait' : ''
                                 }`}
                             >
-                                {isSubmitting ? 'Recording Submission...' : '🚀 SUBMIT PHASE 01 DRIVE LINK'}
+                                {isSubmitting
+                                    ? 'Recording Submission...'
+                                    : subsystem === 'software' && problemStatement === 'ps2'
+                                    ? '🚀 SUBMIT PHASE 01 LINKS (DRIVE + GITHUB)'
+                                    : '🚀 SUBMIT PHASE 01 DRIVE LINK'}
                             </button>
                         </div>
                     </form>

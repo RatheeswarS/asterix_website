@@ -5,6 +5,7 @@ import Icon from '../Icon';
 import ImageField from './ImageField';
 import RecruitmentAdmin from './RecruitmentAdmin';
 import SubmissionsAdmin from './SubmissionsAdmin';
+import teamLogo from '../../assets/Screenshot 2026-08-26 232320.png';
 
 export default function AdminDashboard({ onExit }) {
     const {
@@ -518,7 +519,17 @@ export default function AdminDashboard({ onExit }) {
             {/* Top Navigation Bar */}
             <header className="sticky top-0 z-40 bg-white border-b-4 border-slate-900 px-4 sm:px-8 py-3 flex flex-wrap items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
-                    <div className="w-4 h-4 bg-sky-500 border-2 border-slate-900" />
+                    <button
+                        onClick={onExit}
+                        className="press press-flat flex items-center group cursor-pointer text-left focus:outline-none flex-shrink-0"
+                        title="Return to Live Website Homepage"
+                    >
+                        <img
+                            src={teamLogo}
+                            alt="Team Asterix"
+                            className="h-8 w-auto object-contain transition-transform group-hover:scale-105"
+                        />
+                    </button>
                     <div>
                         <div className="flex items-center gap-2">
                             <h1 className="text-base sm:text-lg font-black uppercase text-slate-900 leading-none">

@@ -43,9 +43,19 @@ const SubmissionSchema = new mongoose.Schema({
         default: '',
         trim: true
     },
+    problemStatement: {
+        type: String,
+        default: 'PS1',
+        trim: true
+    },
     driveUrl: {
         type: String,
         required: true,
+        trim: true
+    },
+    githubUrl: {
+        type: String,
+        default: '',
         trim: true
     },
     notes: {

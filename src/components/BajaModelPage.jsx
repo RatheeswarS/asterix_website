@@ -29,29 +29,7 @@ export default function BajaModelPage({ onBack }) {
     ];
 
     return (
-        <div className="min-h-screen bg-slate-100 text-slate-900 flex flex-col justify-between selection:bg-sky-500 selection:text-white select-none">
-
-            {/* Top Brutalist Navigation Bar */}
-            <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b-4 border-slate-900 px-4 sm:px-8 py-3.5 flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                    <button
-                        onClick={onBack}
-                        className="press px-4 py-2 border-2 border-slate-900 bg-amber-300 font-mono font-black text-xs uppercase shadow-[2px_2px_0px_#0f172a] hover:bg-amber-400 hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[4px_4px_0px_#0f172a] flex items-center gap-1.5 cursor-pointer"
-                    >
-                        <span aria-hidden="true">←</span>
-                        <span>Back to Website</span>
-                    </button>
-                    <div>
-                        <h1 className="text-base sm:text-lg font-black uppercase text-slate-900 leading-tight">
-                            ASTERIX aBAJA 2026 3D INSPECTOR
-                        </h1>
-                    </div>
-                </div>
-
-                {/* Status Indicator */}
-
-            </header>
-
+        <div className="min-h-screen bg-slate-100 text-slate-900 flex flex-col justify-between selection:bg-sky-500 selection:text-white select-none pt-16 sm:pt-20">
             {/* Main Interactive Stage */}
             <main className="relative flex-1 w-full min-h-[calc(100vh-140px)] flex flex-col items-center justify-center p-2 sm:p-6 overflow-hidden">
 

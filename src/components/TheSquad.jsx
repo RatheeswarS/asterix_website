@@ -29,20 +29,48 @@ export default function TheSquad({ onSelectSubsystem }) {
     return (
         <section
             id="squad"
-            className="border-t-4 border-slate-900 relative z-10 select-none bg-slate-50/50"
+            className="border-t-4 border-slate-900 relative z-10 select-none bg-slate-50/50 overflow-hidden"
         >
+            {/* Background Parallax Watermark (Option A: Slow layer) */}
+            <div
+                data-parallax="slow"
+                className="absolute right-4 sm:right-10 top-12 text-[7rem] sm:text-[12rem] md:text-[14rem] font-black text-slate-900/[0.03] select-none pointer-events-none font-mono leading-none z-0 will-change-transform"
+                aria-hidden="true"
+            >
+                // 02 SQUAD
+            </div>
+
+            {/* Floating Kinetic Sticker / Decal (Option D) */}
+            <div
+                data-parallax="sticker"
+                data-parallax-rotate="-5"
+                className="hidden lg:flex absolute left-6 sm:left-12 top-28 z-20 bg-sky-300 text-slate-950 border-3 border-slate-900 shadow-[5px_5px_0px_#0f172a] rounded-lg px-3 py-1.5 font-mono font-black text-[11px] uppercase tracking-wider pointer-events-none will-change-transform"
+            >
+                <span>● ROSTER // ACTIVE CREW</span>
+            </div>
+
             {/* Section Header */}
-            <div className="pt-24 pb-10 px-4 sm:px-8 max-w-7xl mx-auto">
+            <div className="pt-24 pb-10 px-4 sm:px-8 max-w-7xl mx-auto relative z-10">
                 <div data-assemble="header" className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                     <div>
                         <div className="flex flex-wrap items-center gap-3">
                             <h2 className="text-6xl sm:text-7xl md:text-8xl font-black text-slate-900 leading-none uppercase tracking-tight">
                                 THE
                             </h2>
-                            <h2 className="text-6xl sm:text-7xl md:text-8xl font-black text-stroke-black text-transparent leading-none uppercase tracking-tight">
+                            <h2 
+                                data-parallax="fast" 
+                                data-parallax-speed="0.18"
+                                className="text-6xl sm:text-7xl md:text-8xl font-black text-stroke-black text-transparent leading-none uppercase tracking-tight will-change-transform"
+                            >
                                 SQUAD
                             </h2>
-                            <span className="animate-spin-slow text-amber-400 text-4xl hidden sm:inline-block">★</span>
+                            <span 
+                                data-parallax="sticker"
+                                data-parallax-rotate="15"
+                                className="animate-spin-slow text-amber-400 text-4xl hidden sm:inline-block will-change-transform"
+                            >
+                                ★
+                            </span>
                         </div>
                         <p className="text-sm sm:text-base font-bold text-slate-600 mt-3 max-w-xl">
                             Scroll down to cycle through the engineering decks. Click any card to inspect the crew.
@@ -50,7 +78,7 @@ export default function TheSquad({ onSelectSubsystem }) {
                     </div>
 
                     {/* Active Deck Status Indicator */}
-                    <div className="hidden sm:flex items-center gap-3 font-mono">
+                    <div data-parallax="fast" data-parallax-speed="0.1" className="hidden sm:flex items-center gap-3 font-mono will-change-transform">
                         <span className="text-[11px] font-black text-slate-500 uppercase tracking-widest">
                             CURRENT DECK:
                         </span>

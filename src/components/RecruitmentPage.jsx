@@ -6,7 +6,6 @@ import {
 } from './RecruitmentCountdown';
 import { useWebsiteData } from '../context/WebsiteDataContext';
 import { formatIstFull } from '../lib/istTime';
-import teamLogo from '../assets/Screenshot 2026-08-26 232320.png';
 import SoftwarePerceptionViewer from './recruitment/SoftwarePerceptionViewer';
 import PowertrainTestViewer from './recruitment/PowertrainTestViewer';
 import MechanicalMysteryViewer from './recruitment/MechanicalMysteryViewer';
@@ -107,36 +106,15 @@ export default function RecruitmentPage({ onBack, onSelectSubsystem }) {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 text-slate-900 font-sans selection:bg-amber-400 selection:text-slate-900">
+        <div className="min-h-screen bg-slate-50 text-slate-900 font-sans selection:bg-amber-400 selection:text-slate-900 pt-16 sm:pt-20">
 
-            {/* Top navigation */}
-            <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b-4 border-slate-900 shadow-[0_4px_0px_#0f172a]">
-                <div className="px-4 sm:px-8 py-3.5 flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                        <img src={teamLogo} alt="Team Asterix" className="h-9 w-auto object-contain" />
-                        <div className="hidden sm:block">
-                            <span className="font-mono text-xs font-black uppercase text-amber-600 block leading-tight">
-                                CREW SELECTION &amp; RECRUITMENT
-                            </span>
-                            <span className="font-black text-sm uppercase text-slate-900 leading-tight">
-                                TEAM ASTERIX INDUCTION PORTAL
-                            </span>
-                        </div>
-                    </div>
-
-                    <button
-                        onClick={onBack}
-                        className="press px-4 py-2 border-2 border-slate-900 bg-sky-100 hover:bg-sky-500 hover:text-white font-mono font-black text-xs uppercase shadow-[2px_2px_0px_#0f172a] cursor-pointer shrink-0"
-                    >
-                        ← Back to Website
-                    </button>
-                </div>
-
+            {/* Countdown Strip */}
+            <div className="border-b-4 border-slate-900">
                 <RecruitmentCountdownStrip
                     countdown={countdown}
                     docked={isCountdownDocked}
                 />
-            </header>
+            </div>
 
             {/* Admin Bypass Notice */}
             {isAdmin && (!isSoftwareReleased || !isHardwareReleased) && (

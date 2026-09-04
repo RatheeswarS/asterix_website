@@ -36,16 +36,39 @@ export default function CyberNewsletterCTA({ onOpenSponsor }) {
     };
 
     return (
-        <section id="subscribe" className="py-24 px-4 sm:px-8 bg-sky-500 text-slate-900 border-t-4 border-slate-900 relative overflow-hidden z-10">
-            <div className="max-w-5xl mx-auto">
-                <div data-assemble="card" className="bg-white border-4 border-slate-900 shadow-[10px_10px_0px_#0f172a] p-8 sm:p-14 md:p-16 relative">
+        <section id="subscribe" className="py-24 px-4 sm:px-8 bg-sky-500 text-slate-900 border-t-4 border-slate-900 relative overflow-hidden z-10 select-none">
+
+            {/* Background Parallax Watermark (Option A: Slow layer) */}
+            <div
+                data-parallax="slow"
+                className="absolute right-4 sm:right-10 top-8 text-[6rem] sm:text-[10rem] md:text-[12rem] font-black text-white/[0.12] select-none pointer-events-none font-mono leading-none z-0 will-change-transform"
+                aria-hidden="true"
+            >
+                // 06 ALLIANCE
+            </div>
+
+            {/* Floating Kinetic Decal (Option D) */}
+            <div
+                data-parallax="sticker"
+                data-parallax-rotate="7"
+                className="hidden lg:flex absolute left-6 sm:left-12 top-10 z-20 bg-white text-slate-950 border-3 border-slate-900 shadow-[5px_5px_0px_#0f172a] rounded-lg px-3.5 py-1.5 font-mono font-black text-[11px] uppercase tracking-wider pointer-events-none will-change-transform"
+            >
+                <span>✦ PADDOCK ALLIANCE</span>
+            </div>
+
+            <div className="max-w-5xl mx-auto relative z-10">
+                <div data-assemble="card" data-parallax="fast" data-parallax-speed="0.06" className="bg-white border-4 border-slate-900 shadow-[10px_10px_0px_#0f172a] p-8 sm:p-14 md:p-16 relative will-change-transform">
 
                     <div data-assemble="header" className="text-center mb-10">
                         <div className="flex items-center justify-center gap-3">
                             <h2 className="text-5xl sm:text-6xl md:text-7xl font-black text-slate-900 uppercase leading-none">
                                 JOIN THE
                             </h2>
-                            <h2 className="text-5xl sm:text-6xl md:text-7xl font-black text-stroke-sky text-transparent uppercase leading-none">
+                            <h2 
+                                data-parallax="fast" 
+                                data-parallax-speed="0.18"
+                                className="text-5xl sm:text-6xl md:text-7xl font-black text-stroke-sky text-transparent uppercase leading-none will-change-transform"
+                            >
                                 ALLIANCE
                             </h2>
                         </div>

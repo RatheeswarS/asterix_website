@@ -1,6 +1,7 @@
 import { useState, useEffect, lazy, Suspense } from "react";
 import Lenis from "lenis";
 import useScrollAssembly from "./hooks/useScrollAssembly";
+import useParallax from "./hooks/useParallax";
 import CyberNavbar from "./components/CyberNavbar";
 import IntroScrollSequence from "./components/IntroScrollSequence";
 import CyberHero from "./components/CyberHero";
@@ -100,6 +101,9 @@ function MainApp() {
     // Activate the global scroll assembly/forming effect across all sections and pages
     useScrollAssembly(lenisInstance, selectedSubsystem);
 
+    // Activate the multi-speed depth parallax & kinetic decal float across all sections
+    useParallax(lenisInstance, selectedSubsystem);
+
     /* Every page here is a boolean, and forgetting one in a handler leaves two
        pages claiming the screen at once. `closeAll` is the single place that
        knows the full set. */
@@ -169,47 +173,16 @@ function MainApp() {
         );
     }
 
-    // Dedicated Full-Screen 3D Baja Model Inspector Page
-    if (isModelPage) {
-        return (
-            <Suspense fallback={pageFallback}>
-                <BajaModelPage onBack={handleBackToHome} />
-            </Suspense>
-        );
-    }
+    const isDetailPage = Boolean(
+        selectedSubsystem || isSponsorPage || isRecruitmentPage || isSubmissionPage || isModelPage
+    );
 
-    // Dedicated Full-Screen Sponsorship & Pitch Deck Portal
-    if (isSponsorPage) {
-        return (
-            <Suspense fallback={pageFallback}>
-                <SponsorPage onBack={handleBackToHome} />
-            </Suspense>
-        );
-    }
-
-    // Dedicated Full-Screen Crew Recruitment Portal
-    if (isRecruitmentPage) {
-        return (
-            <Suspense fallback={pageFallback}>
-                <RecruitmentPage
-                    onBack={handleBackToHome}
-                    onSelectSubsystem={handleSelectSubsystem}
-                />
-            </Suspense>
-        );
-    }
-
-    // Dedicated Full-Screen Phase 01 Google Drive Submission Portal
-    if (isSubmissionPage) {
-        return (
-            <Suspense fallback={pageFallback}>
-                <SubmissionPortalPage
-                    onNavigateHome={handleBackToHome}
-                    onNavigateRecruitment={handleOpenRecruitment}
-                />
-            </Suspense>
-        );
-    }
+    const currentPage =
+        isSponsorPage ? 'sponsor' :
+        isRecruitmentPage ? 'recruitment' :
+        isSubmissionPage ? 'submit' :
+        isModelPage ? 'model' :
+        selectedSubsystem ? 'subsystem' : 'home';
 
     return (
         <div className="relative min-h-screen bg-white text-slate-900 selection:bg-sky-500 selection:text-white overflow-x-hidden font-sans">
@@ -222,13 +195,36 @@ function MainApp() {
                 {/* Cyberbites Chunky Brutalist Navigation */}
                 <CyberNavbar 
                     onSelectSubsystem={handleSelectSubsystem}
-                    isDetailPage={Boolean(selectedSubsystem)}
+                    isDetailPage={isDetailPage}
+                    currentPage={currentPage}
                     onBackToHome={handleBackToHome}
                     onOpenSponsor={handleOpenSponsor}
                     onOpenRecruitment={handleOpenRecruitment}
                 />
 
-                {selectedSubsystem ? (
+                {isModelPage ? (
+                    <Suspense fallback={pageFallback}>
+                        <BajaModelPage onBack={handleBackToHome} />
+                    </Suspense>
+                ) : isSponsorPage ? (
+                    <Suspense fallback={pageFallback}>
+                        <SponsorPage onBack={handleBackToHome} />
+                    </Suspense>
+                ) : isRecruitmentPage ? (
+                    <Suspense fallback={pageFallback}>
+                        <RecruitmentPage
+                            onBack={handleBackToHome}
+                            onSelectSubsystem={handleSelectSubsystem}
+                        />
+                    </Suspense>
+                ) : isSubmissionPage ? (
+                    <Suspense fallback={pageFallback}>
+                        <SubmissionPortalPage
+                            onNavigateHome={handleBackToHome}
+                            onNavigateRecruitment={handleOpenRecruitment}
+                        />
+                    </Suspense>
+                ) : selectedSubsystem ? (
                     /* Dedicated Subsystem Detail Page (Shows all team members, CAD methodology, specs) */
                     <main>
                         <SubsystemDetail 
