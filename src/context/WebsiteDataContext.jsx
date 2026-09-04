@@ -293,6 +293,14 @@ const normalizeRecruitmentTrack = (track, canonical) => {
     const canonicalStatements = canonical.problemStatements || [];
     const canonicalLead = canonical.lead || null;
 
+    const userTimeline = Array.isArray(track?.timeline) && track.timeline.length > 0
+        ? track.timeline
+        : canonicalTimeline;
+
+    const userStatements = Array.isArray(track?.problemStatements) && track.problemStatements.length > 0
+        ? track.problemStatements
+        : canonicalStatements;
+
     return {
         ...makeRecruitmentTrack(canonical),
         ...(track && typeof track === 'object' ? track : {}),
@@ -301,8 +309,8 @@ const normalizeRecruitmentTrack = (track, canonical) => {
         blurb: track?.blurb || canonical.blurb || '',
         lead: canonicalLead,
         applyUrl: track?.applyUrl ?? canonical.applyUrl ?? '',
-        timeline: canonicalTimeline,
-        problemStatements: canonicalStatements
+        timeline: userTimeline,
+        problemStatements: userStatements
     };
 };
 

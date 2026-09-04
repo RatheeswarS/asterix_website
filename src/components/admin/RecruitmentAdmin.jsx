@@ -376,10 +376,10 @@ export default function RecruitmentAdmin({ showStatus }) {
                                     </div>
 
                                     <div>
-                                        <label className={labelClass}>Attachment URL (optional)</label>
+                                        <label className={labelClass}>Attachment / Reference Link URL (optional)</label>
                                         <input
                                             className={`${input} font-mono`}
-                                            placeholder="https://drive.google.com/…"
+                                            placeholder="https://drive.google.com/… or https://..."
                                             value={ps.fileUrl || ''}
                                             onChange={(e) => patchListItem('problemStatements', problemStatements, index, { fileUrl: e.target.value })}
                                         />
