@@ -21,6 +21,11 @@ export const SUBSYSTEM_LEADS = {
         role: 'Software & Perception Lead',
         phone: '+91 86089 44644',
     },
+    'software': {
+        name: 'Ratheeshwar',
+        role: 'Software & Perception Lead',
+        phone: '+91 86089 44644',
+    },
     'powertrain': {
         name: 'Joel Anto Edwin',
         role: 'Powertrain Subsystem Lead',

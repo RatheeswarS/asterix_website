@@ -614,23 +614,23 @@ Note: Earlier versions remain safely preserved in the audit log.`;
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 text-[11px]">
                         <div>
                             <span className="text-slate-400 block font-bold">Software Lead:</span>
-                            <strong className="text-white">{SUBSYSTEM_LEADS.software.name}</strong>
-                            <a href={`tel:${SUBSYSTEM_LEADS.software.phone}`} className="text-sky-400 block hover:underline">
-                                {SUBSYSTEM_LEADS.software.phone}
+                            <strong className="text-white">{(SUBSYSTEM_LEADS.software || SUBSYSTEM_LEADS['software-perception'])?.name}</strong>
+                            <a href={`tel:${(SUBSYSTEM_LEADS.software || SUBSYSTEM_LEADS['software-perception'])?.phone}`} className="text-sky-400 block hover:underline">
+                                {(SUBSYSTEM_LEADS.software || SUBSYSTEM_LEADS['software-perception'])?.phone}
                             </a>
                         </div>
                         <div>
                             <span className="text-slate-400 block font-bold">Mechanical Lead:</span>
-                            <strong className="text-white">{SUBSYSTEM_LEADS.mechanical.name}</strong>
-                            <a href={`tel:${SUBSYSTEM_LEADS.mechanical.phone}`} className="text-sky-400 block hover:underline">
-                                {SUBSYSTEM_LEADS.mechanical.phone}
+                            <strong className="text-white">{SUBSYSTEM_LEADS.mechanical?.name}</strong>
+                            <a href={`tel:${SUBSYSTEM_LEADS.mechanical?.phone}`} className="text-sky-400 block hover:underline">
+                                {SUBSYSTEM_LEADS.mechanical?.phone}
                             </a>
                         </div>
                         <div>
                             <span className="text-slate-400 block font-bold">Powertrain Lead:</span>
-                            <strong className="text-white">{SUBSYSTEM_LEADS.powertrain.name}</strong>
-                            <a href={`tel:${SUBSYSTEM_LEADS.powertrain.phone}`} className="text-sky-400 block hover:underline">
-                                {SUBSYSTEM_LEADS.powertrain.phone}
+                            <strong className="text-white">{SUBSYSTEM_LEADS.powertrain?.name}</strong>
+                            <a href={`tel:${SUBSYSTEM_LEADS.powertrain?.phone}`} className="text-sky-400 block hover:underline">
+                                {SUBSYSTEM_LEADS.powertrain?.phone}
                             </a>
                         </div>
                     </div>
