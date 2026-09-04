@@ -25,10 +25,25 @@ export default function SoftwarePerceptionViewer({ isAdmin = false }) {
     const currentPhaseKey = challenge && isPhase2Unlocked ? activePhaseKey : 'phase1';
     const phase = challenge ? challenge.phases[currentPhaseKey] : null;
 
+    const renderMarkdownBold = (text) => {
+        if (!text || typeof text !== 'string') return text;
+        const parts = text.split(/(\*\*.*?\*\*)/g);
+        return parts.map((part, i) => {
+            if (part.startsWith('**') && part.endsWith('**')) {
+                return (
+                    <strong key={i} className="text-slate-900 font-black">
+                        {part.slice(2, -2)}
+                    </strong>
+                );
+            }
+            return part;
+        });
+    };
+
     const handleCopyDeliverables = () => {
         if (!phase) return;
         const text = phase.deliverables
-            .map((d, i) => `${i + 1}. ${d.name} (${d.format}): ${d.description}`)
+            .map((d, i) => `${i + 1}. ${d.name.replace(/\*\*/g, '')} (${d.format}): ${d.description.replace(/\*\*/g, '')}`)
             .join('\n');
         navigator.clipboard?.writeText?.(text);
         setCopiedDeliverables(true);
@@ -437,15 +452,15 @@ export default function SoftwarePerceptionViewer({ isAdmin = false }) {
                             </p>
                         </div>
 
-                        {/* If Vision challenge: Display 9 required classes */}
+                        {/* If Vision challenge: Display required classes */}
                         {challenge.id === 'ps-vision' && challenge.classes && (
                             <div className="space-y-3">
-                                <div className="flex items-center justify-between">
+                                <div className="flex flex-wrap items-center justify-between gap-2">
                                     <h4 className="font-black text-sm uppercase text-slate-900 font-mono tracking-wide">
-                                        Required Detection Classes (9 Classes)
+                                        Required Detection Classes ({challenge.classes.length} Distinct Classes)
                                     </h4>
                                     <span className="text-[11px] font-mono font-bold text-amber-700 bg-amber-50 px-2 py-0.5 border border-amber-300">
-                                        Traffic light colors must be separate classes
+                                        Distinct classes for traffic lights &amp; speed signs
                                     </span>
                                 </div>
 
@@ -678,13 +693,13 @@ export default function SoftwarePerceptionViewer({ isAdmin = false }) {
                                     {phase.deliverables.map((item, idx) => (
                                         <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-sky-50/50'}>
                                             <td className="p-3 border-2 border-slate-900 font-mono font-black text-slate-900">
-                                                {item.name}
+                                                {renderMarkdownBold(item.name)}
                                             </td>
                                             <td className="p-3 border-2 border-slate-900 font-mono text-sky-700">
                                                 {item.format}
                                             </td>
-                                            <td className="p-3 border-2 border-slate-900 text-slate-700">
-                                                {item.description}
+                                            <td className="p-3 border-2 border-slate-900 text-slate-700 leading-relaxed">
+                                                {renderMarkdownBold(item.description)}
                                             </td>
                                         </tr>
                                     ))}

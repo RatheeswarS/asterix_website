@@ -43,12 +43,12 @@ export const SOFTWARE_PERCEPTION_DATA = {
         title: 'Team Formation: Teams of 2',
         badge: 'DUO TEAMS ALLOCATED',
         desc: 'Candidates will be working in allocated teams of two to design the architecture, complete deliverables, and submit solutions.',
-        pdfUrl: 'https://ik.imagekit.io/kitzwb4be/asterix/recruitment/software_perception_teams.pdf',
-        pdfLocalUrl: '/recruitment/software_perception_teams.pdf',
+        pdfUrl: 'https://ik.imagekit.io/kitzwb4be/asterix/recruitment/software_perception_teams.pdf?v=2',
+        pdfLocalUrl: '/recruitment/software_perception_teams.pdf?v=2',
         teamsIIYear: [
             { group: 'Group 1', members: [{ name: 'Dharanish V', dept: 'AIDS', phone: '9361365173' }, { name: 'Udhayanthi S', dept: 'AIDS', phone: '9443477014' }] },
             { group: 'Group 2', members: [{ name: 'Aravinth G V', dept: 'CSE', phone: '9080158763' }, { name: 'Rithanya M', dept: 'AIDS', phone: '9865976546' }] },
-            { group: 'Group 3', members: [{ name: 'Gowshigmuthu S D', dept: 'EEE', phone: '8925681850' }, { name: 'Kanishka S', dept: 'AIDS', phone: '8072999845' }] },
+            { group: 'Group 3', members: [{ name: 'Samritha M', dept: 'CSE', phone: '9500324772' }, { name: 'Kanishka S', dept: 'AIDS', phone: '8072999845' }] },
             { group: 'Group 4', members: [{ name: 'Sruthi S', dept: 'CSE', phone: '8438702606' }, { name: 'Sakarnika J', dept: 'AIDS', phone: '8807958435' }] },
             { group: 'Group 5', members: [{ name: 'Jayashree Saravanakumar', dept: 'AIDS', phone: '9500876355' }, { name: 'M. Samvida', dept: 'VLSI', phone: '9500654772' }] },
             { group: 'Group 6', members: [{ name: 'Abhishek Karuppusamy', dept: 'CSE', phone: '8807003699' }, { name: 'Angannan A N', dept: 'ECE', phone: '9566691403' }] },
@@ -115,11 +115,15 @@ export const SOFTWARE_PERCEPTION_DATA = {
                 { name: 'Traffic barrier', icon: 'barrier', color: 'border-orange-400 bg-orange-50 text-orange-900', note: 'Road obstruction / barrier' },
                 { name: 'Cow', icon: 'cow', color: 'border-stone-400 bg-stone-50 text-stone-900', note: 'Unpredictable livestock' },
                 { name: 'Pedestrian', icon: 'pedestrian', color: 'border-blue-400 bg-blue-50 text-blue-900', note: 'Pedestrian on or near track' },
-                { name: 'Bicyclist', icon: 'bicyclist', color: 'border-emerald-400 bg-emerald-50 text-emerald-900', note: 'Cyclist / slow-moving obstacle' },
+                { name: 'Bicyclist', icon: 'bicyclist', color: 'border-emerald-400 bg-emerald-50 text-emerald-900', note: 'Cyclist or just a Cycle as well' },
                 { name: 'Red traffic light', icon: 'red-light', color: 'border-rose-500 bg-rose-50 text-rose-900', note: 'Color treated as separate class' },
                 { name: 'Green traffic light', icon: 'green-light', color: 'border-green-500 bg-green-50 text-green-900', note: 'Color treated as separate class' },
                 { name: 'Orange / amber light', icon: 'amber-light', color: 'border-amber-500 bg-amber-50 text-amber-900', note: 'Color treated as separate class' },
-                { name: 'Two-wheeler', icon: 'bike', color: 'border-cyan-400 bg-cyan-50 text-cyan-900', note: 'Motorcycles / scooters' }
+                { name: 'Two-wheeler', icon: 'bike', color: 'border-cyan-400 bg-cyan-50 text-cyan-900', note: 'Motorcycles / scooters' },
+                { name: 'Speed limit sign 10', icon: 'speed-10', color: 'border-red-500 bg-red-50 text-red-900', note: '10 km/h speed limit sign' },
+                { name: 'Speed limit sign 15', icon: 'speed-15', color: 'border-red-500 bg-red-50 text-red-900', note: '15 km/h speed limit sign' },
+                { name: 'Speed limit sign 30', icon: 'speed-30', color: 'border-red-500 bg-red-50 text-red-900', note: '30 km/h speed limit sign' },
+                { name: 'Cars', icon: 'car', color: 'border-indigo-400 bg-indigo-50 text-indigo-900', note: 'Passenger cars / 4-wheelers' }
             ],
             phases: {
                 phase1: {
@@ -130,8 +134,8 @@ export const SOFTWARE_PERCEPTION_DATA = {
                     tagline: 'In this phase, we want to understand how you think, research, compare options and make sound engineering decisions.',
                     overview: 'Autonomous vehicles need to understand their surroundings in order to make informed decisions. A key part of this is the ability to identify and locate objects from camera data. Your task is to propose a vision-based object detection system for an autonomous vehicle using a ZED 2i camera and Jetson Orin NX.',
                     coreTask: [
-                        'Detect and distinguish all 9 specified classes with 2D bounding boxes, class labels, and confidence scores.',
-                        'Traffic lights must treat color as part of the class (red, green, and orange/amber are 3 distinct classes).',
+                        'Detect and distinguish all 13 specified classes with 2D bounding boxes, class labels, and confidence scores.',
+                        'Traffic lights (Red, Green, Amber) and Speed limit signs (10, 15, 30) must treat color and speed value as distinct individual classes.',
                         'Target computing platform is NVIDIA Jetson Orin NX with a ZED 2i camera. You are not restricted to any particular model, framework, dataset, or training approach.',
                         'The goal of Phase 1 is to design and justify an approach: investigate the problem, identify challenges, explore alternatives (YOLO, SSD, EfficientDet, RT-DETR, etc.), and develop a technically reasoned proposal.'
                     ],
@@ -145,14 +149,21 @@ export const SOFTWARE_PERCEPTION_DATA = {
                         'What would you investigate next if your proposed approach did not work?'
                     ],
                     deliverables: [
-                        { name: 'Technical Presentation', format: 'Slide Deck (PDF/Slides)', description: 'Concise presentation explaining research, reasoning, trade-offs, and proposed solution.' },
-                        { name: 'System / Workflow Diagram', format: 'Diagram (PNG/PDF/SVG)', description: 'Clear end-to-end diagram showing camera input, preprocessing, detector, and postprocessing.' },
-                        { name: 'Model Comparison', format: 'Comparative Matrix', description: 'Evaluation of models considered (YOLO variants, RT-DETR, EfficientDet) with reasoning behind selection.' },
-                        { name: 'Dataset Strategy', format: 'Written Section / Table', description: 'Public datasets considered, class coverage, custom data collection/annotation plan, and class imbalance handling.' },
-                        { name: 'Training & Evaluation Plan', format: 'Structured Plan', description: 'Proposed strategy for transfer learning, augmentation, splits, precision/recall/mAP metrics, and latency measurement.' },
-                        { name: 'Deployment Considerations', format: 'Architecture Notes', description: 'How the solution will fit NVIDIA Jetson Orin NX constraints (FP16/INT8, TensorRT, memory budget).' },
-                        { name: 'Engineering Process', format: 'Summary Report', description: 'Explanation of your decision-making path: Problem → Questions → Research → Alternatives → Decision.' },
-                        { name: 'References', format: 'Bibliography', description: 'Research papers, documentation, repositories, and benchmarks used.' }
+                        {
+                            name: '1. Technical Presentation',
+                            format: 'PPT / PDF',
+                            description: 'Concise presentation covering the **problem statement, research, model comparison, key trade-offs, proposed solution, and final decision**. Should communicate the technical reasoning clearly without going into excessive implementation detail.'
+                        },
+                        {
+                            name: '2. Technical Design & Research Report',
+                            format: 'PDF',
+                            description: 'Detailed technical document covering **model comparison, dataset strategy, training & evaluation plan, deployment considerations for NVIDIA Jetson Orin NX, and engineering decision-making process** from Problem → Questions → Research → Alternatives → Decision. **References/bibliography** should be included at the end.'
+                        },
+                        {
+                            name: '3. System / Workflow Diagram',
+                            format: 'PNG / PDF / SVG',
+                            description: 'Clear end-to-end system architecture showing the **camera input, preprocessing, object detection/inference, post-processing, and final output**, including relevant deployment components such as TensorRT, FP16/INT8, and Jetson Orin NX where applicable.'
+                        }
                     ],
                     suggestedStructure: [
                         '1. Problem Understanding',
@@ -185,7 +196,7 @@ export const SOFTWARE_PERCEPTION_DATA = {
                     overview: 'In Phase 2, you will implement, train, and benchmark the detector proposed in Phase 1. You are not required to follow your Phase 1 proposal blindly — if experiments show a different architecture or training regime is superior, document what changed and why.',
                     environmentNote: 'You do NOT need physical access to an NVIDIA Jetson Orin NX or ZED 2i camera. You may develop and test your detector on whatever hardware is available to you (laptop, Google Colab, GPU workstation). Jetson is the target deployment platform, not a requirement for personal setup.',
                     coreTask: [
-                        'Implement, fine-tune, or train your 2D object detector to distinguish all 9 required classes.',
+                        'Implement, fine-tune, or train your 2D object detector to distinguish all 13 required classes.',
                         'Prepare a dataset by combining public datasets, annotating custom samples, or synthetic augmentation.',
                         'Produce bounding boxes, class labels, and confidence scores for every detection.',
                         'Evaluate using quantitative detection metrics (Precision, Recall, mAP@50, mAP@50:95) and efficiency metrics (FPS, inference latency in ms, model weight size in MB).'
@@ -476,6 +487,7 @@ export const POWERTRAIN_TEST_DATA = {
         'Reporting Time: Arrive at the venue well before 5:30 PM to complete attendance and seating.',
         'Strict Timing: The test follows a rigid 60-minute duration. Late arrivals may face entry restrictions or loss of time.',
         'Stationery: Bring your own pens, pencils, eraser, scale, and writing materials. Borrowing or sharing stationery during the exam is forbidden.',
+        'Rough Sheets: Rough Sheets will not be provided at the venue. You can bring up to 3 A4 plain white sheets if you prefer.',
         'Seating: Remain in your assigned seat throughout the test. Do not leave the hall without permission from the invigilator.',
         'Invigilator Guidance: Follow all announcements and instructions given by the invigilation team promptly.'
     ],
