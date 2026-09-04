@@ -708,20 +708,26 @@ export default function SoftwarePerceptionViewer({ isAdmin = false }) {
                         </div>
 
                         {/* Phase 1 Submission Instructions & Drive Portal Notice */}
-                        <div className="p-4 bg-sky-50 border-2 border-slate-900 shadow-[3px_3px_0px_#0f172a] space-y-2.5">
-                            <div className="flex items-center gap-2">
-                                <span className="px-2 py-0.5 bg-slate-900 text-sky-300 font-mono text-xs font-black uppercase">
-                                    📁 SUBMISSION PROTOCOL
-                                </span>
-                                <span className="font-mono text-xs font-bold text-sky-800">
-                                    Google Drive Link &amp; On-Site Portal
+                        <div className="p-4 bg-sky-50 border-2 border-slate-900 shadow-[3px_3px_0px_#0f172a] space-y-3">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                                <div className="flex items-center gap-2">
+                                    <span className="px-2 py-0.5 bg-slate-900 text-sky-300 font-mono text-xs font-black uppercase">
+                                        📁 SUBMISSION PROTOCOL
+                                    </span>
+                                    <span className="font-mono text-xs font-bold text-sky-800">
+                                        Google Drive Link • Official Portal Open
+                                    </span>
+                                </div>
+                                <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 border border-emerald-300 font-mono text-[10px] font-black uppercase">
+                                    ● PORTAL ACTIVE
                                 </span>
                             </div>
+
                             <ul className="space-y-1.5 text-xs font-bold text-slate-800 leading-relaxed">
                                 <li className="flex items-start gap-2">
                                     <span className="text-sky-600 font-black mt-0.5">✦</span>
                                     <span>
-                                        <strong>Google Drive Folder:</strong> All required documents (System Architecture Proposal PDF, calculations, block diagrams, code files) must be compiled inside a dedicated Google Drive folder for your duo.
+                                        <strong>Google Drive Folder:</strong> All required documents (Technical Presentation, Technical Design &amp; Research Report, and System / Workflow Diagram) must be placed inside a shared Google Drive folder for your duo.
                                     </span>
                                 </li>
                                 <li className="flex items-start gap-2">
@@ -733,10 +739,20 @@ export default function SoftwarePerceptionViewer({ isAdmin = false }) {
                                 <li className="flex items-start gap-2">
                                     <span className="text-sky-600 font-black mt-0.5">✦</span>
                                     <span>
-                                        <strong>Website Submission Portal:</strong> Your Google Drive link must be submitted through the <strong>dedicated submission portal on this same website</strong>, which will be <strong>opened soon</strong> prior to the deadline.
+                                        <strong>Submit Portal:</strong> Submit your Google Drive folder link through the official Asterix Submission Portal below.
                                     </span>
                                 </li>
                             </ul>
+
+                            <div className="pt-1">
+                                <a
+                                    href="#submit?track=software"
+                                    className="press inline-flex items-center gap-2 px-5 py-2.5 bg-slate-900 text-amber-300 hover:bg-slate-800 border-2 border-slate-900 font-mono text-xs font-black uppercase tracking-wider shadow-[3px_3px_0px_#0284c7]"
+                                >
+                                    <span>🚀 SUBMIT PHASE 01 DRIVE LINK NOW</span>
+                                    <span>→</span>
+                                </a>
+                            </div>
                         </div>
                     </div>
                 )}

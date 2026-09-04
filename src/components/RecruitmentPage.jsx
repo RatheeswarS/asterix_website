@@ -179,12 +179,19 @@ export default function RecruitmentPage({ onBack, onSelectSubsystem }) {
                     )}
 
                     {tracks.length > 0 && (
-                        <div className="mt-8">
+                        <div className="mt-8 flex flex-wrap items-center gap-3">
                             <a
                                 href="#subsystems"
                                 className="press px-6 py-3.5 bg-white text-slate-900 border-3 border-slate-900 font-mono font-black text-xs uppercase shadow-[4px_4px_0px_#0284c7] cursor-pointer no-underline"
                             >
                                 Choose your subsystem ↓
+                            </a>
+                            <a
+                                href="#submit"
+                                className="press px-6 py-3.5 bg-amber-300 hover:bg-amber-400 text-slate-900 border-3 border-slate-900 font-mono font-black text-xs uppercase shadow-[4px_4px_0px_#0f172a] cursor-pointer no-underline flex items-center gap-2"
+                            >
+                                <span>🚀 Submit Phase 01 Drive Link</span>
+                                <span>↗</span>
                             </a>
                         </div>
                     )}

@@ -19,6 +19,7 @@ const BajaModelPage = lazy(() => import("./components/BajaModelPage"));
 const AdminDashboard = lazy(() => import("./components/admin/AdminDashboard"));
 const SponsorPage = lazy(() => import("./components/SponsorPage"));
 const RecruitmentPage = lazy(() => import("./components/RecruitmentPage"));
+const SubmissionPortalPage = lazy(() => import("./components/recruitment/SubmissionPortalPage"));
 
 function MainApp() {
     const [selectedSubsystem, setSelectedSubsystem] = useState(null);
@@ -26,6 +27,7 @@ function MainApp() {
     const [isAdminOpen, setIsAdminOpen] = useState(() => window.location.hash.startsWith('#admin'));
     const [isSponsorPage, setIsSponsorPage] = useState(() => window.location.hash === '#sponsor');
     const [isRecruitmentPage, setIsRecruitmentPage] = useState(() => window.location.hash === '#join' || window.location.hash === '#recruitment');
+    const [isSubmissionPage, setIsSubmissionPage] = useState(() => window.location.hash.startsWith('#submit') || window.location.hash.startsWith('#recruitment-submit'));
     const [lenisInstance, setLenisInstance] = useState(null);
 
     const scrollToTop = () => {
@@ -41,6 +43,7 @@ function MainApp() {
             setIsAdminOpen(hash.startsWith('#admin'));
             setIsSponsorPage(hash === '#sponsor');
             setIsRecruitmentPage(hash === '#join' || hash === '#recruitment');
+            setIsSubmissionPage(hash.startsWith('#submit') || hash.startsWith('#recruitment-submit'));
             if (hash === '#model') setIsModelPage(true);
             scrollToTop();
         };
@@ -50,7 +53,7 @@ function MainApp() {
 
     useEffect(() => {
         scrollToTop();
-    }, [isSponsorPage, isRecruitmentPage, selectedSubsystem, isModelPage, isAdminOpen]);
+    }, [isSponsorPage, isRecruitmentPage, isSubmissionPage, selectedSubsystem, isModelPage, isAdminOpen]);
 
     useEffect(() => {
         // Readers who ask for reduced motion get the browser's native scroll.
@@ -191,6 +194,18 @@ function MainApp() {
                 <RecruitmentPage
                     onBack={handleBackToHome}
                     onSelectSubsystem={handleSelectSubsystem}
+                />
+            </Suspense>
+        );
+    }
+
+    // Dedicated Full-Screen Phase 01 Google Drive Submission Portal
+    if (isSubmissionPage) {
+        return (
+            <Suspense fallback={pageFallback}>
+                <SubmissionPortalPage
+                    onNavigateHome={handleBackToHome}
+                    onNavigateRecruitment={handleOpenRecruitment}
                 />
             </Suspense>
         );

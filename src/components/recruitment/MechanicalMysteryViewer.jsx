@@ -384,14 +384,27 @@ export default function MechanicalMysteryViewer() {
                         <li className="flex items-start gap-2">
                             <span className="text-sky-600 font-black mt-0.5">✦</span>
                             <span>
-                                <strong>On-Site Submission Portal:</strong> Your Google Drive folder link must be submitted directly through a dedicated portal hosted right here on this website. <strong>The submission portal will be opened soon</strong> prior to the deadline.
+                                <strong>On-Site Submission Portal:</strong> Your Google Drive folder link must be submitted directly through the official Asterix Submission Portal on this website.
                             </span>
                         </li>
                     </ul>
 
-                    <div className="pt-2 border-t border-slate-200 flex flex-wrap items-center justify-between text-[11px] font-mono font-bold text-slate-600 gap-2">
-                        <span>Portal Status: <strong className="text-amber-700 uppercase">Opening Soon on this Website</strong></span>
-                        <span>Prepare your presentation slides &amp; Google Drive link in advance</span>
+                    <div className="pt-3 border-t border-slate-200 flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                            <span className="font-mono text-xs font-bold text-slate-600 block">
+                                Portal Status: <strong className="text-emerald-700 uppercase">● LIVE &amp; ACCEPTING SUBMISSIONS</strong>
+                            </span>
+                            <span className="font-mono text-[11px] text-slate-500">
+                                Protected by immutable append-only version logging
+                            </span>
+                        </div>
+                        <a
+                            href="#submit?track=mechanical"
+                            className="press inline-flex items-center gap-2 px-5 py-2.5 bg-slate-900 text-amber-300 hover:bg-slate-800 border-2 border-slate-900 font-mono text-xs font-black uppercase tracking-wider shadow-[3px_3px_0px_#f59e0b]"
+                        >
+                            <span>🚀 SUBMIT PHASE 01 DRIVE LINK NOW</span>
+                            <span>→</span>
+                        </a>
                     </div>
                 </div>
             </div>

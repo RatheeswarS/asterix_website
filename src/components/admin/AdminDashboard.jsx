@@ -4,6 +4,7 @@ import { apiUrl } from '../../lib/api';
 import Icon from '../Icon';
 import ImageField from './ImageField';
 import RecruitmentAdmin from './RecruitmentAdmin';
+import SubmissionsAdmin from './SubmissionsAdmin';
 
 export default function AdminDashboard({ onExit }) {
     const {
@@ -503,6 +504,7 @@ export default function AdminDashboard({ onExit }) {
         { id: 'subsystems', label: 'Subsystems & Squad', icon: 'vehicle' },
         { id: 'sponsorship', label: 'Sponsorship Portal', icon: 'folder' },
         { id: 'recruitment', label: 'Recruitment Portal', icon: 'users' },
+        { id: 'submissions', label: 'Phase 1 Submissions', icon: 'folder' },
         { id: 'gallery', label: 'Media Gallery', icon: 'camera' },
         { id: 'updates', label: 'Team Updates', icon: 'megaphone' },
         { id: 'subscribers', label: 'Alliance Leads', icon: 'inbox' },
@@ -1457,6 +1459,10 @@ export default function AdminDashboard({ onExit }) {
 
                     {activeTab === 'recruitment' && (
                         <RecruitmentAdmin showStatus={showStatus} />
+                    )}
+
+                    {activeTab === 'submissions' && (
+                        <SubmissionsAdmin showStatus={showStatus} />
                     )}
 
                     {/* TAB 5: GALLERY & MEDIA */}
