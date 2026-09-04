@@ -17,12 +17,12 @@ export const HARDWARE_RELEASE_MS = new Date(HARDWARE_RELEASE_DATE_STR).getTime()
 
 export const SUBSYSTEM_LEADS = {
     'software-perception': {
-        name: 'Ratheeshwar',
+        name: 'Ratheeswar',
         role: 'Software & Perception Lead',
         phone: '+91 86089 44644',
     },
     'software': {
-        name: 'Ratheeshwar',
+        name: 'Ratheeswar',
         role: 'Software & Perception Lead',
         phone: '+91 86089 44644',
     },
@@ -69,7 +69,7 @@ export const SOFTWARE_PERCEPTION_DATA = {
         teamsIIIYear: [
             { group: 'Group 1', members: [{ name: 'Bharath V', dept: 'ICE', phone: '9342953944' }, { name: 'Vishal S', dept: 'AIDS', phone: '8248897569' }] },
             { group: 'Group 2', members: [{ name: 'Manikandan D', dept: 'AIDS', phone: '7305315144' }, { name: 'Swaraj Rs', dept: 'ECE', phone: '9790299906' }] },
-            { group: 'Group 3', members: [{ name: 'Arun Madav R', dept: 'CSE', phone: '6374704044' }] }
+            { group: 'Group 3', members: [{ name: 'Arun Madav R', dept: 'CSE', phone: '6374704044' }, { name: 'Sivasree', dept: 'CSE', phone: '72002 16339' }] }
         ]
     },
     timeline: [
