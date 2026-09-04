@@ -194,7 +194,7 @@ Submitted By: ${submissionReceipt.submitterName} (${submissionReceipt.submitterP
 Partner: ${submissionReceipt.partnerName || 'None'}
 Drive URL: ${submissionReceipt.driveUrl}
 Recorded At: ${new Date(submissionReceipt.timestamp).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })} IST
-Note: Earlier versions remain safely preserved in the audit log.`;
+Note: If multiple submissions are made, only the latest submission will be considered for evaluation.`;
 
         navigator.clipboard?.writeText?.(text);
         setCopiedReceipt(true);
@@ -260,13 +260,13 @@ Note: Earlier versions remain safely preserved in the audit log.`;
                     Paste your duo team&apos;s shared Google Drive folder containing your Phase 01 presentation slides, technical report, workflow diagrams, and research documentation.
                 </p>
 
-                {/* Anti-Tamper Notice Banner */}
+                {/* Submission Updates Notice Banner */}
                 <div className="mt-6 p-4 bg-amber-500/15 border-2 border-amber-400 text-amber-200 text-xs font-bold space-y-1">
                     <div className="flex items-center gap-2 font-mono font-black uppercase tracking-wide text-amber-300">
-                        <span>🛡️ ANTI-TAMPER POLICY &amp; VERSION PRESERVATION</span>
+                        <span>ℹ️ MULTIPLE SUBMISSIONS ALLOWED</span>
                     </div>
                     <p className="leading-relaxed">
-                        Every submission is permanently recorded with submitter identity and an immutable timestamp. If your duo submits an updated link later, <strong>your previous submission is never erased or overwritten</strong> — both versions remain safely preserved in the audit log for evaluation.
+                        Submissions can be made as many times as required before the deadline. <strong>Only your latest (last) submission will be considered</strong> for final evaluation.
                     </p>
                 </div>
             </section>
@@ -590,7 +590,7 @@ Note: Earlier versions remain safely preserved in the audit log.`;
                         {/* Submit CTA */}
                         <div className="pt-4 border-t-3 border-slate-950 flex flex-col sm:flex-row items-center justify-between gap-4">
                             <div className="text-[11px] font-mono text-slate-500 font-bold">
-                                Protected by Append-Only Audit History
+                                Latest submission will be considered for evaluation
                             </div>
 
                             <button
