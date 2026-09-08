@@ -54,15 +54,34 @@ export default function SubmissionsAdmin({ showStatus }) {
         };
     }, [fetchSubmissions]);
 
-    // Map history per team to show versioning
+    // Map full history per team (differentiating subsystem, cohort and group)
     const groupHistoryMap = useMemo(() => {
         const map = {};
+        // Submissions come in sorted descending by createdAt from the server
         submissions.forEach((s) => {
-            const k = `${s.subsystem.toLowerCase()}:::${s.group.toLowerCase()}`;
+            const cohortKey = (s.cohort || 'General').toLowerCase().trim();
+            const k = `${s.subsystem.toLowerCase().trim()}:::${cohortKey}:::${s.group.toLowerCase().trim()}`;
             if (!map[k]) map[k] = [];
             map[k].push(s);
         });
         return map;
+    }, [submissions]);
+
+    // Distinct list of ONLY the latest submission per team
+    const latestSubmissions = useMemo(() => {
+        const seen = new Set();
+        const latestList = [];
+
+        submissions.forEach((s) => {
+            const cohortKey = (s.cohort || 'General').toLowerCase().trim();
+            const k = `${s.subsystem.toLowerCase().trim()}:::${cohortKey}:::${s.group.toLowerCase().trim()}`;
+            if (!seen.has(k)) {
+                seen.add(k);
+                latestList.push(s);
+            }
+        });
+
+        return latestList;
     }, [submissions]);
 
     // Build canonical rosters to check for missing groups
@@ -98,14 +117,15 @@ export default function SubmissionsAdmin({ showStatus }) {
         return list;
     }, []);
 
-    // Filter submissions
+    // Filter only the latest submissions
     const filteredSubmissions = useMemo(() => {
-        return submissions.filter((sub) => {
+        return latestSubmissions.filter((sub) => {
             if (filterSubsystem !== 'all' && sub.subsystem !== filterSubsystem) return false;
             if (!searchQuery.trim()) return true;
             const q = searchQuery.toLowerCase().trim();
             return (
                 sub.group.toLowerCase().includes(q) ||
+                (sub.cohort && sub.cohort.toLowerCase().includes(q)) ||
                 sub.submitterName.toLowerCase().includes(q) ||
                 sub.submitterPhone.includes(q) ||
                 (sub.problemStatement && sub.problemStatement.toLowerCase().includes(q)) ||
@@ -114,14 +134,20 @@ export default function SubmissionsAdmin({ showStatus }) {
                 sub.driveUrl.toLowerCase().includes(q)
             );
         });
-    }, [submissions, filterSubsystem, searchQuery]);
+    }, [latestSubmissions, filterSubsystem, searchQuery]);
 
     // Find missing groups that haven't submitted yet
     const missingGroups = useMemo(() => {
-        const submittedKeys = new Set(submissions.map((s) => `${s.subsystem.toLowerCase()}:::${s.group.toLowerCase()}`));
+        const submittedKeys = new Set(
+            submissions.map((s) => {
+                const cohortKey = (s.cohort || 'General').toLowerCase().trim();
+                return `${s.subsystem.toLowerCase().trim()}:::${cohortKey}:::${s.group.toLowerCase().trim()}`;
+            })
+        );
         return canonicalRoster.filter((rosterItem) => {
             if (filterSubsystem !== 'all' && rosterItem.subsystem !== filterSubsystem) return false;
-            const key = `${rosterItem.subsystem.toLowerCase()}:::${rosterItem.group.toLowerCase()}`;
+            const cohortKey = (rosterItem.cohort || 'General').toLowerCase().trim();
+            const key = `${rosterItem.subsystem.toLowerCase().trim()}:::${cohortKey}:::${rosterItem.group.toLowerCase().trim()}`;
             return !submittedKeys.has(key);
         });
     }, [canonicalRoster, submissions, filterSubsystem]);
@@ -449,15 +475,16 @@ export default function SubmissionsAdmin({ showStatus }) {
 
                                                 <td className="p-3 text-center">
                                                     {(() => {
-                                                        const teamKey = `${sub.subsystem.toLowerCase()}:::${sub.group.toLowerCase()}`;
+                                                        const cohortKey = (sub.cohort || 'General').toLowerCase().trim();
+                                                        const teamKey = `${sub.subsystem.toLowerCase().trim()}:::${cohortKey}:::${sub.group.toLowerCase().trim()}`;
                                                         const historyForTeam = groupHistoryMap[teamKey] || [];
                                                         const hasMultiple = historyForTeam.length > 1;
                                                         const isExpanded = expandedGroupKey === teamKey;
 
                                                         return (
                                                             <div className="flex flex-col items-center gap-1">
-                                                                <span className="px-2 py-0.5 bg-slate-100 border border-slate-300 font-mono text-[10px] font-black uppercase">
-                                                                    v{historyForTeam.length}
+                                                                <span className="px-2 py-0.5 bg-emerald-100 text-emerald-900 border border-emerald-400 font-mono text-[10px] font-black uppercase">
+                                                                    Latest (v{historyForTeam.length})
                                                                 </span>
                                                                 {hasMultiple && (
                                                                     <button
@@ -473,19 +500,24 @@ export default function SubmissionsAdmin({ showStatus }) {
                                                     })()}
                                                 </td>
                                             </tr>
-                                            {expandedGroupKey === `${sub.subsystem.toLowerCase()}:::${sub.group.toLowerCase()}` && (
-                                                <tr className="bg-amber-50/70 border-b-2 border-slate-900 font-mono text-[11px]">
-                                                    <td colSpan={6} className="p-4 space-y-2">
-                                                        <div className="flex items-center justify-between">
-                                                            <strong className="text-slate-900 uppercase">
-                                                                Full Submission History for {sub.group} ({sub.subsystem})
-                                                            </strong>
-                                                            <span className="text-slate-500 font-bold">
-                                                                All historical links safely preserved
-                                                            </span>
-                                                        </div>
-                                                        <div className="space-y-1.5 pt-1">
-                                                            {(groupHistoryMap[`${sub.subsystem.toLowerCase()}:::${sub.group.toLowerCase()}`] || []).map((h, hIdx, arr) => (
+                                            {(() => {
+                                                const cohortKey = (sub.cohort || 'General').toLowerCase().trim();
+                                                const teamKey = `${sub.subsystem.toLowerCase().trim()}:::${cohortKey}:::${sub.group.toLowerCase().trim()}`;
+                                                if (expandedGroupKey !== teamKey) return null;
+
+                                                return (
+                                                    <tr className="bg-amber-50/70 border-b-2 border-slate-900 font-mono text-[11px]">
+                                                        <td colSpan={6} className="p-4 space-y-2">
+                                                            <div className="flex items-center justify-between">
+                                                                <strong className="text-slate-900 uppercase">
+                                                                    Full Submission History for {sub.group} ({sub.subsystem} • {sub.cohort || 'General'})
+                                                                </strong>
+                                                                <span className="text-slate-500 font-bold">
+                                                                    All historical links safely preserved
+                                                                </span>
+                                                            </div>
+                                                            <div className="space-y-1.5 pt-1">
+                                                                {(groupHistoryMap[teamKey] || []).map((h, hIdx, arr) => (
                                                                 <div
                                                                     key={h._id || hIdx}
                                                                     className="p-2.5 bg-white border border-slate-300 flex flex-wrap items-center justify-between gap-2"
@@ -537,7 +569,8 @@ export default function SubmissionsAdmin({ showStatus }) {
                                                         </div>
                                                     </td>
                                                 </tr>
-                                            )}
+                                                );
+                                            })()}
                                         </Fragment>
                                     );
                                     })}
