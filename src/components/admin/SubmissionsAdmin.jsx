@@ -5,6 +5,8 @@ import {
     MECHANICAL_MYSTERY_DATA
 } from '../../data/recruitmentProblemStatements';
 
+import { AUTH_TOKEN_KEY } from '../../context/WebsiteDataContext';
+
 export default function SubmissionsAdmin({ showStatus }) {
     const [submissions, setSubmissions] = useState([]);
     const [groupedTeams, setGroupedTeams] = useState([]);
@@ -17,7 +19,7 @@ export default function SubmissionsAdmin({ showStatus }) {
     const fetchSubmissions = useCallback(async () => {
         setIsLoading(true);
         try {
-            const token = localStorage.getItem('admin_token');
+            const token = sessionStorage.getItem(AUTH_TOKEN_KEY) || localStorage.getItem('admin_token');
             const res = await fetch(apiUrl('/api/submissions'), {
                 headers: {
                     Authorization: `Bearer ${token}`
