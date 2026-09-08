@@ -16,8 +16,8 @@ export default function SubmissionsAdmin({ showStatus }) {
     const [expandedGroupKey, setExpandedGroupKey] = useState(null);
     const [viewMode, setViewMode] = useState('submissions'); // 'submissions' or 'missing'
 
-    const fetchSubmissions = useCallback(async () => {
-        setIsLoading(true);
+    const fetchSubmissions = useCallback(async (isSilent = false) => {
+        if (!isSilent) setIsLoading(true);
         try {
             const token = sessionStorage.getItem(AUTH_TOKEN_KEY) || localStorage.getItem('admin_token');
             const res = await fetch(apiUrl('/api/submissions'), {
@@ -33,19 +33,25 @@ export default function SubmissionsAdmin({ showStatus }) {
             setGroupedTeams(data.groupedTeams || []);
         } catch (err) {
             console.error('Error loading submissions:', err);
-            if (showStatus) showStatus('Failed to load submissions: ' + err.message);
+            if (!isSilent && showStatus) showStatus('Failed to load submissions: ' + err.message);
         } finally {
-            setIsLoading(false);
+            if (!isSilent) setIsLoading(false);
         }
-    }, [showStatus]);
+    }, []);
 
     useEffect(() => {
         let isMounted = true;
-        const load = async () => {
-            if (isMounted) await fetchSubmissions();
+        fetchSubmissions(false);
+
+        // Periodic background silent refresh every 10s without flickering the table
+        const timer = setInterval(() => {
+            if (isMounted) fetchSubmissions(true);
+        }, 10000);
+
+        return () => {
+            isMounted = false;
+            clearInterval(timer);
         };
-        load();
-        return () => { isMounted = false; };
     }, [fetchSubmissions]);
 
     // Map history per team to show versioning

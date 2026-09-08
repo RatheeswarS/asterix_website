@@ -82,10 +82,10 @@ export default function AdminDashboard({ onExit }) {
     const [isLoadingInquiries, setIsLoadingInquiries] = useState(false);
     const [dbAccounts, setDbAccounts] = useState([]);
 
-    const showStatus = (msg) => {
+    const showStatus = useCallback((msg) => {
         setStatusMessage(msg);
         setTimeout(() => setStatusMessage(''), 3500);
-    };
+    }, []);
 
     /**
      * Sign-in goes to the server and nowhere else.
