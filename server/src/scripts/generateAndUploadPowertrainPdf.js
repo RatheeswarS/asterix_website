@@ -14,83 +14,83 @@ dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 const teamsData = [
     {
         group: 'Group 01',
-        m1: { name: 'Raghav GS', dept: 'ECE', year: 'II YEAR', rollNo: '25L189', regNo: '715525106091', phone: '715525106091', email: '25l189@psgitech.ac.in' },
-        m2: { name: 'Raghauv N D', dept: 'EEE', year: 'II YEAR', rollNo: '25E176', regNo: '715525105076', phone: '715525105076', email: '25e176@psgitech.ac.in' }
+        m1: { name: 'Raghav GS', dept: 'ECE', year: 'II YEAR', rollNo: '25L189', regNo: '715525106091', phone: '9962479975', email: '25l189@psgitech.ac.in' },
+        m2: { name: 'Raghauv N D', dept: 'EEE', year: 'II YEAR', rollNo: '25E176', regNo: '715525105076', phone: '9787229518', email: '25e176@psgitech.ac.in' }
     },
     {
         group: 'Group 02',
-        m1: { name: 'Ben Jounes B', dept: 'VLSI', year: 'II YEAR', rollNo: '25V107', regNo: '715525249007', phone: '715525249007', email: '25v107@psgitech.ac.in' },
-        m2: { name: 'Sankaranarayanan L', dept: 'EEE', year: 'II YEAR', rollNo: '25E152', regNo: '715525105063', phone: '715525105063', email: '25e152@psgitech.ac.in' }
+        m1: { name: 'Ben Jounes B', dept: 'VLSI', year: 'II YEAR', rollNo: '25V107', regNo: '715525249007', phone: '6369209286', email: '25v107@psgitech.ac.in' },
+        m2: { name: 'Sankaranarayanan L', dept: 'EEE', year: 'II YEAR', rollNo: '25E152', regNo: '715525105063', phone: '9791407050', email: '25e152@psgitech.ac.in' }
     },
     {
         group: 'Group 03',
-        m1: { name: 'Annapoorni S', dept: 'ICE', year: 'III YEAR', rollNo: '24U104', regNo: '715524112004', phone: '715524112004', email: '24u104@psgitech.ac.in' },
-        m2: { name: 'Deeksha Balaji', dept: 'EEE', year: 'II YEAR', rollNo: '25E116', regNo: '715525105016', phone: '715525105016', email: '25e116@psgitech.ac.in' }
+        m1: { name: 'Annapoorni S', dept: 'ICE', year: 'III YEAR', rollNo: '24U104', regNo: '715524112004', phone: '9344417101', email: '24u104@psgitech.ac.in' },
+        m2: { name: 'Deeksha Balaji', dept: 'EEE', year: 'II YEAR', rollNo: '25E116', regNo: '715525105016', phone: '9942245925', email: '25e116@psgitech.ac.in' }
     },
     {
         group: 'Group 04',
-        m1: { name: 'Vibash Duraimurugan R', dept: 'ECE', year: 'II YEAR', rollNo: '25L221', regNo: '715525106123', phone: '715525106123', email: '25l221@psgitech.ac.in' },
-        m2: { name: 'Kirthick S', dept: 'EEE', year: 'II YEAR', rollNo: '25E150', regNo: '715525105050', phone: '715525105050', email: '25e150@psgitech.ac.in' }
+        m1: { name: 'Vibash Duraimurugan R', dept: 'ECE', year: 'II YEAR', rollNo: '25L221', regNo: '715525106123', phone: '8015131854', email: '25l221@psgitech.ac.in' },
+        m2: { name: 'Kirthick S', dept: 'EEE', year: 'II YEAR', rollNo: '25E150', regNo: '715525105050', phone: '6385832167', email: '25e150@psgitech.ac.in' }
     },
     {
         group: 'Group 05',
-        m1: { name: 'Tarun. I', dept: 'VLSI', year: 'II YEAR', rollNo: '25V154', regNo: '715525249054', phone: '715525249054', email: '25v154@psgitech.ac.in' },
-        m2: { name: 'Nitish A M', dept: 'EEE', year: 'II YEAR', rollNo: '25E165', regNo: '715525105064', phone: '715525105064', email: '25e165@psgitech.ac.in' }
+        m1: { name: 'Tarun. I', dept: 'VLSI', year: 'II YEAR', rollNo: '25V154', regNo: '715525249054', phone: '6385691678', email: '25v154@psgitech.ac.in' },
+        m2: { name: 'K.Thulasi Madhavaa', dept: 'ECE', year: 'II YEAR', rollNo: '25L218', regNo: '715525106120', phone: '6385105559', email: '25l218@psgitech.ac.in' }
     },
     {
         group: 'Group 06',
-        m1: { name: 'J.kaviya', dept: 'ICE', year: 'II YEAR', rollNo: '25U133', regNo: '715525112034', phone: '715525112034', email: '25u133@psgitech.ac.in' },
-        m2: { name: 'Saisith.N', dept: 'EEE', year: 'II YEAR', rollNo: '25E190', regNo: '715525105090', phone: '715525105090', email: '25e190@psgitech.ac.in' }
+        m1: { name: 'J.kaviya', dept: 'ICE', year: 'II YEAR', rollNo: '25U133', regNo: '715525112034', phone: '8807030548', email: '25u133@psgitech.ac.in' },
+        m2: { name: 'Saisith.N', dept: 'EEE', year: 'II YEAR', rollNo: '25E190', regNo: '715525105090', phone: '9940674168', email: '25e190@psgitech.ac.in' }
     },
     {
         group: 'Group 07',
-        m1: { name: 'Karthi W R', dept: 'VLSI', year: 'II YEAR', rollNo: '25V119', regNo: '715525249020', phone: '715525249020', email: '25v119@psgitech.ac.in' },
-        m2: { name: 'Sanjeev S', dept: 'EEE', year: 'II YEAR', rollNo: '25E194', regNo: '715525105094', phone: '715525105094', email: '25e194@psgitech.ac.in' }
+        m1: { name: 'Karthi W R', dept: 'VLSI', year: 'II YEAR', rollNo: '25V119', regNo: '715525249020', phone: '6383799699', email: '25v119@psgitech.ac.in' },
+        m2: { name: 'Sanjeev S', dept: 'EEE', year: 'II YEAR', rollNo: '25E194', regNo: '715525105094', phone: '9363535132', email: '25e194@psgitech.ac.in' }
     },
     {
         group: 'Group 08',
-        m1: { name: 'Preethy.S', dept: 'ICE', year: 'II YEAR', rollNo: '25U142', regNo: '715525112044', phone: '715525112044', email: '25u142@psgitech.ac.in' },
-        m2: { name: 'Naveen Kumar Raja S', dept: 'EEE', year: 'II YEAR', rollNo: '25E163', regNo: '715525105062', phone: '715525105062', email: '25e163@psgitech.ac.in' }
+        m1: { name: 'Preethy.S', dept: 'ICE', year: 'II YEAR', rollNo: '25U142', regNo: '715525112044', phone: '8438062906', email: '25u142@psgitech.ac.in' },
+        m2: { name: 'Naveen Kumar Raja S', dept: 'EEE', year: 'II YEAR', rollNo: '25E163', regNo: '715525105062', phone: '7305932998', email: '25e163@psgitech.ac.in' }
     },
     {
         group: 'Group 09',
-        m1: { name: 'Rubesh SK', dept: 'VLSI', year: 'II YEAR', rollNo: '25V142', regNo: '715525249042', phone: '715525249042', email: '25v142@psgitech.ac.in' },
-        m2: { name: 'Thanuja J', dept: 'EEE', year: 'II YEAR', rollNo: '25E210', regNo: '715525105110', phone: '715525105110', email: '25e210@psgitech.ac.in' }
+        m1: { name: 'Rubesh SK', dept: 'VLSI', year: 'II YEAR', rollNo: '25V142', regNo: '715525249042', phone: '6369926295', email: '25v142@psgitech.ac.in' },
+        m2: { name: 'Thanuja J', dept: 'EEE', year: 'II YEAR', rollNo: '25E210', regNo: '715525105110', phone: '9159107747', email: '25e210@psgitech.ac.in' }
     },
     {
         group: 'Group 10',
-        m1: { name: 'Jeevitha. V', dept: 'ICE', year: 'II YEAR', rollNo: '25U125', regNo: '715525112026', phone: '715525112026', email: '25u125@psgitech.ac.in' },
-        m2: { name: 'Harsith V', dept: 'EEE', year: 'II YEAR', rollNo: '25E133', regNo: '715525105033', phone: '715525105033', email: '25e133@psgitech.ac.in' }
+        m1: { name: 'Jeevitha. V', dept: 'ICE', year: 'II YEAR', rollNo: '25U125', regNo: '715525112026', phone: '8870846986', email: '25u125@psgitech.ac.in' },
+        m2: { name: 'Harsith V', dept: 'EEE', year: 'II YEAR', rollNo: '25E133', regNo: '715525105033', phone: '7373069780', email: '25e133@psgitech.ac.in' }
     },
     {
         group: 'Group 11',
-        m1: { name: 'Swetha S L', dept: 'VLSI', year: 'II YEAR', rollNo: '25V153', regNo: '715525249053', phone: '715525249053', email: '25v153@psgitech.ac.in' },
-        m2: { name: 'Sugankumar.V.S', dept: 'EEE', year: 'II YEAR', rollNo: '25E207', regNo: '715525105107', phone: '715525105107', email: '25e207@psgitech.ac.in' }
+        m1: { name: 'Swetha S L', dept: 'VLSI', year: 'II YEAR', rollNo: '25V153', regNo: '715525249053', phone: '9487951222', email: '25v153@psgitech.ac.in' },
+        m2: { name: 'Sugankumar.V.S', dept: 'EEE', year: 'II YEAR', rollNo: '25E207', regNo: '715525105107', phone: '9994977234', email: '25e207@psgitech.ac.in' }
     },
     {
         group: 'Group 12',
-        m1: { name: 'K K KIRUBHA HARNI', dept: 'EEE', year: 'II YEAR', rollNo: '25E151', regNo: '715525105051', phone: '715525105051', email: '25e151@psgitech.ac.in' },
-        m2: { name: 'G Vigneshwaran', dept: 'EEE', year: 'II YEAR', rollNo: '25E218', regNo: '715525105118', phone: '715525105118', email: '25e218@psgitech.ac.in' }
+        m1: { name: 'K K KIRUBHA HARNI', dept: 'EEE', year: 'II YEAR', rollNo: '25E151', regNo: '715525105051', phone: '7530018683', email: '25e151@psgitech.ac.in' },
+        m2: { name: 'G Vigneshwaran', dept: 'EEE', year: 'II YEAR', rollNo: '25E218', regNo: '715525105118', phone: '9976313553', email: '25e218@psgitech.ac.in' }
     },
     {
         group: 'Group 13',
-        m1: { name: 'Lakkshon K S', dept: 'EEE', year: 'II YEAR', rollNo: '25E153', regNo: '715525105052', phone: '715525105052', email: '25e153@psgitech.ac.in' },
-        m2: { name: 'Theniniyazh C', dept: 'EEE', year: 'II YEAR', rollNo: '25E211', regNo: '715525105111', phone: '715525105111', email: '25e211@psgitech.ac.in' }
+        m1: { name: 'Lakkshon K S', dept: 'EEE', year: 'II YEAR', rollNo: '25E153', regNo: '715525105052', phone: '9944020111', email: '25e153@psgitech.ac.in' },
+        m2: { name: 'Theniniyazh C', dept: 'EEE', year: 'II YEAR', rollNo: '25E211', regNo: '715525105111', phone: '6383983836', email: '25e211@psgitech.ac.in' }
     },
     {
         group: 'Group 14',
-        m1: { name: 'Manish Aravind S', dept: 'EEE', year: 'II YEAR', rollNo: '25E156', regNo: '715525105055', phone: '715525105055', email: '25e156@psgitech.ac.in' },
-        m2: { name: 'Sudhan Babu B', dept: 'EEE', year: 'II YEAR', rollNo: '25E206', regNo: '715525105106', phone: '715525105106', email: '25e206@psgitech.ac.in' }
+        m1: { name: 'Manish Aravind S', dept: 'EEE', year: 'II YEAR', rollNo: '25E156', regNo: '715525105055', phone: '9894585679', email: '25e156@psgitech.ac.in' },
+        m2: { name: 'Sudhan Babu B', dept: 'EEE', year: 'II YEAR', rollNo: '25E206', regNo: '715525105106', phone: '7397319583', email: '25e206@psgitech.ac.in' }
     },
     {
         group: 'Group 15',
-        m1: { name: 'Muhamed Mufaries A', dept: 'EEE', year: 'II YEAR', rollNo: '25E160', regNo: '715525105059', phone: '715525105059', email: '25e160@psgitech.ac.in' },
-        m2: { name: 'Sri Varshan V R', dept: 'EEE', year: 'II YEAR', rollNo: '25E202', regNo: '715525105105', phone: '715525105105', email: '25e202@psgitech.ac.in' }
+        m1: { name: 'Muhamed Mufaries A', dept: 'EEE', year: 'II YEAR', rollNo: '25E160', regNo: '715525105059', phone: '9566689667', email: '25e160@psgitech.ac.in' },
+        m2: { name: 'Sri Varshan V R', dept: 'EEE', year: 'II YEAR', rollNo: '25E202', regNo: '715525105105', phone: '9345677590', email: '25e202@psgitech.ac.in' }
     },
     {
         group: 'Group 16',
-        m1: { name: 'M.Mukesh', dept: 'EEE', year: 'II YEAR', rollNo: '25E161', regNo: '715525105060', phone: '715525105060', email: '25e161@psgitech.ac.in' },
-        m2: { name: 'Sowjanya S', dept: 'EEE', year: 'II YEAR', rollNo: '25E200', regNo: '715525105100', phone: '715525105100', email: '25e200@psgitech.ac.in' }
+        m1: { name: 'M.Mukesh', dept: 'EEE', year: 'II YEAR', rollNo: '25E161', regNo: '715525105060', phone: '6379502894', email: '25e161@psgitech.ac.in' },
+        m2: { name: 'Sowjanya S', dept: 'EEE', year: 'II YEAR', rollNo: '25E200', regNo: '715525105100', phone: '6374462136', email: '25e200@psgitech.ac.in' }
     }
 ];
 
