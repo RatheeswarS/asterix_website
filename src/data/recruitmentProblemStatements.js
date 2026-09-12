@@ -396,7 +396,7 @@ export const POWERTRAIN_CHALLENGE_DATA = {
         title: 'Team Formation: Teams of 2',
         badge: 'DUO TEAMS ALLOCATED',
         desc: 'In this recruitment challenge, you will work in an allocated team of two to solve one electrical engineering problem inspired by the architecture and requirements of an autonomous BAJA vehicle. Each team must choose exactly ONE problem statement and register their selection in the portal.',
-        pdfUrl: 'https://ik.imagekit.io/kitzwb4be/asterix/recruitment/powertrain_teams.pdf',
+        pdfUrl: 'https://ik.imagekit.io/kitzwb4be/asterix/recruitment/powertrain_teams.pdf?v=2',
         pdfLocalUrl: '/recruitment/powertrain_teams.pdf',
         teams: [
             {

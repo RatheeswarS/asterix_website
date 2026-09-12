@@ -168,7 +168,7 @@ export default function RecruitmentPage({ onBack, onSelectSubsystem }) {
                                 href="#submit"
                                 className="press px-6 py-3.5 bg-amber-300 hover:bg-amber-400 text-slate-900 border-3 border-slate-900 font-mono font-black text-xs uppercase shadow-[4px_4px_0px_#0f172a] cursor-pointer no-underline flex items-center gap-2"
                             >
-                                <span>🚀 Submit Phase 01 Drive Link</span>
+                                <span>🚀 Submission Portal</span>
                                 <span>↗</span>
                             </a>
                         </div>
@@ -203,11 +203,10 @@ export default function RecruitmentPage({ onBack, onSelectSubsystem }) {
                                     type="button"
                                     onClick={() => handleSelect(track.id)}
                                     aria-pressed={isActive}
-                                    className={`px-5 py-3 border-3 border-slate-900 font-mono font-black text-xs uppercase tracking-wide cursor-pointer transition-all ${
-                                        isActive
+                                    className={`px-5 py-3 border-3 border-slate-900 font-mono font-black text-xs uppercase tracking-wide cursor-pointer transition-all ${isActive
                                             ? 'bg-slate-900 text-white shadow-[4px_4px_0px_#0284c7]'
                                             : 'bg-white hover:bg-slate-100 text-slate-900 shadow-[3px_3px_0px_#0f172a]'
-                                    }`}
+                                        }`}
                                 >
                                     {track.name}
                                 </button>

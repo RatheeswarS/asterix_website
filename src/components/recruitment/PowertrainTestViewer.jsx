@@ -158,13 +158,13 @@ export default function PowertrainTestViewer() {
                                                 <div>
                                                     <strong className="text-slate-900 block leading-tight">{m.name}</strong>
                                                     <span className="font-mono text-[10px] text-slate-500 uppercase">
-                                                        {m.dept} • {m.year || 'II YEAR'} • {m.rollNo}
+                                                        {m.dept} • {m.year || 'II YEAR'} • {m.rollNo || ''}
                                                     </span>
                                                 </div>
                                                 <div className="text-right shrink-0">
-                                                    <span className="font-mono text-[10px] font-bold text-sky-800 bg-sky-50 px-1.5 py-0.5 border border-sky-200 block">
-                                                        {m.regNo || m.phone}
-                                                    </span>
+                                                    <a href={`tel:${m.phone}`} className="font-mono text-[11px] font-bold text-sky-700 hover:underline block">
+                                                        {m.phone}
+                                                    </a>
                                                 </div>
                                             </div>
                                         ))}

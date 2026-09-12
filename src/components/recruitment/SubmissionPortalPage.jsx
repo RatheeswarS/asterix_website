@@ -795,7 +795,7 @@ Note: If multiple registrations are made, only the latest choice will be conside
                                                     {member.dept} • {member.year || 'II YEAR'} • {member.rollNo || ''}
                                                 </span>
                                                 <span className="font-mono text-[10px] text-sky-700 block font-bold mt-0.5">
-                                                    ID / Reg: {member.regNo || member.phone}
+                                                    📞 {member.phone}
                                                 </span>
                                             </div>
                                         </label>
