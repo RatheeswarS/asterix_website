@@ -141,7 +141,7 @@ export default function SubmissionPortalPage({ onNavigateHome, onNavigateRecruit
 
             if (registeredPhone && cleanPhone !== registeredPhone && !rollMatches && !emailMatches) {
                 setFormError(
-                    `Verification failed: The entered credential does not match ${currentSubmitter.name}. Please enter your register number (${currentSubmitter.regNo || currentSubmitter.phone}) or registered roll code.`
+                    `Verification failed: The entered credential does not match ${currentSubmitter.name}. Please enter your registered contact mobile number or college register number.`
                 );
                 return;
             }
@@ -792,10 +792,7 @@ Note: If multiple registrations are made, only the latest choice will be conside
                                             <div className="text-xs">
                                                 <strong className="block text-slate-900 text-sm">{member.name}</strong>
                                                 <span className="font-mono text-[11px] text-slate-500 uppercase">
-                                                    {member.dept} • {member.year || 'II YEAR'} • {member.rollNo || ''}
-                                                </span>
-                                                <span className="font-mono text-[10px] text-sky-700 block font-bold mt-0.5">
-                                                    📞 {member.phone}
+                                                    {member.dept} • {member.year || 'II YEAR'}
                                                 </span>
                                             </div>
                                         </label>
@@ -808,17 +805,17 @@ Note: If multiple registrations are made, only the latest choice will be conside
                         {activeTeam && (
                             <div className="space-y-1.5 pt-2 border-t-2 border-slate-200">
                                 <label className="font-mono text-xs font-black uppercase text-slate-900 flex items-center justify-between">
-                                    <span>{subsystem === 'powertrain' ? 'Step 5' : 'Step 4'}: Submitter Verification</span>
+                                    <span>{subsystem === 'powertrain' ? 'Step 5' : 'Step 4'}: Submitter Identity Verification</span>
                                     <span className="font-mono text-[10px] text-rose-600 font-bold">REQUIRED</span>
                                 </label>
                                 <p className="text-[11px] font-bold text-slate-600">
-                                    Enter the registered contact / register number (e.g. <strong>{currentSubmitter?.regNo || currentSubmitter?.phone}</strong>) or roll code (<strong>{currentSubmitter?.rollNo || ''}</strong>) for <strong>{currentSubmitter?.name}</strong> to verify your identity.
+                                    Enter your registered contact mobile number or college register number for <strong>{currentSubmitter?.name}</strong> to verify your identity.
                                 </p>
                                 <input
                                     type="text"
                                     value={phoneInput}
                                     onChange={(e) => setPhoneInput(e.target.value)}
-                                    placeholder={`Enter ${currentSubmitter?.regNo ? 'Register No / Roll Code / Contact' : '10-digit registered contact number'}`}
+                                    placeholder="Enter your registered 10-digit mobile number or college register number"
                                     className="w-full p-3 bg-slate-50 border-2 border-slate-950 font-mono text-sm font-bold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500"
                                     required
                                 />
