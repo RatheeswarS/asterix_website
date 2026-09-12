@@ -50,7 +50,7 @@ const SubmissionSchema = new mongoose.Schema({
     },
     driveUrl: {
         type: String,
-        required: true,
+        default: '',
         trim: true
     },
     githubUrl: {

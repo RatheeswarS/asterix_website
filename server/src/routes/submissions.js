@@ -34,15 +34,23 @@ router.post('/', async (req, res) => {
             notes
         } = req.body;
 
+        const isPowertrain = String(subsystem).toLowerCase().trim() === 'powertrain';
+
         // Basic validation
-        if (!subsystem || !group || !submitterName || !submitterPhone || !driveUrl) {
+        if (!subsystem || !group || !submitterName || !submitterPhone || (!isPowertrain && !driveUrl)) {
             return res.status(400).json({
-                error: 'Missing required fields: subsystem, group, submitterName, submitterPhone, and driveUrl are mandatory.'
+                error: 'Missing required fields: subsystem, group, submitterName, submitterPhone' + (!isPowertrain ? ', and driveUrl' : '') + ' are mandatory.'
             });
         }
 
-        const cleanUrl = String(driveUrl).trim();
-        if (!cleanUrl.toLowerCase().includes('drive.google.com')) {
+        const cleanUrl = String(driveUrl || '').trim();
+        if (!isPowertrain) {
+            if (!cleanUrl || !cleanUrl.toLowerCase().includes('drive.google.com')) {
+                return res.status(400).json({
+                    error: 'Invalid link: Please provide a valid Google Drive link (containing drive.google.com).'
+                });
+            }
+        } else if (cleanUrl && !cleanUrl.toLowerCase().includes('drive.google.com')) {
             return res.status(400).json({
                 error: 'Invalid link: Please provide a valid Google Drive link (containing drive.google.com).'
             });

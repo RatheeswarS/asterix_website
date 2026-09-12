@@ -375,138 +375,430 @@ export const SOFTWARE_PERCEPTION_DATA = {
     }
 };
 
-export const POWERTRAIN_TEST_DATA = {
+export const POWERTRAIN_CHALLENGE_DATA = {
     id: 'powertrain',
     name: 'Powertrain',
-    headline: 'POWERTRAIN SUBSYSTEM RECRUITMENT TEST',
-    blurb: 'Offline written evaluation covering Logical Reasoning, Network Analysis, Electronic Devices, and Digital Electronics.',
+    headline: 'POWERTRAIN SUBSYSTEM RECRUITMENT CHALLENGE',
+    badge: 'ROUND 2 • DESIGN & IMPLEMENTATION',
+    blurb: 'Choose one of three electrical engineering problem statements inspired by an autonomous BAJA vehicle. Research the problem, compare approaches, design a practical solution, and prove it with a working prototype or simulation.',
     lead: SUBSYSTEM_LEADS['powertrain'],
+    coordinators: [
+        { name: 'Joel Anto Edwin', role: 'Powertrain Subsystem Lead', phone: '+91 72079 60077' },
+        { name: 'Shriniyathi S', role: 'Recruitment Coordinator', phone: '+91 99429 12792' },
+        { name: 'Kathin Sankar', role: 'Recruitment Coordinator', phone: '+91 97909 55695' }
+    ],
+    rulebook: {
+        title: 'aBAJA SAEINDIA Rulebook 2026 (Rev01)',
+        url: 'https://bajasaeindia.org/upload/Resource/aBAJA%20SAEINDIA%20RULEBOOK%202026_Rev01_1769348085.pdf',
+        note: 'Teams attempting Problem Statement 03 should refer to Part C (Base Vehicle Electrical Technical Requirements) for clarification on electrical starting interlocks and safety standards. Where this challenge document states a requirement, this challenge document takes precedence.'
+    },
+    teamFormat: {
+        title: 'Team Formation: Teams of 2',
+        badge: 'DUO TEAMS ALLOCATED',
+        desc: 'In this recruitment challenge, you will work in an allocated team of two to solve one electrical engineering problem inspired by the architecture and requirements of an autonomous BAJA vehicle. Each team must choose exactly ONE problem statement and register their selection in the portal.',
+        pdfUrl: 'https://ik.imagekit.io/kitzwb4be/asterix/recruitment/powertrain_teams.pdf',
+        pdfLocalUrl: '/recruitment/powertrain_teams.pdf',
+        teams: [
+            {
+                group: 'Group 01',
+                members: [
+                    { name: 'Raghav GS', dept: 'ECE', year: 'II YEAR', rollNo: '25L189', regNo: '715525106091', email: '25l189@psgitech.ac.in', phone: '715525106091' },
+                    { name: 'Raghauv N D', dept: 'EEE', year: 'II YEAR', rollNo: '25E176', regNo: '715525105076', email: '25e176@psgitech.ac.in', phone: '715525105076' }
+                ]
+            },
+            {
+                group: 'Group 02',
+                members: [
+                    { name: 'Ben Jounes B', dept: 'VLSI', year: 'II YEAR', rollNo: '25V107', regNo: '715525249007', email: '25v107@psgitech.ac.in', phone: '715525249007' },
+                    { name: 'Sankaranarayanan L', dept: 'EEE', year: 'II YEAR', rollNo: '25E152', regNo: '715525105063', email: '25e152@psgitech.ac.in', phone: '715525105063' }
+                ]
+            },
+            {
+                group: 'Group 03',
+                members: [
+                    { name: 'Annapoorni S', dept: 'ICE', year: 'III YEAR', rollNo: '24U104', regNo: '715524112004', email: '24u104@psgitech.ac.in', phone: '715524112004' },
+                    { name: 'Deeksha Balaji', dept: 'EEE', year: 'II YEAR', rollNo: '25E116', regNo: '715525105016', email: '25e116@psgitech.ac.in', phone: '715525105016' }
+                ]
+            },
+            {
+                group: 'Group 04',
+                members: [
+                    { name: 'Vibash Duraimurugan R', dept: 'ECE', year: 'II YEAR', rollNo: '25L221', regNo: '715525106123', email: '25l221@psgitech.ac.in', phone: '715525106123' },
+                    { name: 'Kirthick S', dept: 'EEE', year: 'II YEAR', rollNo: '25E150', regNo: '715525105050', email: '25e150@psgitech.ac.in', phone: '715525105050' }
+                ]
+            },
+            {
+                group: 'Group 05',
+                members: [
+                    { name: 'Tarun. I', dept: 'VLSI', year: 'II YEAR', rollNo: '25V154', regNo: '715525249054', email: '25v154@psgitech.ac.in', phone: '715525249054' },
+                    { name: 'Nitish A M', dept: 'EEE', year: 'II YEAR', rollNo: '25E165', regNo: '715525105064', email: '25e165@psgitech.ac.in', phone: '715525105064' }
+                ]
+            },
+            {
+                group: 'Group 06',
+                members: [
+                    { name: 'J.kaviya', dept: 'ICE', year: 'II YEAR', rollNo: '25U133', regNo: '715525112034', email: '25u133@psgitech.ac.in', phone: '715525112034' },
+                    { name: 'Saisith.N', dept: 'EEE', year: 'II YEAR', rollNo: '25E190', regNo: '715525105090', email: '25e190@psgitech.ac.in', phone: '715525105090' }
+                ]
+            },
+            {
+                group: 'Group 07',
+                members: [
+                    { name: 'Karthi W R', dept: 'VLSI', year: 'II YEAR', rollNo: '25V119', regNo: '715525249020', email: '25v119@psgitech.ac.in', phone: '715525249020' },
+                    { name: 'Sanjeev S', dept: 'EEE', year: 'II YEAR', rollNo: '25E194', regNo: '715525105094', email: '25e194@psgitech.ac.in', phone: '715525105094' }
+                ]
+            },
+            {
+                group: 'Group 08',
+                members: [
+                    { name: 'Preethy.S', dept: 'ICE', year: 'II YEAR', rollNo: '25U142', regNo: '715525112044', email: '25u142@psgitech.ac.in', phone: '715525112044' },
+                    { name: 'Naveen Kumar Raja S', dept: 'EEE', year: 'II YEAR', rollNo: '25E163', regNo: '715525105062', email: '25e163@psgitech.ac.in', phone: '715525105062' }
+                ]
+            },
+            {
+                group: 'Group 09',
+                members: [
+                    { name: 'Rubesh SK', dept: 'VLSI', year: 'II YEAR', rollNo: '25V142', regNo: '715525249042', email: '25v142@psgitech.ac.in', phone: '715525249042' },
+                    { name: 'Thanuja J', dept: 'EEE', year: 'II YEAR', rollNo: '25E210', regNo: '715525105110', email: '25e210@psgitech.ac.in', phone: '715525105110' }
+                ]
+            },
+            {
+                group: 'Group 10',
+                members: [
+                    { name: 'Jeevitha. V', dept: 'ICE', year: 'II YEAR', rollNo: '25U125', regNo: '715525112026', email: '25u125@psgitech.ac.in', phone: '715525112026' },
+                    { name: 'Harsith V', dept: 'EEE', year: 'II YEAR', rollNo: '25E133', regNo: '715525105033', email: '25e133@psgitech.ac.in', phone: '715525105033' }
+                ]
+            },
+            {
+                group: 'Group 11',
+                members: [
+                    { name: 'Swetha S L', dept: 'VLSI', year: 'II YEAR', rollNo: '25V153', regNo: '715525249053', email: '25v153@psgitech.ac.in', phone: '715525249053' },
+                    { name: 'Sugankumar.V.S', dept: 'EEE', year: 'II YEAR', rollNo: '25E207', regNo: '715525105107', email: '25e207@psgitech.ac.in', phone: '715525105107' }
+                ]
+            },
+            {
+                group: 'Group 12',
+                members: [
+                    { name: 'K K KIRUBHA HARNI', dept: 'EEE', year: 'II YEAR', rollNo: '25E151', regNo: '715525105051', email: '25e151@psgitech.ac.in', phone: '715525105051' },
+                    { name: 'G Vigneshwaran', dept: 'EEE', year: 'II YEAR', rollNo: '25E218', regNo: '715525105118', email: '25e218@psgitech.ac.in', phone: '715525105118' }
+                ]
+            },
+            {
+                group: 'Group 13',
+                members: [
+                    { name: 'Lakkshon K S', dept: 'EEE', year: 'II YEAR', rollNo: '25E153', regNo: '715525105052', email: '25e153@psgitech.ac.in', phone: '715525105052' },
+                    { name: 'Theniniyazh C', dept: 'EEE', year: 'II YEAR', rollNo: '25E211', regNo: '715525105111', email: '25e211@psgitech.ac.in', phone: '715525105111' }
+                ]
+            },
+            {
+                group: 'Group 14',
+                members: [
+                    { name: 'Manish Aravind S', dept: 'EEE', year: 'II YEAR', rollNo: '25E156', regNo: '715525105055', email: '25e156@psgitech.ac.in', phone: '715525105055' },
+                    { name: 'Sudhan Babu B', dept: 'EEE', year: 'II YEAR', rollNo: '25E206', regNo: '715525105106', email: '25e206@psgitech.ac.in', phone: '715525105106' }
+                ]
+            },
+            {
+                group: 'Group 15',
+                members: [
+                    { name: 'Muhamed Mufaries A', dept: 'EEE', year: 'II YEAR', rollNo: '25E160', regNo: '715525105059', email: '25e160@psgitech.ac.in', phone: '715525105059' },
+                    { name: 'Sri Varshan V R', dept: 'EEE', year: 'II YEAR', rollNo: '25E202', regNo: '715525105105', email: '25e202@psgitech.ac.in', phone: '715525105105' }
+                ]
+            },
+            {
+                group: 'Group 16',
+                members: [
+                    { name: 'M.Mukesh', dept: 'EEE', year: 'II YEAR', rollNo: '25E161', regNo: '715525105060', email: '25e161@psgitech.ac.in', phone: '715525105060' },
+                    { name: 'Sowjanya S', dept: 'EEE', year: 'II YEAR', rollNo: '25E200', regNo: '715525105100', email: '25e200@psgitech.ac.in', phone: '715525105100' }
+                ]
+            }
+        ]
+    },
     timeline: [
         {
             id: 'pt-release',
-            label: 'Test Syllabus & Guidelines Release',
-            detail: 'Full 4-domain test topics, rules & cheat sheet specifications unlock today at 7:00 PM IST',
-            date: '2026-09-03T19:00:00+05:30',
-            opensAt: '2026-09-02T18:00:00+05:30',
+            label: 'Challenge Brief & Duo Allocations Release',
+            detail: '3 electrical problem statements, deliverables rulebook and duo teams released',
+            date: '2026-09-12T10:00:00+05:30',
+            opensAt: '2026-09-12T00:00:00+05:30',
         },
         {
-            id: 'pt-test',
-            label: 'Powertrain Recruitment Test',
-            detail: 'Offline Written Test • 5:30 PM – 6:30 PM IST',
-            date: '2026-09-11T17:30:00+05:30',
-            opensAt: '2026-09-03T19:00:00+05:30',
+            id: 'pt-tue-deadline',
+            label: 'PS 02 & PS 03 Presentation Deadline',
+            detail: 'Technical Presentation slides (PPT/PDF) for PS2 & PS3 due on Tuesday 15 September at 11:59 PM IST',
+            date: '2026-09-15T23:59:00+05:30',
+            opensAt: '2026-09-12T10:00:00+05:30',
         },
         {
-            id: 'pt-interview',
-            label: 'Interview & Presentation',
-            detail: 'Technical interviews and candidate presentations on 15 September',
-            date: '2026-09-15T18:00:00+05:30',
-            opensAt: '2026-09-11T18:30:00+05:30',
+            id: 'pt-wed-deadline',
+            label: 'PS 01 Hardware Prototype Deadline',
+            detail: 'Breadboard CAN Prototype & Technical Presentation (PPT/PDF) for PS1 due on Wednesday 16 September at 11:59 PM IST',
+            date: '2026-09-16T23:59:00+05:30',
+            opensAt: '2026-09-12T10:00:00+05:30',
+        },
+        {
+            id: 'pt-demos',
+            label: 'Live Demonstrations & Technical Defense',
+            detail: 'Live hardware testing, simulation demonstrations and technical presentation reviews',
+            date: '2026-09-17T17:30:00+05:30',
+            opensAt: '2026-09-16T23:59:00+05:30',
         },
         {
             id: 'pt-results',
             label: 'Final Results Announcement',
             detail: 'Final selected crew roster published on 20 September night',
             date: '2026-09-20T23:59:00+05:30',
-            opensAt: '2026-09-15T18:00:00+05:30',
+            opensAt: '2026-09-17T18:00:00+05:30',
         }
     ],
-    testOverview: {
-        title: 'BAJA Recruitment – Powertrain Subsystem Test',
-        subtitle: 'Test Instructions, Rules & Syllabus Structure',
-        eligibility: '2nd- and 3rd-year students interested in joining the Powertrain subsystem of Team Asterix.',
-        date: '11 September 2026',
-        time: '5:30 PM – 6:30 PM IST (Tentative — any changes will be communicated in advance)',
-        duration: '60 minutes',
-        totalQuestions: 45,
-        mode: 'Offline Written Test',
-        calculator: 'Standard Scientific / Numerical Calculator Allowed',
-        phones: 'Strictly NOT Permitted'
-    },
-    sections: [
+    deliverablesTable: [
         {
-            name: 'Logical Reasoning',
-            questions: 15,
-            percentage: '33%',
-            color: 'bg-amber-400',
-            description: 'Analytical ability, pattern recognition, spatial reasoning, and critical problem solving.'
+            no: '01',
+            deliverable: 'Technical Presentation',
+            whatItShouldContain: 'A concise slide deck explaining the problem, your research, chosen approach, results and conclusions. This is the document you submit.',
+            weightage: '20%',
+            submissionMode: 'Uploaded on Website (PPT/PDF)'
         },
         {
-            name: 'Network Analysis',
-            questions: 10,
-            percentage: '22%',
-            color: 'bg-sky-400',
-            description: 'Kirchhoff’s laws, RLC circuit transient analysis, AC/DC network theorems, power calculations, and impedance.'
+            no: '02',
+            deliverable: 'System Architecture',
+            whatItShouldContain: 'A block diagram showing all inputs, controllers/processing, communication, outputs and feedback, and how they connect.',
+            weightage: '10%',
+            submissionMode: 'Included inside Technical Presentation'
         },
         {
-            name: 'Electronic Devices',
-            questions: 10,
-            percentage: '22%',
-            color: 'bg-emerald-400',
-            description: 'Semiconductor physics, diodes, BJT/MOSFET characteristics, power semiconductor switching, and thermal dissipation.'
+            no: '03',
+            deliverable: 'Circuit Diagram',
+            whatItShouldContain: 'A complete schematic of your system, including power and current distribution (supply rails, load currents, component ratings) where relevant.',
+            weightage: '10%',
+            submissionMode: 'Included inside Technical Presentation'
         },
         {
-            name: 'Digital Electronics',
-            questions: 10,
-            percentage: '22%',
-            color: 'bg-purple-400',
-            description: 'Logic gates, Boolean algebra, combinational & sequential circuits, flip-flops, counters, and ADC/DAC principles.'
+            no: '04',
+            deliverable: 'Approach Comparison & Alternatives Considered',
+            whatItShouldContain: 'The alternative approaches you evaluated, the criteria used to compare them, and why you selected your final approach.',
+            weightage: '8%',
+            submissionMode: 'Included inside Technical Presentation'
+        },
+        {
+            no: '05',
+            deliverable: 'Testing / Evaluation Plan',
+            whatItShouldContain: 'The tests you performed, what was measured or observed, and the criteria used to decide whether the system works.',
+            weightage: '7%',
+            submissionMode: 'Included inside Technical Presentation'
+        },
+        {
+            no: '06',
+            deliverable: 'Failsafe & Failsafe Test Points',
+            whatItShouldContain: 'The failure cases you identified, how the system detects and responds to each, and how each failsafe is verified.',
+            weightage: '15%',
+            submissionMode: 'Included inside Technical Presentation'
+        },
+        {
+            no: '07',
+            deliverable: 'Prototype / Simulation Demonstration',
+            whatItShouldContain: 'A live, working demonstration that meets the mandatory prototype or simulation requirement of your chosen problem statement.',
+            weightage: '30%',
+            submissionMode: 'Demonstrated LIVE during the evaluation round'
         }
     ],
-    cheatSheetRules: {
-        title: 'Handwritten Cheat Sheet — Official Guidelines',
-        badge: '1 A4 SHEET ALLOWED',
-        rules: [
-            { text: 'Must be completely handwritten by the candidate.', allowed: true },
-            { text: 'Must be exactly ONE single A4-sized paper sheet.', allowed: true },
-            { text: 'Both sides of the single A4 sheet may be used for notes, formulas, and diagrams.', allowed: true },
-            { text: 'Candidates may include any formulas, concepts, diagrams, or notes of their choice.', allowed: true },
-            { text: 'Printed, photocopied, digitally rendered, or mechanically reproduced notes are STRICTLY PROHIBITED.', allowed: false },
-            { text: 'No extra sheets, loose notes, reference books, textbooks, or formula booklets allowed.', allowed: false },
-            { text: 'The cheat sheet must be prepared and brought by the candidate (will not be provided at venue).', allowed: true }
-        ]
-    },
-    devicesAndCalculators: {
-        calculators: {
-            allowed: true,
-            title: 'Calculators: Permitted',
-            desc: 'Candidates may bring and use a standard scientific/numerical calculator for calculations. Programmable calculators or devices with wireless/cellular connectivity are not permitted.'
-        },
-        electronicDevices: {
-            allowed: false,
-            title: 'Electronic Devices: Strictly Banned',
-            prohibitedList: [
-                'Mobile phones (must be powered off and kept away)',
-                'Smartwatches, fitness trackers, and smart bands',
-                'Earphones, headphones, and wireless earbuds',
-                'Tablets, e-readers, and laptops',
-                'Any device capable of internet connectivity, messaging, or storage of unauthorized data'
+    challenges: [
+        {
+            id: 'ps1',
+            number: '01',
+            title: 'CAN-Based Autonomous Vehicle Sensor Network',
+            tagline: 'Design and build a CAN-based distributed sensing system using three ESP32 nodes, each connected to an autonomous-vehicle sensor of your choice.',
+            domain: 'Distributed Embedded Systems & CAN Bus',
+            badge: 'HARDWARE PROTOTYPE MANDATORY',
+            deadlineLabel: 'Due Wednesday, 16 September • 11:59 PM IST',
+            deadlineDate: '2026-09-16T23:59:00+05:30',
+            deadlineDay: 'Wednesday',
+            mandatoryDemo: 'Breadboard hardware prototype: three ESP32 nodes, three sensors, communicating over CAN.',
+            context: 'Autonomous vehicles rely on multiple sensors to understand their surroundings and their own state. When these sensors are distributed across the vehicle, a reliable way to move information between processing nodes is needed. The Controller Area Network (CAN) bus is widely used for this purpose in vehicles.',
+            task: 'Choose any three sensors that you believe are relevant to an autonomous/off-road BAJA vehicle. Connect each sensor to its own ESP32 node and link all three nodes over a CAN bus. Decide what each sensor contributes, where its data is processed, what information is transmitted over CAN, and how the three nodes work together to enable a useful vehicle function.',
+            questionsToInvestigate: [
+                'Which three sensors provide useful information for an autonomous vehicle, and why?',
+                'What vehicle problem or function does your combination of sensors address?',
+                'What is each ESP32 node responsible for?',
+                'Should the transmitted data be raw, filtered, processed, or converted into a higher-level message?',
+                'How should CAN message identifiers, priorities and update rates be chosen?',
+                'Can the three sensor values be combined (fused) to produce a better or more useful output?',
+                'How will sensor faults, stale data or loss of communication be detected and handled?',
+                'How could a higher-level controller (such as a Jetson) use the information from your network?'
             ],
-            advice: 'Candidates are strongly advised to keep electronic devices in their hostels/homes. The recruitment team assumes no responsibility for the safety of personal belongings.'
+            innovation: 'The innovation is yours. You may use the three-sensor network to enable a perception, safety, navigation, diagnostics or vehicle-control concept. The three sensors do not need to be of the same type, and no combination is prescribed. Examples are intentionally not given: we want to see which sensors you choose, what problem you identify, and what system you design around them.',
+            prototypeRequirement: 'A breadboard hardware prototype is mandatory. It must consist of three ESP32 nodes, each interfaced with one real sensor, communicating with each other over a CAN bus. Simulated or potentiometer-based substitutes for the three sensors are not accepted for this problem statement.',
+            hardwareComponents: [
+                { component: 'ESP32 development board', qty: '3', notes: 'One per sensor node.' },
+                { component: 'CAN transceiver module', qty: '3', notes: 'One per node. The ESP32 has a built-in CAN controller (TWAI) but requires an external transceiver to connect to the bus. If you use a 5 V transceiver with the 3.3 V ESP32, explain how you handle the logic-level difference.' },
+                { component: 'Sensors', qty: '3', notes: 'Your choice. Must be relevant to an autonomous/off-road vehicle.' },
+                { component: '120 Ω termination resistor', qty: '2', notes: 'One at each end of the CAN bus. Check whether your transceiver modules already include one.' },
+                { component: 'Breadboards and jumper wires', qty: 'As required', notes: 'For assembling the nodes and the bus wiring (CAN_H / CAN_L).' },
+                { component: 'Power supply / USB cables', qty: 'As required', notes: 'To power all three nodes. Consider grounding between nodes.' },
+                { component: 'Output devices', qty: 'Optional', notes: 'LEDs, buzzer, display, servo or similar, to show the vehicle response.' },
+                { component: 'Laptop (serial monitor)', qty: 'Optional', notes: 'May act as the higher-level controller or data logger in place of a Jetson.' }
+            ],
+            borrowNotice: 'You do not need to buy everything. Components may be borrowed from classmates in your department for the duration of this project. Purchase only the items you are unable to borrow.',
+            demonstrationMustShow: [
+                'All three nodes communicating over the CAN bus.',
+                'How sensor data is acquired, processed and transmitted by each node.',
+                'How information from multiple nodes is combined to produce your chosen vehicle function.',
+                'How the system behaves when a sensor gives invalid data, a node stops transmitting, or the bus is disconnected.',
+                'Supporting evidence such as serial logs or printed CAN messages.'
+            ],
+            failsafeVerification: 'Identify test (probe) points on your circuit where each failsafe can be verified with a multimeter or oscilloscope, and state the expected reading in normal and fault conditions.'
+        },
+        {
+            id: 'ps2',
+            number: '02',
+            title: 'Automatic Temperature Control of a Heating System',
+            tagline: 'Design and simulate a control system that keeps a heating chamber at a specified temperature despite changing operating conditions.',
+            domain: 'Control Systems & Thermal Dynamics',
+            badge: 'SIMULATION IN MATLAB / PYTHON MANDATORY',
+            deadlineLabel: 'Due Tuesday, 15 September • 11:59 PM IST',
+            deadlineDate: '2026-09-15T23:59:00+05:30',
+            deadlineDay: 'Tuesday',
+            mandatoryDemo: 'Simulation in MATLAB/Simulink (or accepted alternatives: Python NumPy/SciPy/python-control or Scilab Xcos).',
+            context: 'A heating chamber loses heat to its surroundings, and the rate of heat loss can change while the system is running. A good controller should bring the chamber to the target temperature in a reasonable time, without excessive overshoot or oscillation, and should recover on its own when operating conditions change.',
+            task: 'Design a controller that decides the heater power based on the target temperature and the measured temperature. You are free to choose the control method, but your choice must be justified using the simulated response. You must also build a simulation of the heating chamber to test your controller.',
+            systemFlow: 'Target Temperature → Error → Controller → Heater Power → Chamber Temperature → Temperature Sensor → Feedback',
+            keyConditions: [
+                'You must model the heating chamber yourself. No model is provided. State the assumptions, equations and parameter values you use, and justify why they are reasonable.',
+                'The heater can only add heat. It cannot cool the chamber, and its power is limited between zero and a maximum value. Consider how this limit affects your controller (for example, saturation and integral windup).',
+                'The controller is not informed of changes. When heat loss changes during operation, the controller must respond using temperature feedback alone.'
+            ],
+            testScenarios: [
+                {
+                    scenario: 'Scenario A: Setpoint change',
+                    action: 'Change the target temperature during a run.',
+                    observe: 'How quickly and accurately the chamber reaches the new target.'
+                },
+                {
+                    scenario: 'Scenario B: Different heat-loss levels',
+                    action: 'Run the system under at least two levels of heat loss.',
+                    observe: 'Whether performance remains acceptable across conditions.'
+                },
+                {
+                    scenario: 'Scenario C: Sudden heat-loss change',
+                    action: 'Step-change the heat loss in the middle of a run without informing the controller.',
+                    observe: 'Temperature dip or rise, and time taken to recover.'
+                },
+                {
+                    scenario: 'Scenario D: Different initial temperatures',
+                    action: 'Start from at least two different initial temperatures.',
+                    observe: 'Whether the response remains stable and well-behaved.'
+                }
+            ],
+            performanceMetrics: [
+                { metric: 'Steady-state error', desc: 'How close the final temperature is to the target.' },
+                { metric: 'Rise time and settling time', desc: 'How quickly the target is reached and held.' },
+                { metric: 'Overshoot', desc: 'How far the temperature exceeds the target.' },
+                { metric: 'Disturbance recovery', desc: 'How the system responds to a sudden change in heat loss.' },
+                { metric: 'Stability', desc: 'Whether the response settles or oscillates.' }
+            ],
+            baselineComparison: 'Implement a simple on/off (bang-bang) controller with hysteresis as a baseline. Run it through the same test scenarios as your chosen controller and compare the results using the metrics above. This comparison forms part of your Approach Comparison deliverable.',
+            pidExplanation: 'PID is NOT required. PID is one possible solution, not a requirement. Investigate the available control approaches and decide what is appropriate. If you choose PID (or P, PI, PD), explain why. If you choose another method, explain why it suits this problem better. If you use automatic tuning tools (such as the MATLAB PID Tuner), you must be able to explain what the resulting gains do and how they affect the response.',
+            simulationSpecs: {
+                recommended: 'MATLAB/Simulink',
+                alternatives: 'Python (NumPy/SciPy or python-control) or Scilab Xcos, if MATLAB access is not available',
+                mustInclude: 'Heating-chamber model, controller, baseline on/off controller, all four test scenarios, and plots of chamber temperature vs time & heater power vs time.'
+            },
+            failsafeConsiderations: 'Think about what can go wrong in a real heating system and how your design would detect and respond to it (e.g. disconnected or faulty temperature sensor, unrealistic sensor readings, or a heater that keeps heating when it should not). Each failsafe you propose must be demonstrated with a simulation test case.'
+        },
+        {
+            id: 'ps3',
+            number: '03',
+            title: 'Starting Conditions & Ready-to-Drive System',
+            tagline: "Design the electrical and embedded system that safely activates the vehicle's tractive system, following the starting sequence defined in the rulebook.",
+            domain: 'Vehicle Electrical Architecture & Interlock Safety',
+            badge: 'CIRCUIT + MICROCONTROLLER SIMULATION MANDATORY',
+            deadlineLabel: 'Due Tuesday, 15 September • 11:59 PM IST',
+            deadlineDate: '2026-09-15T23:59:00+05:30',
+            deadlineDay: 'Tuesday',
+            mandatoryDemo: 'Circuit simulation in PSpice/LTspice + microcontroller simulation in Proteus/Wokwi. Physical low-voltage hardware setup is optional.',
+            context: 'Before an electric vehicle can be driven, it must verify that a set of safety conditions is satisfied and that the driver has performed a deliberate start action. Only then is the tractive system activated. Your task is to design the electrical and embedded system that implements this starting sequence reliably and safely.',
+            startingSequence: [
+                '1. Ignition Key & HV rated cut-off switch (if applicable) are ON',
+                '2. Charging is not in progress.',
+                '3. Gear is in neutral position',
+                '4. Accelerator is not in pressed condition',
+                '5. Kill switch(s) are not pressed (engaged/energized).',
+                '6. Brake Pedal is pressed along with a dedicated start/stop (push) button when all the above conditions are satisfied.'
+            ],
+            activatedActions: [
+                'i) AIR should be energized (Accumulator Isolation Relay)',
+                'ii) TSAL & TSAL indicator should glow as mentioned in their sections in the rulebook (Tractive System Active Light)',
+                'iii) Ready to drive sound (RTDS) should start buzzing as mentioned in its section in the rulebook'
+            ],
+            terminology: 'AIR = Accumulator Isolation Relay, TSAL = Tractive System Active Light, RTDS = Ready-to-Drive Sound, HV = High Voltage. For any clarification on these terms or their requirements, refer to Part C (Base Vehicle Electrical Technical Requirements) of the official rulebook.',
+            task: 'Design and simulate a system that implements the starting sequence. Your design must define: (1) Inputs: how each of the six conditions is sensed by the controller (switches, buttons, sensors); (2) Logic: the interlocks, state transitions and order of checks needed to activate the tractive system only when every condition is met; (3) Outputs: how the controller energises the AIR, lights the TSAL and TSAL indicator, and sounds the RTDS; (4) Abnormal behaviour: what the system does if a condition is not met, is met in the wrong order, or changes after the tractive system is already active (for example, a kill switch pressed while driving).',
+            electricalInterface: {
+                title: 'Electrical Interface Requirement: 3.3 V / 5 V to 12 V',
+                desc: 'The outputs (AIR, TSAL, TSAL indicator, RTDS) operate at 12 V DC. The controller\'s inputs and outputs operate at 3.3 V or 5 V. A microcontroller pin cannot drive a 12 V load directly, so your design must include a switching circuit that allows a 3.3 V / 5 V logic signal to safely control each 12 V output.',
+                addressPoints: [
+                    'Which switching device or driver you use, and why it is suitable for your controller\'s logic voltage.',
+                    'The voltage and current ratings of the load and of the switching components.',
+                    'What protection your circuit needs for the type of load being switched (e.g. flyback diode for inductive relay coil).',
+                    'What state each output takes if the controller resets, loses power or its output pin is disconnected (fail-safe default).',
+                    'If any of your input signals come from the 12 V side, how they are safely brought down to the controller\'s logic level (e.g. optocouplers, resistive dividers, Zener clamps).'
+                ]
+            },
+            supplyRequirement: {
+                title: 'The 12 V Supply Architecture',
+                desc: 'In the vehicle, the 12 V outputs are powered by the low-voltage (LV) system, while the controller runs from its own 3.3 V / 5 V supply.',
+                simDetails: 'In simulation: model the 12 V supply as a separate DC voltage source, distinct from the 3.3 V / 5 V logic supply. Show how the two supplies are referenced to each other (common ground, or intentional isolation), and show the current drawn by each 12 V load.',
+                hardwareDetails: 'In hardware (if you choose to build it): use only a 12 V bench power supply or a 12 V DC adapter. Represent the AIR with a relay, the TSAL and indicator with 12 V lamps or LEDs, and the RTDS with a 12 V buzzer. NEVER use a vehicle battery or tractive-system components.'
+            },
+            simulationParts: [
+                {
+                    part: 'Part A. Switching / Interface Circuit',
+                    tool: 'PSpice or LTspice',
+                    whatItMustShow: 'A 3.3 V / 5 V control signal switching each 12 V output, with voltages and currents shown at key points of the circuit.'
+                },
+                {
+                    part: 'Part B. Controller Logic',
+                    tool: 'Proteus or Wokwi',
+                    whatItMustShow: 'A microcontroller of your choice with simulated inputs (for the six conditions) and outputs (AIR, TSAL, TSAL indicator, RTDS). Demonstrate the correct starting sequence as well as sequences that must be rejected.'
+                },
+                {
+                    part: 'Hardware Setup',
+                    tool: 'Physical Bench Setup (Optional)',
+                    whatItMustShow: 'Teams may additionally bring a physical low-voltage hardware setup. This is not mandatory.'
+                }
+            ],
+            failsafeVerification: 'Provide test cases that deliberately create each fault condition (wrong start sequence, sensor dropout, kill switch actuation during drive) and show, through simulation results, that the failsafe responds correctly.'
         }
-    },
-    hallInstructions: [
-        'Reporting Time: Arrive at the venue well before 5:30 PM to complete attendance and seating.',
-        'Strict Timing: The test follows a rigid 60-minute duration. Late arrivals may face entry restrictions or loss of time.',
-        'Stationery: Bring your own pens, pencils, eraser, scale, and writing materials. Borrowing or sharing stationery during the exam is forbidden.',
-        'Rough Sheets: Rough Sheets will not be provided at the venue. You can bring up to 3 A4 plain white sheets if you prefer.',
-        'Seating: Remain in your assigned seat throughout the test. Do not leave the hall without permission from the invigilator.',
-        'Invigilator Guidance: Follow all announcements and instructions given by the invigilation team promptly.'
     ],
-    academicIntegrity: {
-        title: 'Academic Integrity & Fair Evaluation',
-        desc: 'The recruitment test evaluates individual foundational understanding and real-time problem-solving skills. Any malpractice—including copying, communicating with peers, unauthorized notes, or external assistance—will lead to immediate disqualification from the Asterix recruitment cycle.'
-    },
-    candidateChecklist: [
-        { item: 'College / Student ID Card (mandatory for venue entry)', id: 'chk-id' },
-        { item: 'One handwritten A4 cheat sheet (both sides allowed)', id: 'chk-sheet' },
-        { item: 'Standard scientific calculator (functional battery)', id: 'chk-calc' },
-        { item: 'Personal stationery (pens, pencils, eraser, ruler)', id: 'chk-pen' },
-        { item: 'Mobile phones & smartwatches switched off and packed away', id: 'chk-phone' },
-        { item: 'Report at venue at least 15 minutes before 5:30 PM', id: 'chk-time' }
+    generalRules: [
+        'Each team consists of exactly two members. Both members must understand the complete submission, and either member may be questioned on any part of it.',
+        'Each team must choose exactly one problem statement and treat it as the primary design objective. Do not replace it with an unrelated project.',
+        'The prototype/simulation specified for the chosen problem statement is mandatory.',
+        'Register your chosen problem statement on the portal.',
+        'Alternative approaches are welcome, provided they are technically justified.',
+        'Any AI tool (ChatGPT, Claude, Gemini, GitHub Copilot), online resource, simulator or person may be used for assistance. AI is explicitly allowed to learn concepts, generate or review code, troubleshoot errors, and explore alternatives.',
+        'Do not treat external or AI-generated material as automatically correct. Verify important technical information, and be ready to explain every decision in your own words.',
+        'Do not claim results you have not obtained. Clearly distinguish between researched facts, assumptions, simulated results and measured results.',
+        'Physical setups must be low-voltage and bench-scale only. Do not connect any work to a BAJA vehicle, traction battery, high-power actuator or vehicle-critical hardware.',
+        'Evaluation is based on engineering reasoning, technical understanding and working results, not on presentation aesthetics or the amount of equipment used.'
     ],
-    finalNote: 'The test is designed to evaluate fundamental problem-solving and conceptual clarity rather than rote memorization. Revise your fundamentals in Logical Reasoning, Network Analysis, Electronic Devices, and Digital Electronics. Best of luck, future Asterix engineers!'
+    whatWeLookFor: [
+        'Starts with a clear understanding of the problem instead of jumping straight to a component or technology.',
+        'Considers multiple approaches and explains, with evidence, why one was chosen.',
+        'Has an architecture, circuit, and implementation that agree with one another.',
+        'Anticipates what can go wrong and proves that the failsafes work.',
+        'States assumptions and limitations openly.',
+        'Is fully understood and explained by both team members.'
+    ],
+    whatWeDoNotReward: [
+        'Complexity for its own sake, or large component counts without clear purpose.',
+        'Copying a tutorial or reference project without understanding it.',
+        'Unverified claims generated by AI or online sources.',
+        'A polished presentation that hides weak engineering reasoning.',
+        'A prototype or simulation that works once but cannot be explained or tested.'
+    ]
 };
+
+// Retain alias for backwards compatibility
+export const POWERTRAIN_TEST_DATA = POWERTRAIN_CHALLENGE_DATA;
 
 export const MECHANICAL_MYSTERY_DATA = {
     id: 'mechanical',

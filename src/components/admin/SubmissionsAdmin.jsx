@@ -2,7 +2,8 @@ import { useState, useEffect, useMemo, useCallback, Fragment } from 'react';
 import { apiUrl } from '../../lib/api';
 import {
     SOFTWARE_PERCEPTION_DATA,
-    MECHANICAL_MYSTERY_DATA
+    MECHANICAL_MYSTERY_DATA,
+    POWERTRAIN_CHALLENGE_DATA
 } from '../../data/recruitmentProblemStatements';
 
 import { AUTH_TOKEN_KEY } from '../../context/WebsiteDataContext';
@@ -109,6 +110,15 @@ export default function SubmissionsAdmin({ showStatus }) {
         MECHANICAL_MYSTERY_DATA.teamFormat?.teams?.forEach((t) => {
             list.push({
                 subsystem: 'mechanical',
+                cohort: 'General',
+                group: t.group,
+                members: t.members
+            });
+        });
+        // Powertrain
+        POWERTRAIN_CHALLENGE_DATA.teamFormat?.teams?.forEach((t) => {
+            list.push({
+                subsystem: 'powertrain',
                 cohort: 'General',
                 group: t.group,
                 members: t.members

@@ -2,7 +2,7 @@ import { useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { WebsiteDataContext } from './WebsiteContext';
 import { subsystems as initialSubsystems } from '../data/subsystemsData';
 import { apiUrl } from '../lib/api';
-import { SOFTWARE_PERCEPTION_DATA, POWERTRAIN_TEST_DATA, MECHANICAL_MYSTERY_DATA } from '../data/recruitmentProblemStatements';
+import { SOFTWARE_PERCEPTION_DATA, POWERTRAIN_CHALLENGE_DATA, POWERTRAIN_TEST_DATA, MECHANICAL_MYSTERY_DATA } from '../data/recruitmentProblemStatements';
 
 import imgPaddock from '../assets/gallery/01_team_paddock.jpg';
 import imgWelding from '../assets/gallery/02_workshop_welding.jpg';
@@ -240,18 +240,16 @@ const RECRUITMENT_TRACKS = [
     {
         id: 'powertrain',
         name: 'Powertrain',
-        blurb: POWERTRAIN_TEST_DATA.blurb,
-        lead: POWERTRAIN_TEST_DATA.lead,
+        blurb: POWERTRAIN_CHALLENGE_DATA.blurb,
+        lead: POWERTRAIN_CHALLENGE_DATA.lead,
         applyUrl: '',
-        timeline: POWERTRAIN_TEST_DATA.timeline,
-        problemStatements: [
-            {
-                id: 'pt-test-01',
-                title: 'BAJA Recruitment – Powertrain Subsystem Test',
-                summary: 'Offline written test covering Logical Reasoning (15 Qs), Network Analysis (10 Qs), Electronic Devices (10 Qs), and Digital Electronics (10 Qs). Duration: 60 mins. One handwritten A4 cheat sheet permitted.',
-                body: 'Date: 11 September 2026\nTime: 5:30 PM – 6:30 PM IST (Tentative)\nDuration: 60 minutes\nTotal Questions: 45\nMode: Offline Written Test\nCalculator: Permitted\nMobile Phones: Strictly NOT permitted\nCheat Sheet: One handwritten A4 sheet allowed (both sides).'
-            }
-        ]
+        timeline: POWERTRAIN_CHALLENGE_DATA.timeline,
+        problemStatements: POWERTRAIN_CHALLENGE_DATA.challenges.map((c) => ({
+            id: c.id,
+            title: `Problem Statement ${c.number}: ${c.title}`,
+            summary: `${c.tagline} (${c.badge} • ${c.deadlineLabel})`,
+            body: `${c.title}\n${c.tagline}\n\nMandatory Demo: ${c.mandatoryDemo}\nDeadline: ${c.deadlineLabel}\nDomain: ${c.domain}`
+        }))
     },
     {
         id: 'mechanical',
