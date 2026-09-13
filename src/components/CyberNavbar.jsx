@@ -5,6 +5,9 @@ import { useWebsiteData } from '../context/WebsiteDataContext';
 import Icon from './Icon';
 
 export default function CyberNavbar({ onSelectSubsystem, isDetailPage, currentPage = 'home', onBackToHome, onOpenSponsor, onOpenRecruitment, onOpenFreshersRecruitment }) {
+    const { siteData } = useWebsiteData();
+    const subsystems = siteData.subsystems;
+    const { contact } = siteData;
     const [shopOpen, setShopOpen] = useState(false);
     const [contactOpen, setContactOpen] = useState(false);
     const [mobileOpen, setMobileOpen] = useState(false);
