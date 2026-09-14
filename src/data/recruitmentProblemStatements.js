@@ -818,8 +818,8 @@ export const MECHANICAL_MYSTERY_DATA = {
         {
             id: 'mech-deadline',
             label: 'Mechanical Submission Deadline',
-            detail: 'Duo solution proposals & presentations due on 16 September at 11:59 PM IST',
-            date: '2026-09-16T23:59:00+05:30',
+            detail: 'Duo solution proposals & presentations due on 17 September at 11:59 PM IST',
+            date: '2026-09-17T23:59:00+05:30',
             opensAt: '2026-09-03T19:00:00+05:30',
         },
         {
@@ -827,7 +827,7 @@ export const MECHANICAL_MYSTERY_DATA = {
             label: 'Final Results Announcement',
             detail: 'Final selected crew roster published on 20 September night',
             date: '2026-09-20T23:59:00+05:30',
-            opensAt: '2026-09-16T23:59:00+05:30',
+            opensAt: '2026-09-17T23:59:00+05:30',
         }
     ],
     teamFormat: {

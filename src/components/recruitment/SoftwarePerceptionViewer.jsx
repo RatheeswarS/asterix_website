@@ -371,7 +371,7 @@ export default function SoftwarePerceptionViewer({ isAdmin = false }) {
                                     </span>
                                     <span className={`px-2 py-0.5 text-[10px] font-mono font-black uppercase rounded-none ${!isPhase2Unlocked ? 'bg-slate-700 text-slate-200' : 'bg-rose-600 text-white'
                                         }`}>
-                                        {!isPhase2Unlocked ? 'UNLOCKS 8 SEPT 11:59 PM' : 'DUE 14TH NIGHT 11:59 PM IST'}
+                                        {!isPhase2Unlocked ? 'UNLOCKS 8 SEPT 11:59 PM' : 'DUE 15TH NIGHT 11:59 PM IST'}
                                     </span>
                                 </div>
                                 <div className={`font-black text-sm uppercase leading-snug ${!isPhase2Unlocked ? 'text-slate-600' : 'text-slate-900'

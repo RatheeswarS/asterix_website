@@ -31,6 +31,7 @@ export default function SubmissionPortalPage({ onNavigateHome, onNavigateRecruit
 
     const initial = getInitialState();
     const [subsystem, setSubsystem] = useState(initial.track);
+    const [phase, setPhase] = useState('phase2'); // 'phase2' active, 'phase1' closed
     const [softwareCohort, setSoftwareCohort] = useState('ii'); // 'ii' or 'iii'
     const [problemStatement, setProblemStatement] = useState(initial.ps); // 'ps1', 'ps2', or 'ps3'
     const [selectedGroup, setSelectedGroup] = useState('');
@@ -44,6 +45,41 @@ export default function SubmissionPortalPage({ onNavigateHome, onNavigateRecruit
     const [formError, setFormError] = useState('');
     const [submissionReceipt, setSubmissionReceipt] = useState(null);
     const [copiedReceipt, setCopiedReceipt] = useState(false);
+
+    // Track Phase 1 eligibility data for Software track
+    const [eligiblePhase1Data, setEligiblePhase1Data] = useState({
+        eligibleGroups: [],
+        eligiblePhones: [],
+        eligibleGroupDetails: {},
+        isLoading: true
+    });
+
+    useEffect(() => {
+        let isMounted = true;
+        const fetchEligibility = async () => {
+            try {
+                const res = await fetch(apiUrl('/api/submissions/phase1-eligible?subsystem=software'));
+                if (res.ok) {
+                    const data = await res.json();
+                    if (isMounted) {
+                        setEligiblePhase1Data({
+                            eligibleGroups: data.eligibleGroups || [],
+                            eligiblePhones: data.eligiblePhones || [],
+                            eligibleGroupDetails: data.eligibleGroupDetails || {},
+                            isLoading: false
+                        });
+                    }
+                }
+            } catch (e) {
+                console.error('Error checking Phase 1 eligibility:', e);
+                if (isMounted) {
+                    setEligiblePhase1Data((prev) => ({ ...prev, isLoading: false }));
+                }
+            }
+        };
+        fetchEligibility();
+        return () => { isMounted = false; };
+    }, []);
 
     // Sync track if hash changes
     useEffect(() => {
@@ -87,6 +123,17 @@ export default function SubmissionPortalPage({ onNavigateHome, onNavigateRecruit
     const currentSubmitter = activeTeam?.members?.[selectedSubmitterIdx] || null;
     const currentPartner = activeTeam?.members?.[selectedSubmitterIdx === 0 ? 1 : 0] || null;
 
+    // Check if the currently selected team is eligible for Software Phase 2
+    const isTeamEligible = useMemo(() => {
+        if (subsystem !== 'software' || phase !== 'phase2') return true;
+        if (!selectedGroup) return true;
+        if (eligiblePhase1Data.isLoading) return true; // wait for fetch
+        if (eligiblePhase1Data.eligibleGroups.length === 0) return true; // fallback if no data
+        return eligiblePhase1Data.eligibleGroups.some(
+            (g) => g.toLowerCase().trim() === selectedGroup.toLowerCase().trim()
+        );
+    }, [subsystem, phase, selectedGroup, eligiblePhase1Data]);
+
     // Reset group selection on track/cohort change
     const handleSubsystemChange = (newSubsystem) => {
         setSubsystem(newSubsystem);
@@ -118,7 +165,9 @@ export default function SubmissionPortalPage({ onNavigateHome, onNavigateRecruit
         e.preventDefault();
         setFormError('');
 
+        const isSoftware = subsystem === 'software';
         const isPowertrain = subsystem === 'powertrain';
+        const isMechanical = subsystem === 'mechanical';
 
         if (!selectedGroup) {
             setFormError('Please select your allocated Duo Group.');
@@ -127,6 +176,14 @@ export default function SubmissionPortalPage({ onNavigateHome, onNavigateRecruit
 
         if (!currentSubmitter) {
             setFormError('Please choose which team member is submitting.');
+            return;
+        }
+
+        // Enforce Phase 1 eligibility for Software Phase 2
+        if (isSoftware && phase === 'phase2' && !isTeamEligible) {
+            setFormError(
+                `Eligibility restriction: Only teams who submitted Phase 1 are eligible to submit Phase 2. No Phase 1 submission was found for ${selectedGroup}. Please contact the Software Lead if you believe this is an error.`
+            );
             return;
         }
 
@@ -153,34 +210,39 @@ export default function SubmissionPortalPage({ onNavigateHome, onNavigateRecruit
         const trimmedUrl = driveUrl.trim();
         const cleanGithub = githubUrl.trim();
 
-        // Validation for Google Drive URL
+        // Validation for Links
         if (isPowertrain) {
             // For powertrain, drive link is optional at stage 1, but if provided must be a valid Google Drive link
             if (trimmedUrl && !trimmedUrl.toLowerCase().includes('drive.google.com')) {
                 setFormError('Invalid link: Please provide a valid Google Drive URL (must contain drive.google.com).');
                 return;
             }
-        } else {
-            // Software and Mechanical require Google Drive links
+        } else if (isSoftware) {
+            // Software Phase 2 requires BOTH Google Drive folder link AND GitHub repository link for BOTH PS1 and PS2!
             if (!trimmedUrl) {
-                setFormError('Please paste your Google Drive folder link.');
+                setFormError('Please paste your Google Drive folder link containing presentation slides and weights.');
                 return;
             }
-
             if (!trimmedUrl.toLowerCase().includes('drive.google.com')) {
                 setFormError('Invalid link: Please provide a valid Google Drive URL (must contain drive.google.com).');
                 return;
             }
-
-            if (subsystem === 'software' && problemStatement === 'ps2') {
-                if (!cleanGithub) {
-                    setFormError('GitHub Repository required: Problem Statement 2 requires both a Google Drive link and a GitHub repository link.');
-                    return;
-                }
-                if (!cleanGithub.toLowerCase().includes('github.com')) {
-                    setFormError('Invalid GitHub URL: Please provide a valid repository link (must contain github.com).');
-                    return;
-                }
+            if (!cleanGithub) {
+                setFormError('GitHub Repository required: Phase 2 requires your runnable GitHub code repository link.');
+                return;
+            }
+            if (!cleanGithub.toLowerCase().includes('github.com')) {
+                setFormError('Invalid GitHub URL: Please provide a valid repository link (must contain github.com).');
+                return;
+            }
+        } else if (isMechanical) {
+            if (!trimmedUrl) {
+                setFormError('Please paste your Google Drive folder link containing your Technical Presentation (PPT / PDF).');
+                return;
+            }
+            if (!trimmedUrl.toLowerCase().includes('drive.google.com')) {
+                setFormError('Invalid link: Please provide a valid Google Drive URL (must contain drive.google.com).');
+                return;
             }
         }
 
@@ -189,7 +251,7 @@ export default function SubmissionPortalPage({ onNavigateHome, onNavigateRecruit
         try {
             const payload = {
                 subsystem,
-                phase: isPowertrain ? 'Round 2' : 'phase1',
+                phase: isPowertrain ? 'Round 2' : phase,
                 cohort: subsystem === 'software' ? (softwareCohort === 'ii' ? 'II Year' : 'III Year') : 'General',
                 group: activeTeam ? activeTeam.group : 'Open Submission',
                 problemStatement,
@@ -219,6 +281,7 @@ export default function SubmissionPortalPage({ onNavigateHome, onNavigateRecruit
                 version: data.version || 1,
                 isUpdate: data.isUpdate || false,
                 timestamp: data.timestamp || new Date().toISOString(),
+                phase: payload.phase,
                 subsystem,
                 problemStatement: payload.problemStatement,
                 group: payload.group,
@@ -246,7 +309,7 @@ export default function SubmissionPortalPage({ onNavigateHome, onNavigateRecruit
             if (ps === 'ps2') return 'PS2: Automatic Temperature Control (Due Tuesday 15 Sept)';
             if (ps === 'ps3') return 'PS3: Ready-to-Drive System (Due Tuesday 15 Sept)';
         }
-        return 'PS1: Mechanical System Design';
+        return 'PS1: Mechanical System Design (Due Thursday 17 Sept)';
     };
 
     const handleCopyReceipt = () => {
@@ -298,12 +361,16 @@ Note: If multiple registrations are made, only the latest choice will be conside
                 <h1 className="text-3xl sm:text-5xl font-black uppercase tracking-tight text-white font-mono leading-none">
                     {subsystem === 'powertrain'
                         ? 'Register Problem Statement Choice'
-                        : "Submit Your Team's Drive Link"}
+                        : subsystem === 'software'
+                        ? "Submit Phase 02 Implementation (Drive + GitHub)"
+                        : "Submit Mechanical Presentation Link"}
                 </h1>
                 <p className="mt-3 text-sm sm:text-base font-bold text-slate-300 max-w-2xl leading-relaxed">
                     {subsystem === 'powertrain'
                         ? 'Select your allocated duo team and register the electrical engineering problem statement (PS1, PS2, or PS3) your team will be solving and defending.'
-                        : 'Paste your duo team\'s shared Google Drive folder containing your presentation slides, technical report, workflow diagrams, and research documentation.'}
+                        : subsystem === 'software'
+                        ? 'Phase 02 candidates: Submit your shared Google Drive folder (model weights, benchmark results & deck) and your GitHub repository link (runnable codebase & README).'
+                        : 'Paste your duo team\'s shared Google Drive folder containing your Technical Presentation (PPT / PDF) due Thursday, 17 September 11:59 PM IST.'}
                 </p>
 
                 {/* Submission Updates Notice Banner */}
@@ -333,6 +400,8 @@ Note: If multiple registrations are made, only the latest choice will be conside
                                             ? (submissionReceipt.driveUrl
                                                 ? 'Problem Statement & Presentation Link Recorded!'
                                                 : 'Problem Statement Choice Successfully Locked In!')
+                                            : submissionReceipt.subsystem === 'software'
+                                            ? 'Phase 02 Implementation Links Successfully Recorded!'
                                             : 'Submission Successfully Recorded!'}
                                     </h2>
                                     <span className="font-mono text-xs font-bold text-slate-500">
@@ -348,7 +417,9 @@ Note: If multiple registrations are made, only the latest choice will be conside
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 border-2 border-slate-900 p-4 font-mono text-xs">
                             <div>
                                 <span className="text-slate-500 block uppercase font-bold text-[10px]">Track / Subsystem</span>
-                                <strong className="text-slate-900 text-sm uppercase">{submissionReceipt.subsystem}</strong>
+                                <strong className="text-slate-900 text-sm uppercase">
+                                    {submissionReceipt.subsystem} ({submissionReceipt.phase ? submissionReceipt.phase.toUpperCase() : 'PHASE 2'})
+                                </strong>
                             </div>
                             <div>
                                 <span className="text-slate-500 block uppercase font-bold text-[10px]">Duo Allocation</span>
@@ -376,7 +447,7 @@ Note: If multiple registrations are made, only the latest choice will be conside
                                     <span className="text-slate-500 block uppercase font-bold text-[10px] mb-1">
                                         {submissionReceipt.subsystem === 'powertrain'
                                             ? 'Submitted Presentation Drive Folder (PPT / PDF)'
-                                            : 'Submitted Google Drive Folder'}
+                                            : 'Submitted Google Drive Folder (Slides, Weights & Metrics)'}
                                     </span>
                                     <a
                                         href={submissionReceipt.driveUrl}
@@ -404,7 +475,7 @@ Note: If multiple registrations are made, only the latest choice will be conside
 
                             {submissionReceipt.githubUrl && (
                                 <div className="sm:col-span-2 pt-2 border-t border-slate-200">
-                                    <span className="text-slate-500 block uppercase font-bold text-[10px] mb-1">Submitted GitHub Repository</span>
+                                    <span className="text-slate-500 block uppercase font-bold text-[10px] mb-1">Submitted GitHub Repository (Phase 02 Codebase)</span>
                                     <a
                                         href={submissionReceipt.githubUrl}
                                         target="_blank"
@@ -440,7 +511,7 @@ Note: If multiple registrations are made, only the latest choice will be conside
                             <div className="p-4 bg-amber-50 border-2 border-slate-900 text-xs font-bold text-slate-800 space-y-1">
                                 <strong className="font-mono text-slate-900 block uppercase">Important Reminder:</strong>
                                 <p>
-                                    Please verify that your Google Drive link has permissions set to <strong>&quot;Anyone with the link can view&quot;</strong> so our evaluation committee can access and grade your presentation.
+                                    Please verify that your Google Drive link has permissions set to <strong>&quot;Anyone with the link can view&quot;</strong> and your GitHub repository is public or shared with <strong>asterix-recruitment</strong> so our evaluation committee can run your code.
                                 </p>
                             </div>
                         )}
@@ -461,7 +532,7 @@ Note: If multiple registrations are made, only the latest choice will be conside
                             >
                                 {submissionReceipt.subsystem === 'powertrain'
                                     ? (submissionReceipt.driveUrl ? 'Submit Updated Presentation Link / Change PS ↗' : 'Submit Presentation Drive Link (PPT / PDF) ↗')
-                                    : 'Submit An Updated Link ↗'}
+                                    : 'Submit An Updated Link / Revision ↗'}
                             </button>
                         </div>
                     </div>
@@ -545,11 +616,68 @@ Note: If multiple registrations are made, only the latest choice will be conside
                             </div>
                         </div>
 
-                        {/* Step 2 for Powertrain: Choose Problem Statement */}
+                        {/* Step 1.5: Phase 1 & Phase 2 Selection Option */}
+                        <div className="space-y-2 pt-2 border-t-2 border-slate-200">
+                            <div className="flex items-center justify-between">
+                                <label className="font-mono text-xs font-black uppercase text-slate-900 block">
+                                    Step 2: Select Recruitment Phase
+                                </label>
+                                <span className="font-mono text-[10px] font-bold text-slate-500 uppercase">
+                                    Phase 01 Closed • Phase 02 Active
+                                </span>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                {/* Phase 1 Button - Disabled / Closed */}
+                                <button
+                                    type="button"
+                                    disabled={true}
+                                    className="p-3.5 border-3 border-slate-300 bg-slate-100 text-slate-400 text-left cursor-not-allowed opacity-75 select-none relative"
+                                    title="Phase 1 submissions are officially closed."
+                                >
+                                    <div className="flex items-center justify-between mb-1">
+                                        <span className="font-mono text-xs font-black uppercase text-slate-500">
+                                            Phase 01: Research &amp; Proposal
+                                        </span>
+                                        <span className="text-[10px] font-mono font-black px-1.5 py-0.5 bg-slate-300 text-slate-700 border border-slate-400">
+                                            CLOSED
+                                        </span>
+                                    </div>
+                                    <span className="text-[11px] block font-bold text-slate-500">
+                                        System architecture, design proposal &amp; research deck (Deadline passed 8 Sept)
+                                    </span>
+                                </button>
+
+                                {/* Phase 2 Button - Active / Selected */}
+                                <button
+                                    type="button"
+                                    onClick={() => setPhase('phase2')}
+                                    className={`p-3.5 border-3 border-slate-950 text-left cursor-pointer transition-all ${
+                                        phase === 'phase2'
+                                            ? 'bg-amber-300 text-slate-950 shadow-[4px_4px_0px_#0284c7] -translate-y-0.5 font-black'
+                                            : 'bg-white hover:bg-slate-100 text-slate-900 shadow-[2px_2px_0px_#000]'
+                                    }`}
+                                >
+                                    <div className="flex items-center justify-between mb-1">
+                                        <span className="font-mono text-xs font-black uppercase">
+                                            Phase 02: Implementation &amp; Evaluation
+                                        </span>
+                                        <span className="text-[10px] font-mono font-black px-1.5 py-0.5 bg-slate-950 text-amber-300 border border-slate-950">
+                                            ACTIVE NOW
+                                        </span>
+                                    </div>
+                                    <span className="text-[11px] opacity-90 block font-bold">
+                                        Runnable code pipeline, GitHub repo &amp; Drive folder (Due 15 Sept 11:59 PM)
+                                    </span>
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Step for Powertrain: Choose Problem Statement */}
                         {subsystem === 'powertrain' && (
                             <div className="space-y-3 pt-2 border-t-2 border-slate-200">
                                 <label className="font-mono text-xs font-black uppercase text-slate-900 flex items-center justify-between">
-                                    <span>Step 2: Choose Your Team&apos;s Problem Statement</span>
+                                    <span>Step 3: Choose Your Team&apos;s Problem Statement</span>
                                     <span className="font-mono text-[10px] text-amber-700 font-bold bg-amber-100 px-2 py-0.5 border border-amber-300">
                                         Choose Exactly 1 Statement
                                     </span>
@@ -635,12 +763,12 @@ Note: If multiple registrations are made, only the latest choice will be conside
                             </div>
                         )}
 
-                        {/* Step 2 for Software: Cohort & Problem Statement */}
+                        {/* Step for Software: Cohort & Problem Statement */}
                         {subsystem === 'software' && (
                             <div className="space-y-4 pt-2 border-t-2 border-slate-200">
                                 <div className="space-y-2">
                                     <label className="font-mono text-xs font-black uppercase text-slate-900 block">
-                                        Select Academic Cohort
+                                        Step 3: Select Academic Cohort
                                     </label>
                                     <div className="flex gap-3">
                                         <button
@@ -670,9 +798,9 @@ Note: If multiple registrations are made, only the latest choice will be conside
 
                                 <div className="space-y-2">
                                     <label className="font-mono text-xs font-black uppercase text-slate-900 flex items-center justify-between">
-                                        <span>Select Problem Statement</span>
-                                        <span className="font-mono text-[10px] text-slate-500 font-bold uppercase">
-                                            {problemStatement === 'ps2' ? 'Dual Submission (Drive + GitHub)' : 'Drive Submission'}
+                                        <span>Step 4: Select Problem Statement</span>
+                                        <span className="font-mono text-[10px] text-amber-800 bg-amber-100 px-2 py-0.5 border border-amber-300 font-bold uppercase">
+                                            Phase 2: Dual Link Required (Drive + GitHub)
                                         </span>
                                     </label>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -691,13 +819,13 @@ Note: If multiple registrations are made, only the latest choice will be conside
                                             <div className="flex items-center justify-between mb-1">
                                                 <span className="font-black">PS1: Vision Detection</span>
                                                 <span className={`text-[10px] px-1.5 py-0.5 border ${
-                                                    problemStatement === 'ps1' ? 'bg-slate-900 text-amber-300 border-slate-900' : 'bg-slate-100 border-slate-300'
+                                                    problemStatement === 'ps1' ? 'bg-slate-900 text-amber-300 border-slate-950' : 'bg-slate-100 border-slate-300'
                                                 }`}>
                                                     {problemStatement === 'ps1' ? 'ACTIVE' : 'SELECT'}
                                                 </span>
                                             </div>
                                             <span className="text-[10px] opacity-85 block font-bold font-sans">
-                                                Camera object detection, dataset, classes &amp; presentation
+                                                ZED 2i multi-class 2D detection (Drive Link + GitHub Repo)
                                             </span>
                                         </button>
 
@@ -716,13 +844,13 @@ Note: If multiple registrations are made, only the latest choice will be conside
                                             <div className="flex items-center justify-between mb-1">
                                                 <span className="font-black">PS2: Sensor Fusion</span>
                                                 <span className={`text-[10px] px-1.5 py-0.5 border ${
-                                                    problemStatement === 'ps2' ? 'bg-slate-900 text-amber-300 border-slate-900' : 'bg-slate-100 border-slate-300'
+                                                    problemStatement === 'ps2' ? 'bg-slate-900 text-amber-300 border-slate-950' : 'bg-slate-100 border-slate-300'
                                                 }`}>
                                                     {problemStatement === 'ps2' ? 'ACTIVE' : 'SELECT'}
                                                 </span>
                                             </div>
                                             <span className="text-[10px] opacity-85 block font-bold font-sans">
-                                                Transforms, noise filter, 2D map (Drive Link + GitHub Link)
+                                                Online streaming track reconstruction (Drive Link + GitHub Repo)
                                             </span>
                                         </button>
                                     </div>
@@ -730,10 +858,16 @@ Note: If multiple registrations are made, only the latest choice will be conside
                             </div>
                         )}
 
-                        {/* Step: Duo Group Selector */}
+                        {/* Step: Duo Group Selector with Phase 1 Eligibility tagging */}
                         <div className="space-y-2 pt-2 border-t-2 border-slate-200">
                             <label className="font-mono text-xs font-black uppercase text-slate-900 flex items-center justify-between">
-                                <span>{subsystem === 'powertrain' ? 'Step 3' : 'Step 2'}: Select Your Duo Group</span>
+                                <span>
+                                    {subsystem === 'powertrain'
+                                        ? 'Step 4'
+                                        : subsystem === 'software'
+                                        ? 'Step 5'
+                                        : 'Step 3'}: Select Your Duo Group
+                                </span>
                                 <span className="text-slate-500 font-bold text-[11px]">
                                     ({availableTeams.length} Allocated Groups)
                                 </span>
@@ -746,22 +880,43 @@ Note: If multiple registrations are made, only the latest choice will be conside
                             >
                                 <option value="">-- Choose your allocated Duo Group --</option>
                                 {availableTeams.map((grp) => {
+                                    const isP1Submitted = eligiblePhase1Data.eligibleGroups.some(
+                                        (g) => g.toLowerCase().trim() === grp.group.toLowerCase().trim()
+                                    );
                                     const names = grp.members?.map((m) => `${m.name} (${m.dept})`).join(' & ') || `${grp.member1} & ${grp.member2}`;
+                                    const tag = subsystem === 'software' && !eligiblePhase1Data.isLoading && eligiblePhase1Data.eligibleGroups.length > 0
+                                        ? (isP1Submitted ? '✓ [ELIGIBLE - P1 Submitted]' : '⚠️ [NOT ELIGIBLE - P1 Missing]')
+                                        : '';
                                     return (
                                         <option key={grp.group} value={grp.group}>
-                                            {grp.group}: {names}
+                                            {grp.group} {tag}: {names}
                                         </option>
                                     );
                                 })}
                             </select>
                         </div>
 
+                        {/* Software Ineligible Warning Alert */}
+                        {subsystem === 'software' && selectedGroup && !isTeamEligible && (
+                            <div className="p-4 bg-rose-50 border-3 border-rose-600 text-rose-900 space-y-1 font-sans text-xs">
+                                <div className="flex items-center gap-2 font-mono font-black uppercase text-rose-700 text-sm">
+                                    <span>🚫 Ineligible for Phase 2 Submissions</span>
+                                </div>
+                                <p className="font-bold leading-relaxed">
+                                    Only duo teams who submitted Phase 1 deliverables are eligible to submit Phase 2. No Phase 1 submission was recorded for <strong>{selectedGroup}</strong>.
+                                </p>
+                                <p className="text-[11px] text-rose-800">
+                                    If a member of your duo team submitted Phase 1 under a different name or phone number, please contact the Software Lead directly.
+                                </p>
+                            </div>
+                        )}
+
                         {/* Selected Duo Partner Cards */}
                         {activeTeam && activeTeam.members && (
                             <div className="p-4 bg-sky-50 border-2 border-slate-950 space-y-3">
                                 <div className="flex items-center justify-between">
                                     <span className="font-mono text-xs font-black uppercase text-sky-900">
-                                        {subsystem === 'powertrain' ? 'Step 4' : 'Step 3'}: Who Is Submitting This Registration?
+                                        {subsystem === 'powertrain' ? 'Step 5' : subsystem === 'software' ? 'Step 6' : 'Step 4'}: Who Is Submitting This Registration?
                                     </span>
                                     <span className="font-mono text-[10px] font-bold text-slate-500 uppercase">
                                         Select Member
@@ -801,11 +956,11 @@ Note: If multiple registrations are made, only the latest choice will be conside
                             </div>
                         )}
 
-                        {/* Step: Submitter Identity Verification */}
+                        {/* Submitter Identity Verification */}
                         {activeTeam && (
                             <div className="space-y-1.5 pt-2 border-t-2 border-slate-200">
                                 <label className="font-mono text-xs font-black uppercase text-slate-900 flex items-center justify-between">
-                                    <span>{subsystem === 'powertrain' ? 'Step 5' : 'Step 4'}: Submitter Identity Verification</span>
+                                    <span>{subsystem === 'powertrain' ? 'Step 6' : subsystem === 'software' ? 'Step 7' : 'Step 5'}: Submitter Identity Verification</span>
                                     <span className="font-mono text-[10px] text-rose-600 font-bold">REQUIRED</span>
                                 </label>
                                 <p className="text-[11px] font-bold text-slate-600">
@@ -822,12 +977,12 @@ Note: If multiple registrations are made, only the latest choice will be conside
                             </div>
                         )}
 
-                        {/* Step: Google Drive Link (Presentation PPT / PDF / Deliverables) */}
+                        {/* Step: Google Drive Link */}
                         {subsystem === 'powertrain' ? (
                             <div className="space-y-2 pt-2 border-t-2 border-slate-200">
                                 <div className="flex flex-wrap items-center justify-between gap-2">
                                     <label className="font-mono text-xs font-black uppercase text-slate-900">
-                                        Step 6: Technical Presentation Google Drive Link (PPT / PDF)
+                                        Step 7: Technical Presentation Google Drive Link (PPT / PDF)
                                     </label>
                                     <span className="font-mono text-[10px] text-amber-800 bg-amber-200/80 px-2 py-0.5 border border-amber-400 font-bold uppercase">
                                         Optional Now • Submit Now or Later
@@ -851,10 +1006,12 @@ Note: If multiple registrations are made, only the latest choice will be conside
                                 </div>
                             </div>
                         ) : (
-                            /* For Software & Mechanical: Step 5 Google Drive Link */
+                            /* For Software & Mechanical: Google Drive Link */
                             <div className="space-y-1.5 pt-2 border-t-2 border-slate-200">
                                 <label className="font-mono text-xs font-black uppercase text-slate-900 flex items-center justify-between">
-                                    <span>Step 5: Google Drive Folder Link</span>
+                                    <span>
+                                        {subsystem === 'software' ? 'Step 8' : 'Step 6'}: Google Drive Folder Link (Presentation Slides, Demo Video &amp; Weights)
+                                    </span>
                                     <span className="font-mono text-[10px] text-rose-600 font-bold">REQUIRED</span>
                                 </label>
                                 <input
@@ -874,28 +1031,28 @@ Note: If multiple registrations are made, only the latest choice will be conside
                             </div>
                         )}
 
-                        {/* Software PS2: Step 6 GitHub Repository Link */}
-                        {subsystem === 'software' && problemStatement === 'ps2' && (
+                        {/* Software Phase 2: Step 9 GitHub Repository Link (Required for BOTH PS1 and PS2) */}
+                        {subsystem === 'software' && (
                             <div className="space-y-1.5 pt-2 border-t-2 border-slate-200">
                                 <label className="font-mono text-xs font-black uppercase text-slate-900 flex items-center justify-between">
-                                    <span>Step 6: GitHub Repository Link (Code Pipeline)</span>
-                                    <span className="font-mono text-[10px] text-rose-600 font-bold">REQUIRED FOR PS2</span>
+                                    <span>Step 9: GitHub Repository Link (Phase 02 Codebase &amp; Execution Scripts)</span>
+                                    <span className="font-mono text-[10px] text-rose-600 font-bold">REQUIRED FOR PHASE 2</span>
                                 </label>
                                 <p className="text-[11px] font-bold text-slate-600">
-                                    For Problem Statement 2, submit your runnable source code, config files, and README replay instructions via a public or shared GitHub repository.
+                                    Submit your runnable code repository containing training/inference scripts, configuration files, requirements, and a clear README for reproducing your evaluation results.
                                 </p>
                                 <input
                                     type="url"
                                     value={githubUrl}
                                     onChange={(e) => setGithubUrl(e.target.value)}
-                                    placeholder="https://github.com/your-username/asterix-sensor-fusion"
+                                    placeholder="https://github.com/your-team/asterix-perception-phase2"
                                     className="w-full p-3 bg-slate-50 border-2 border-slate-950 font-mono text-sm font-bold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500"
                                     required
                                 />
                                 <div className="flex items-start gap-2 p-3 bg-sky-50 border border-sky-300 text-sky-950 text-xs font-bold leading-relaxed">
                                     <span className="font-mono text-base">ℹ️</span>
                                     <div>
-                                        <strong>Dual Submission for PS2:</strong> Your Google Drive folder stores your plots, diagram, and comparative analysis report. Your GitHub repository hosts the complete runnable script/package.
+                                        <strong>Phase 2 Dual Deliverable:</strong> Your Google Drive folder stores your presentation slides, evaluation plots, demonstration screen-recordings, and trained weights. Your GitHub repository hosts the clean, executable codebase.
                                     </div>
                                 </div>
                             </div>
@@ -904,13 +1061,25 @@ Note: If multiple registrations are made, only the latest choice will be conside
                         {/* Additional Remarks / Notes */}
                         <div className="space-y-1.5 pt-2 border-t-2 border-slate-200">
                             <label className="font-mono text-xs font-black uppercase text-slate-900 flex items-center justify-between">
-                                <span>{subsystem === 'powertrain' ? 'Step 7' : (subsystem === 'software' && problemStatement === 'ps2' ? 'Step 7' : 'Step 6')}: Additional Remarks / Notes</span>
+                                <span>
+                                    {subsystem === 'powertrain'
+                                        ? 'Step 8'
+                                        : subsystem === 'software'
+                                        ? 'Step 10'
+                                        : 'Step 7'}: Additional Remarks / Notes
+                                </span>
                                 <span className="font-mono text-[10px] text-slate-400 font-bold">OPTIONAL</span>
                             </label>
                             <textarea
                                 value={notes}
                                 onChange={(e) => setNotes(e.target.value)}
-                                placeholder={subsystem === 'powertrain' ? 'e.g. Planning to use 3 ESP32 nodes with CAN transceiver modules...' : 'e.g. Phase 1 Final Deck & Workflow Diagram included.'}
+                                placeholder={
+                                    subsystem === 'powertrain'
+                                        ? 'e.g. Planning to use 3 ESP32 nodes with CAN transceiver modules...'
+                                        : subsystem === 'software'
+                                        ? 'e.g. YOLOv8x fine-tuned model weights and TensorRT inference script included in repo.'
+                                        : 'e.g. Technical presentation deck with sizing calculations & CAD mounting included.'
+                                }
                                 rows={2}
                                 className="w-full p-3 bg-slate-50 border-2 border-slate-950 font-mono text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500"
                             />
@@ -933,18 +1102,20 @@ Note: If multiple registrations are made, only the latest choice will be conside
 
                             <button
                                 type="submit"
-                                disabled={isSubmitting}
+                                disabled={isSubmitting || (subsystem === 'software' && !isTeamEligible)}
                                 className={`w-full sm:w-auto press px-8 py-3.5 bg-slate-950 text-amber-300 hover:bg-slate-900 border-3 border-slate-950 font-mono text-sm font-black uppercase tracking-wider cursor-pointer shadow-[4px_4px_0px_#f59e0b] ${
-                                    isSubmitting ? 'opacity-70 cursor-wait' : ''
+                                    isSubmitting || (subsystem === 'software' && !isTeamEligible)
+                                        ? 'opacity-60 cursor-not-allowed'
+                                        : ''
                                 }`}
                             >
                                 {isSubmitting
                                     ? 'Recording Submission...'
                                     : subsystem === 'powertrain'
                                     ? (driveUrl.trim() ? '🚀 SUBMIT PRESENTATION LINK & LOCK CHOICE' : '🎯 LOCK IN PROBLEM STATEMENT CHOICE')
-                                    : subsystem === 'software' && problemStatement === 'ps2'
-                                    ? '🚀 SUBMIT PHASE 01 LINKS (DRIVE + GITHUB)'
-                                    : '🚀 SUBMIT PHASE 01 DRIVE LINK'}
+                                    : subsystem === 'software'
+                                    ? '🚀 SUBMIT PHASE 02 DELIVERABLES (DRIVE + GITHUB)'
+                                    : '🚀 SUBMIT MECHANICAL PRESENTATION LINK'}
                             </button>
                         </div>
                     </form>
