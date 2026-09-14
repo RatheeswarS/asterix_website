@@ -310,9 +310,19 @@ const normalizeRecruitmentTrack = (track, canonical) => {
     const canonicalStatements = canonical.problemStatements || [];
     const canonicalLead = canonical.lead || null;
 
-    const userTimeline = Array.isArray(track?.timeline) && track.timeline.length > 0
-        ? track.timeline
-        : canonicalTimeline;
+    let userTimeline = canonicalTimeline;
+    if (Array.isArray(track?.timeline) && track.timeline.length > 0) {
+        userTimeline = canonicalTimeline.map((canItem) => {
+            const match = track.timeline.find((t) => t?.id === canItem.id);
+            if (!match) return canItem;
+            return {
+                ...canItem,
+                ...match,
+                date: canItem.date || match.date,
+                detail: canItem.detail || match.detail
+            };
+        });
+    }
 
     const userStatements = Array.isArray(track?.problemStatements) && track.problemStatements.length > 0
         ? track.problemStatements

@@ -360,7 +360,7 @@ export default function MechanicalMysteryViewer() {
                             </span>
                         </div>
                         <span className="font-mono text-xs font-bold text-rose-600">
-                            Deadline: 16 September 2026, 11:59 PM IST
+                            Deadline: 17 September 2026, 11:59 PM IST
                         </span>
                     </div>
 
