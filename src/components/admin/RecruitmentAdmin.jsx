@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useWebsiteData } from '../../context/WebsiteDataContext';
 import { istInputValue, istInputToIso, formatIstFull } from '../../lib/istTime';
+import ImageField from './ImageField';
 
 /**
  * Recruitment administration — static content editor, split per subsystem.
@@ -21,7 +22,7 @@ const labelClass = 'block text-[10px] font-mono font-black uppercase text-slate-
 
 const newId = (prefix) => `${prefix}-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`;
 
-export default function RecruitmentAdmin({ showStatus }) {
+export default function RecruitmentAdmin({ showStatus, onImageUpload }) {
     const { siteData, updateRecruitment } = useWebsiteData();
     const recruitment = siteData.recruitment || {};
     const tracks = Array.isArray(recruitment.tracks) ? recruitment.tracks : [];
@@ -53,6 +54,8 @@ export default function RecruitmentAdmin({ showStatus }) {
 
     const timeline = Array.isArray(track?.timeline) ? track.timeline : [];
     const problemStatements = Array.isArray(track?.problemStatements) ? track.problemStatements : [];
+    const freshers = recruitment.freshers || {};
+    const freshersDetails = Array.isArray(freshers.details) ? freshers.details : [];
 
     const addTimelineItem = () => {
         setTrackList('timeline', [...timeline, { id: newId('tl'), label: '', detail: '', date: '' }]);
@@ -76,6 +79,82 @@ export default function RecruitmentAdmin({ showStatus }) {
                     per-subsystem timelines and the problem statements shown around them. Changes sync
                     automatically; use <strong>☁ Sync Cloud</strong> above to push immediately.
                 </p>
+            </div>
+
+            <div className="p-5 bg-amber-50 border-4 border-slate-900 shadow-[6px_6px_0px_#0f172a] space-y-4">
+                <div>
+                    <h3 className="text-lg font-black uppercase text-slate-900">Freshers announcement</h3>
+                    <p className="text-[11px] font-mono font-bold text-slate-500 mt-1">
+                        This content appears in the popup on the main site and in the freshers section at the top of the recruitment page.
+                    </p>
+                </div>
+                <label className="flex items-center gap-2 text-xs font-mono font-black uppercase text-slate-700">
+                    <input
+                        type="checkbox"
+                        checked={freshers.enabled !== false}
+                        onChange={(e) => updateRecruitment({ freshers: { ...freshers, enabled: e.target.checked } })}
+                    />
+                    Show popup and freshers section
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label className={labelClass}>Badge / eyebrow</label>
+                        <input className={input} value={freshers.badge || ''} onChange={(e) => updateRecruitment({ freshers: { ...freshers, badge: e.target.value } })} />
+                    </div>
+                    <div>
+                        <label className={labelClass}>Button label</label>
+                        <input className={input} value={freshers.ctaLabel || ''} onChange={(e) => updateRecruitment({ freshers: { ...freshers, ctaLabel: e.target.value } })} />
+                    </div>
+                </div>
+                <div>
+                    <label className={labelClass}>Title</label>
+                    <input className={input} value={freshers.title || ''} onChange={(e) => updateRecruitment({ freshers: { ...freshers, title: e.target.value } })} />
+                </div>
+                <div>
+                    <label className={labelClass}>Description</label>
+                    <textarea rows={3} className={input} value={freshers.description || ''} onChange={(e) => updateRecruitment({ freshers: { ...freshers, description: e.target.value } })} />
+                </div>
+                    <div>
+                        <label className={labelClass}>First-year application URL</label>
+                        <input className={`${input} font-mono`} placeholder="https://forms.gle/..." value={freshers.applyUrl || ''} onChange={(e) => updateRecruitment({ freshers: { ...freshers, applyUrl: e.target.value } })} />
+                    </div>
+                    <ImageField
+                        label="Freshers poster"
+                        value={freshers.posterUrl || ''}
+                        fit={freshers.posterFit || 'cover'}
+                        position={freshers.posterPosition || '50% 50%'}
+                        frames="gallery"
+                        onChange={(fields) => updateRecruitment({ freshers: { ...freshers, posterUrl: fields.url ?? freshers.posterUrl, posterFit: fields.fit ?? freshers.posterFit, posterPosition: fields.position ?? freshers.posterPosition } })}
+                        onUpload={onImageUpload}
+                        folder="/asterix/freshers"
+                    />
+                <div className="space-y-3">
+                    <h4 className="font-black uppercase text-slate-900">Freshers details</h4>
+                    {freshersDetails.map((detail, index) => (
+                        <div key={detail.id || index} className="grid grid-cols-1 gap-2 border-2 border-slate-900 bg-white p-3 sm:grid-cols-[1fr_2fr_auto]">
+                            <input className={input} placeholder="Detail heading" value={detail.title || ''} onChange={(e) => updateRecruitment({ freshers: { ...freshers, details: freshersDetails.map((item, i) => i === index ? { ...item, title: e.target.value } : item) } })} />
+                            <textarea rows={2} className={input} placeholder="Detail text" value={detail.body || ''} onChange={(e) => updateRecruitment({ freshers: { ...freshers, details: freshersDetails.map((item, i) => i === index ? { ...item, body: e.target.value } : item) } })} />
+                            <button type="button" onClick={() => updateRecruitment({ freshers: { ...freshers, details: freshersDetails.filter((_, i) => i !== index) } })} className={btnDanger}>Delete</button>
+                        </div>
+                    ))}
+                    <button type="button" onClick={() => updateRecruitment({ freshers: { ...freshers, details: [...freshersDetails, { id: newId('freshers-detail'), title: '', body: '' }] } })} className={btnQuiet}>
+                        + Add a freshers detail
+                    </button>
+                </div>
+                <div className="space-y-3">
+                    <h4 className="font-black uppercase text-slate-900">Freshers timeline</h4>
+                    {Array.isArray(freshers.timeline) && freshers.timeline.map((item, index) => (
+                        <div key={item.id || index} className="grid grid-cols-1 gap-2 border-2 border-slate-900 bg-white p-3 sm:grid-cols-[1fr_1fr_1fr_auto]">
+                            <input className={input} placeholder="Stage title" value={item.label || ''} onChange={(e) => updateRecruitment({ freshers: { ...freshers, timeline: freshers.timeline.map((entry, i) => i === index ? { ...entry, label: e.target.value } : entry) } })} />
+                            <input className={input} placeholder="Date and time (optional)" type="datetime-local" value={istInputValue(item.date)} onChange={(e) => updateRecruitment({ freshers: { ...freshers, timeline: freshers.timeline.map((entry, i) => i === index ? { ...entry, date: istInputToIso(e.target.value) } : entry) } })} />
+                            <input className={input} placeholder="Stage description" value={item.detail || ''} onChange={(e) => updateRecruitment({ freshers: { ...freshers, timeline: freshers.timeline.map((entry, i) => i === index ? { ...entry, detail: e.target.value } : entry) } })} />
+                            <button type="button" onClick={() => updateRecruitment({ freshers: { ...freshers, timeline: freshers.timeline.filter((_, i) => i !== index) } })} className={btnDanger}>Delete</button>
+                        </div>
+                    ))}
+                    <button type="button" onClick={() => updateRecruitment({ freshers: { ...freshers, timeline: [...(freshers.timeline || []), { id: newId('freshers-timeline'), label: '', detail: '', date: '' }] } })} className={btnQuiet}>
+                        + Add a timeline stage
+                    </button>
+                </div>
             </div>
 
             {/* Shared header */}

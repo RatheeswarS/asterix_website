@@ -4,7 +4,7 @@ import TextDock, { DockTextItem } from './Dock';
 import { useWebsiteData } from '../context/WebsiteDataContext';
 import Icon from './Icon';
 
-export default function CyberNavbar({ onSelectSubsystem, isDetailPage, currentPage = 'home', onBackToHome, onOpenSponsor, onOpenRecruitment }) {
+export default function CyberNavbar({ onSelectSubsystem, isDetailPage, currentPage = 'home', onBackToHome, onOpenSponsor, onOpenRecruitment, onOpenFreshersRecruitment }) {
     const { siteData } = useWebsiteData();
     const subsystems = siteData.subsystems;
     const { contact } = siteData;
@@ -396,6 +396,19 @@ export default function CyberNavbar({ onSelectSubsystem, isDetailPage, currentPa
                                         <span className="text-[9px]">↗</span>
                                     </DockTextItem>
 
+                                    <DockTextItem
+                                        mouseX={mouseX}
+                                        onClick={() => onOpenFreshersRecruitment?.()}
+                                        className={`border-slate-900 bg-sky-100 text-slate-900 hover:bg-sky-200 flex items-center gap-1 cursor-pointer ${
+                                            isScrolled
+                                                ? 'px-2.5 py-1 text-[11px] rounded-md border font-bold hover:shadow-[2px_2px_0px_#0f172a]'
+                                                : 'px-3 py-1.5 text-xs border-2 shadow-[2px_2px_0px_#0f172a] hover:shadow-[3px_3px_0px_#0f172a]'
+                                        }`}
+                                    >
+                                        <span>Freshers</span>
+                                        <span className="text-[9px]">↗</span>
+                                    </DockTextItem>
+
                                     {/* Sponsor Team Button */}
                                     <DockTextItem
                                         mouseX={mouseX}
@@ -592,6 +605,15 @@ export default function CyberNavbar({ onSelectSubsystem, isDetailPage, currentPa
                                 Sponsor Team
                             </button>
                         </div>
+                        <button
+                            onClick={() => {
+                                setMobileOpen(false);
+                                onOpenFreshersRecruitment?.();
+                            }}
+                            className="w-full border-2 border-slate-900 bg-sky-100 p-2.5 text-center font-black text-xs uppercase text-slate-900 shadow-[2px_2px_0px_#0f172a] hover:bg-sky-200"
+                        >
+                            First Year Freshers Recruitment ↗
+                        </button>
                     </div>
                 )}
 

@@ -14,12 +14,14 @@ import CyberNewsletterCTA from "./components/CyberNewsletterCTA";
 import CyberFooter from "./components/CyberFooter";
 import SubsystemDetail from "./components/SubsystemDetail";
 import FloatingBackground from "./components/FloatingBackground";
+import FreshersRecruitmentPopup from "./components/FreshersRecruitmentPopup";
 import { WebsiteDataProvider } from "./context/WebsiteDataContext";
 
 const BajaModelPage = lazy(() => import("./components/BajaModelPage"));
 const AdminDashboard = lazy(() => import("./components/admin/AdminDashboard"));
 const SponsorPage = lazy(() => import("./components/SponsorPage"));
 const RecruitmentPage = lazy(() => import("./components/RecruitmentPage"));
+const FreshersRecruitmentPage = lazy(() => import("./components/FreshersRecruitmentPage"));
 const SubmissionPortalPage = lazy(() => import("./components/recruitment/SubmissionPortalPage"));
 
 function MainApp() {
@@ -28,6 +30,7 @@ function MainApp() {
     const [isAdminOpen, setIsAdminOpen] = useState(() => window.location.hash.startsWith('#admin'));
     const [isSponsorPage, setIsSponsorPage] = useState(() => window.location.hash === '#sponsor');
     const [isRecruitmentPage, setIsRecruitmentPage] = useState(() => window.location.hash === '#join' || window.location.hash === '#recruitment');
+    const [isFreshersRecruitmentPage, setIsFreshersRecruitmentPage] = useState(() => window.location.hash === '#freshers-recruitment');
     const [isSubmissionPage, setIsSubmissionPage] = useState(() => window.location.hash.startsWith('#submit') || window.location.hash.startsWith('#recruitment-submit'));
     const [lenisInstance, setLenisInstance] = useState(null);
 
@@ -44,6 +47,7 @@ function MainApp() {
             setIsAdminOpen(hash.startsWith('#admin'));
             setIsSponsorPage(hash === '#sponsor');
             setIsRecruitmentPage(hash === '#join' || hash === '#recruitment');
+            setIsFreshersRecruitmentPage(hash === '#freshers-recruitment');
             setIsSubmissionPage(hash.startsWith('#submit') || hash.startsWith('#recruitment-submit'));
             if (hash === '#model') setIsModelPage(true);
             scrollToTop();
@@ -54,7 +58,7 @@ function MainApp() {
 
     useEffect(() => {
         scrollToTop();
-    }, [isSponsorPage, isRecruitmentPage, isSubmissionPage, selectedSubsystem, isModelPage, isAdminOpen]);
+    }, [isSponsorPage, isRecruitmentPage, isFreshersRecruitmentPage, isSubmissionPage, selectedSubsystem, isModelPage, isAdminOpen]);
 
     useEffect(() => {
         // Readers who ask for reduced motion get the browser's native scroll.
@@ -113,6 +117,7 @@ function MainApp() {
         setIsAdminOpen(false);
         setIsSponsorPage(false);
         setIsRecruitmentPage(false);
+        setIsFreshersRecruitmentPage(false);
     };
 
     const handleSelectSubsystem = (id) => {
@@ -141,6 +146,13 @@ function MainApp() {
         scrollToTop();
     };
 
+    const handleOpenFreshersRecruitment = () => {
+        closeAll();
+        setIsFreshersRecruitmentPage(true);
+        window.location.hash = '#freshers-recruitment';
+        scrollToTop();
+    };
+
     const handleOpenAdmin = () => {
         closeAll();
         setIsAdminOpen(true);
@@ -151,7 +163,7 @@ function MainApp() {
     const handleBackToHome = () => {
         closeAll();
         const hash = window.location.hash;
-        if (hash.startsWith('#admin') || ['#sponsor', '#join', '#recruitment', '#model'].includes(hash)) {
+        if (hash.startsWith('#admin') || ['#sponsor', '#join', '#recruitment', '#freshers-recruitment', '#model'].includes(hash)) {
             window.history.replaceState(null, '', window.location.pathname);
         }
         scrollToTop();
@@ -174,21 +186,65 @@ function MainApp() {
     }
 
     const isDetailPage = Boolean(
-        selectedSubsystem || isSponsorPage || isRecruitmentPage || isSubmissionPage || isModelPage
+        selectedSubsystem || isSponsorPage || isRecruitmentPage || isFreshersRecruitmentPage || isSubmissionPage || isModelPage
     );
 
     const currentPage =
         isSponsorPage ? 'sponsor' :
         isRecruitmentPage ? 'recruitment' :
+        isFreshersRecruitmentPage ? 'freshers' :
         isSubmissionPage ? 'submit' :
         isModelPage ? 'model' :
         selectedSubsystem ? 'subsystem' : 'home';
+
+    // Dedicated Full-Screen Sponsorship & Pitch Deck Portal
+    if (isSponsorPage) {
+        return (
+            <Suspense fallback={pageFallback}>
+                <SponsorPage onBack={handleBackToHome} />
+            </Suspense>
+        );
+    }
+
+    // Dedicated Full-Screen Crew Recruitment Portal
+    if (isRecruitmentPage) {
+        return (
+            <Suspense fallback={pageFallback}>
+                <RecruitmentPage
+                    onBack={handleBackToHome}
+                    onSelectSubsystem={handleSelectSubsystem}
+                />
+            </Suspense>
+        );
+    }
+
+    if (isFreshersRecruitmentPage) {
+        return (
+            <Suspense fallback={pageFallback}>
+                <FreshersRecruitmentPage onBack={handleBackToHome} />
+            </Suspense>
+        );
+    }
+
+    // Dedicated Full-Screen Phase 01 Google Drive Submission Portal
+    if (isSubmissionPage) {
+        return (
+            <Suspense fallback={pageFallback}>
+                <SubmissionPortalPage
+                    onNavigateHome={handleBackToHome}
+                    onNavigateRecruitment={handleOpenRecruitment}
+                />
+            </Suspense>
+        );
+    }
 
     return (
         <div className="relative min-h-screen bg-white text-slate-900 selection:bg-sky-500 selection:text-white overflow-x-hidden font-sans">
             
             {/* Photorealistic 3D Floating Baja Buggy Canvas & Swimming Goldfish */}
             <FloatingBackground />
+
+            <FreshersRecruitmentPopup onOpenRecruitment={handleOpenFreshersRecruitment} />
 
             {/* Main Content Layer */}
             <div className="relative z-10">
@@ -200,6 +256,7 @@ function MainApp() {
                     onBackToHome={handleBackToHome}
                     onOpenSponsor={handleOpenSponsor}
                     onOpenRecruitment={handleOpenRecruitment}
+                    onOpenFreshersRecruitment={handleOpenFreshersRecruitment}
                 />
 
                 {isModelPage ? (

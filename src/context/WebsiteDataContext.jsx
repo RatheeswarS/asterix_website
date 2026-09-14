@@ -283,6 +283,25 @@ const initialRecruitment = {
     notice: '',
     applyUrl: '',                                 // shared fallback Google Form
     applyLabel: 'Apply on the Google Form',
+    freshers: {
+        enabled: true,
+        badge: 'FRESHERS RECRUITMENT 2026',
+        title: 'Build the next Team Asterix machine',
+        description: 'Applications are open for enthusiastic freshers who want to learn, build and compete with Team Asterix.',
+        ctaLabel: 'Explore freshers recruitment',
+        applyUrl: '',
+        posterUrl: '',
+        posterFit: 'cover',
+        posterPosition: '50% 50%',
+        timeline: [
+            { id: 'freshers-timeline-1', label: 'Applications open', detail: 'Submit your details and tell us where you want to contribute.', date: '' },
+            { id: 'freshers-timeline-2', label: 'Shortlist and induction', detail: 'Selected freshers meet the subsystem leads and begin onboarding.', date: '' }
+        ],
+        details: [
+            { id: 'freshers-detail-1', title: 'Who can apply?', body: 'Freshers and students who are ready to contribute to an engineering subsystem can apply.' },
+            { id: 'freshers-detail-2', title: 'What happens next?', body: 'Choose a subsystem, review its brief and follow the application instructions on the recruitment portal.' }
+        ]
+    },
     tracks: RECRUITMENT_TRACKS.map(makeRecruitmentTrack)
 };
 
@@ -342,6 +361,25 @@ const normalizeRecruitment = (rec) => {
         notice: source.notice ?? '',
         applyUrl: source.applyUrl ?? '',
         applyLabel: source.applyLabel ?? initialRecruitment.applyLabel,
+        freshers: {
+            ...initialRecruitment.freshers,
+            ...(source.freshers && typeof source.freshers === 'object' ? source.freshers : {}),
+            details: Array.isArray(source.freshers?.details)
+                ? source.freshers.details.map((detail, index) => ({
+                    id: detail?.id || `freshers-detail-${index + 1}`,
+                    title: detail?.title || '',
+                    body: detail?.body || ''
+                }))
+                : initialRecruitment.freshers.details,
+            timeline: Array.isArray(source.freshers?.timeline)
+                ? source.freshers.timeline.map((item, index) => ({
+                    id: item?.id || `freshers-timeline-${index + 1}`,
+                    label: item?.label || '',
+                    detail: item?.detail || '',
+                    date: item?.date || ''
+                }))
+                : initialRecruitment.freshers.timeline
+        },
         tracks
     };
 };

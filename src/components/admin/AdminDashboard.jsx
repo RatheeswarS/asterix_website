@@ -1469,7 +1469,7 @@ export default function AdminDashboard({ onExit }) {
                     )}
 
                     {activeTab === 'recruitment' && (
-                        <RecruitmentAdmin showStatus={showStatus} />
+                        <RecruitmentAdmin showStatus={showStatus} onImageUpload={handleImageUpload} />
                     )}
 
                     {activeTab === 'submissions' && (
