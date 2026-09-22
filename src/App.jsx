@@ -20,18 +20,14 @@ import { WebsiteDataProvider } from "./context/WebsiteDataContext";
 const BajaModelPage = lazy(() => import("./components/BajaModelPage"));
 const AdminDashboard = lazy(() => import("./components/admin/AdminDashboard"));
 const SponsorPage = lazy(() => import("./components/SponsorPage"));
-const RecruitmentPage = lazy(() => import("./components/RecruitmentPage"));
 const FreshersRecruitmentPage = lazy(() => import("./components/FreshersRecruitmentPage"));
-const SubmissionPortalPage = lazy(() => import("./components/recruitment/SubmissionPortalPage"));
 
 function MainApp() {
     const [selectedSubsystem, setSelectedSubsystem] = useState(null);
     const [isModelPage, setIsModelPage] = useState(false);
     const [isAdminOpen, setIsAdminOpen] = useState(() => window.location.hash.startsWith('#admin'));
     const [isSponsorPage, setIsSponsorPage] = useState(() => window.location.hash === '#sponsor');
-    const [isRecruitmentPage, setIsRecruitmentPage] = useState(() => window.location.hash === '#join' || window.location.hash === '#recruitment');
     const [isFreshersRecruitmentPage, setIsFreshersRecruitmentPage] = useState(() => window.location.hash === '#freshers-recruitment');
-    const [isSubmissionPage, setIsSubmissionPage] = useState(() => window.location.hash.startsWith('#submit') || window.location.hash.startsWith('#recruitment-submit'));
     const [lenisInstance, setLenisInstance] = useState(null);
 
     const scrollToTop = () => {
@@ -44,21 +40,31 @@ function MainApp() {
     useEffect(() => {
         const handleHashChange = () => {
             const hash = window.location.hash;
+            // Clear retired recruitment and submission hashes to prevent broken landing
+            if (['#join', '#recruitment'].includes(hash) || hash.startsWith('#submit') || hash.startsWith('#recruitment-submit')) {
+                window.history.replaceState(null, '', window.location.pathname);
+                scrollToTop();
+                return;
+            }
             setIsAdminOpen(hash.startsWith('#admin'));
             setIsSponsorPage(hash === '#sponsor');
-            setIsRecruitmentPage(hash === '#join' || hash === '#recruitment');
             setIsFreshersRecruitmentPage(hash === '#freshers-recruitment');
-            setIsSubmissionPage(hash.startsWith('#submit') || hash.startsWith('#recruitment-submit'));
             if (hash === '#model') setIsModelPage(true);
             scrollToTop();
         };
+
+        const initialHash = window.location.hash;
+        if (['#join', '#recruitment'].includes(initialHash) || initialHash.startsWith('#submit') || initialHash.startsWith('#recruitment-submit')) {
+            window.history.replaceState(null, '', window.location.pathname);
+        }
+
         window.addEventListener('hashchange', handleHashChange);
         return () => window.removeEventListener('hashchange', handleHashChange);
     }, []);
 
     useEffect(() => {
         scrollToTop();
-    }, [isSponsorPage, isRecruitmentPage, isFreshersRecruitmentPage, isSubmissionPage, selectedSubsystem, isModelPage, isAdminOpen]);
+    }, [isSponsorPage, isFreshersRecruitmentPage, selectedSubsystem, isModelPage, isAdminOpen]);
 
     useEffect(() => {
         // Readers who ask for reduced motion get the browser's native scroll.
@@ -116,7 +122,6 @@ function MainApp() {
         setIsModelPage(false);
         setIsAdminOpen(false);
         setIsSponsorPage(false);
-        setIsRecruitmentPage(false);
         setIsFreshersRecruitmentPage(false);
     };
 
@@ -139,13 +144,6 @@ function MainApp() {
         scrollToTop();
     };
 
-    const handleOpenRecruitment = () => {
-        closeAll();
-        setIsRecruitmentPage(true);
-        window.location.hash = '#join';
-        scrollToTop();
-    };
-
     const handleOpenFreshersRecruitment = () => {
         closeAll();
         setIsFreshersRecruitmentPage(true);
@@ -163,7 +161,7 @@ function MainApp() {
     const handleBackToHome = () => {
         closeAll();
         const hash = window.location.hash;
-        if (hash.startsWith('#admin') || ['#sponsor', '#join', '#recruitment', '#freshers-recruitment', '#model'].includes(hash)) {
+        if (hash.startsWith('#admin') || ['#sponsor', '#freshers-recruitment', '#model'].includes(hash)) {
             window.history.replaceState(null, '', window.location.pathname);
         }
         scrollToTop();
@@ -185,39 +183,6 @@ function MainApp() {
         );
     }
 
-    const isDetailPage = Boolean(
-        selectedSubsystem || isSponsorPage || isRecruitmentPage || isFreshersRecruitmentPage || isSubmissionPage || isModelPage
-    );
-
-    const currentPage =
-        isSponsorPage ? 'sponsor' :
-        isRecruitmentPage ? 'recruitment' :
-        isFreshersRecruitmentPage ? 'freshers' :
-        isSubmissionPage ? 'submit' :
-        isModelPage ? 'model' :
-        selectedSubsystem ? 'subsystem' : 'home';
-
-    // Dedicated Full-Screen Sponsorship & Pitch Deck Portal
-    if (isSponsorPage) {
-        return (
-            <Suspense fallback={pageFallback}>
-                <SponsorPage onBack={handleBackToHome} />
-            </Suspense>
-        );
-    }
-
-    // Dedicated Full-Screen Crew Recruitment Portal
-    if (isRecruitmentPage) {
-        return (
-            <Suspense fallback={pageFallback}>
-                <RecruitmentPage
-                    onBack={handleBackToHome}
-                    onSelectSubsystem={handleSelectSubsystem}
-                />
-            </Suspense>
-        );
-    }
-
     if (isFreshersRecruitmentPage) {
         return (
             <Suspense fallback={pageFallback}>
@@ -226,14 +191,21 @@ function MainApp() {
         );
     }
 
-    // Dedicated Full-Screen Phase 01 Google Drive Submission Portal
-    if (isSubmissionPage) {
+    const isDetailPage = Boolean(
+        selectedSubsystem || isSponsorPage || isFreshersRecruitmentPage || isModelPage
+    );
+
+    const currentPage =
+        isSponsorPage ? 'sponsor' :
+        isFreshersRecruitmentPage ? 'freshers' :
+        isModelPage ? 'model' :
+        selectedSubsystem ? 'subsystem' : 'home';
+
+    // Dedicated Full-Screen Sponsorship & Pitch Deck Portal
+    if (isSponsorPage) {
         return (
             <Suspense fallback={pageFallback}>
-                <SubmissionPortalPage
-                    onNavigateHome={handleBackToHome}
-                    onNavigateRecruitment={handleOpenRecruitment}
-                />
+                <SponsorPage onBack={handleBackToHome} />
             </Suspense>
         );
     }
@@ -255,7 +227,6 @@ function MainApp() {
                     currentPage={currentPage}
                     onBackToHome={handleBackToHome}
                     onOpenSponsor={handleOpenSponsor}
-                    onOpenRecruitment={handleOpenRecruitment}
                     onOpenFreshersRecruitment={handleOpenFreshersRecruitment}
                 />
 
@@ -266,20 +237,6 @@ function MainApp() {
                 ) : isSponsorPage ? (
                     <Suspense fallback={pageFallback}>
                         <SponsorPage onBack={handleBackToHome} />
-                    </Suspense>
-                ) : isRecruitmentPage ? (
-                    <Suspense fallback={pageFallback}>
-                        <RecruitmentPage
-                            onBack={handleBackToHome}
-                            onSelectSubsystem={handleSelectSubsystem}
-                        />
-                    </Suspense>
-                ) : isSubmissionPage ? (
-                    <Suspense fallback={pageFallback}>
-                        <SubmissionPortalPage
-                            onNavigateHome={handleBackToHome}
-                            onNavigateRecruitment={handleOpenRecruitment}
-                        />
                     </Suspense>
                 ) : selectedSubsystem ? (
                     /* Dedicated Subsystem Detail Page (Shows all team members, CAD methodology, specs) */
@@ -293,7 +250,8 @@ function MainApp() {
                 ) : (
                     /* Main Landing Page */
                     <main>
-                        {/* Scroll-scrubbed buggy walkaround, resolving into the
+                        {/* 115-Frame Pre-Rendered Cinema Intro Scroll Sequence */}
+                        {/* Interactive Scrubbing Frame Canvas Video sequence with rotating 
                             team mark. Frames live in public/intro. */}
                         <IntroScrollSequence />
 
@@ -313,7 +271,7 @@ function MainApp() {
                         <TeamUpdates />
 
                         {/* "OUR STORY" - Animated Sinusoidal Wave SVG Curved Text */}
-                        <OurStoryCurvedWave onOpenRecruitment={handleOpenRecruitment} />
+                        <OurStoryCurvedWave onOpenSponsor={handleOpenSponsor} />
 
                         {/* "JOIN THE ALLIANCE" - Brutalist Sponsor / Newsletter Form */}
                         <CyberNewsletterCTA onOpenSponsor={handleOpenSponsor} />
@@ -324,7 +282,7 @@ function MainApp() {
                 <CyberFooter 
                     onOpenAdmin={handleOpenAdmin}
                     onOpenSponsor={handleOpenSponsor}
-                    onOpenRecruitment={handleOpenRecruitment}
+                    onOpenFreshersRecruitment={handleOpenFreshersRecruitment}
                 />
             </div>
 

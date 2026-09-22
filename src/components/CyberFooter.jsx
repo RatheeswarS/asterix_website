@@ -2,10 +2,7 @@ import teamLogo from '../assets/Screenshot 2026-08-26 232320.png';
 import { useWebsiteData } from '../context/WebsiteDataContext';
 import Icon from './Icon';
 
-/* `onOpenRecruitment` / `onOpenSponsor` were passed by `App` but never
-   destructured here, so both buttons always took the `window.location.hash`
-   branch -- which works, but bypasses the router's own scroll reset. */
-export default function CyberFooter({ onOpenAdmin, onOpenRecruitment, onOpenSponsor }) {
+export default function CyberFooter({ onOpenAdmin, onOpenSponsor, onOpenFreshersRecruitment }) {
     const { siteData } = useWebsiteData();
     const { contact } = siteData;
 
@@ -74,14 +71,15 @@ export default function CyberFooter({ onOpenAdmin, onOpenRecruitment, onOpenSpon
                             <a href="#gallery" className="hover:text-sky-600 transition-colors">Photo Gallery</a>
                             <a href="#updates" className="hover:text-sky-600 transition-colors">Team Updates</a>
                             <a href="#story" className="hover:text-sky-600 transition-colors">Our Story</a>
+
                             <button
                                 onClick={() => {
-                                    if (onOpenRecruitment) onOpenRecruitment();
-                                    else window.location.hash = '#join';
+                                    if (onOpenFreshersRecruitment) onOpenFreshersRecruitment();
+                                    else window.location.hash = '#freshers-recruitment';
                                 }}
-                                className="text-left hover:text-amber-600 transition-colors font-bold cursor-pointer"
+                                className="text-left hover:text-sky-600 transition-colors font-bold cursor-pointer"
                             >
-                                Join Team / Recruitment
+                                Freshers Recruitment ↗
                             </button>
                             <button
                                 onClick={() => {

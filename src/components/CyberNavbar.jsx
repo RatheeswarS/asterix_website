@@ -4,7 +4,7 @@ import TextDock, { DockTextItem } from './Dock';
 import { useWebsiteData } from '../context/WebsiteDataContext';
 import Icon from './Icon';
 
-export default function CyberNavbar({ onSelectSubsystem, isDetailPage, currentPage = 'home', onBackToHome, onOpenSponsor, onOpenRecruitment, onOpenFreshersRecruitment }) {
+export default function CyberNavbar({ onSelectSubsystem, isDetailPage, currentPage = 'home', onBackToHome, onOpenSponsor, onOpenFreshersRecruitment }) {
     const { siteData } = useWebsiteData();
     const subsystems = siteData.subsystems;
     const { contact } = siteData;
@@ -375,31 +375,15 @@ export default function CyberNavbar({ onSelectSubsystem, isDetailPage, currentPa
                                         )}
                                     </div>
 
-                                    {/* Action Buttons: Join */}
-                                    <DockTextItem
-                                        mouseX={mouseX}
-                                        onClick={() => {
-                                            if (onOpenRecruitment) onOpenRecruitment();
-                                            else window.location.hash = '#join';
-                                        }}
-                                        className={`border-slate-900 flex items-center gap-1 cursor-pointer ${
-                                            currentPage === 'recruitment' || currentPage === 'submit'
-                                                ? 'bg-amber-400 font-black shadow-[inset_2px_2px_0px_#000] text-slate-950'
-                                                : 'bg-amber-300 text-slate-900 hover:bg-amber-400'
-                                        } ${
-                                            isScrolled
-                                                ? 'px-2.5 py-1 text-[11px] rounded-md border font-bold hover:shadow-[2px_2px_0px_#0f172a]'
-                                                : 'px-3 py-1.5 text-xs border-2 shadow-[2px_2px_0px_#0f172a] hover:shadow-[3px_3px_0px_#0f172a]'
-                                        }`}
-                                    >
-                                        <span>Join</span>
-                                        <span className="text-[9px]">↗</span>
-                                    </DockTextItem>
-
+                                    {/* Freshers Recruitment Button */}
                                     <DockTextItem
                                         mouseX={mouseX}
                                         onClick={() => onOpenFreshersRecruitment?.()}
                                         className={`border-slate-900 bg-sky-100 text-slate-900 hover:bg-sky-200 flex items-center gap-1 cursor-pointer ${
+                                            currentPage === 'freshers'
+                                                ? 'bg-sky-300 font-black shadow-[inset_2px_2px_0px_#000]'
+                                                : ''
+                                        } ${
                                             isScrolled
                                                 ? 'px-2.5 py-1 text-[11px] rounded-md border font-bold hover:shadow-[2px_2px_0px_#0f172a]'
                                                 : 'px-3 py-1.5 text-xs border-2 shadow-[2px_2px_0px_#0f172a] hover:shadow-[3px_3px_0px_#0f172a]'
@@ -427,6 +411,7 @@ export default function CyberNavbar({ onSelectSubsystem, isDetailPage, currentPa
                                         }`}
                                     >
                                         <span>Sponsor</span>
+                                        <span className="text-[9px]">↗</span>
                                     </DockTextItem>
 
                                 </div>
@@ -581,39 +566,29 @@ export default function CyberNavbar({ onSelectSubsystem, isDetailPage, currentPa
                             )}
                         </div>
 
-                        {/* Direct Action Dual Buttons */}
-                        <div className="grid grid-cols-2 gap-2 pt-1">
-                            <button
-                                onClick={() => {
-                                    setMobileOpen(false);
-                                    if (onOpenRecruitment) onOpenRecruitment();
-                                    else window.location.hash = '#join';
-                                }}
-                                className="p-2.5 bg-amber-300 text-slate-900 border-2 border-slate-900 text-center flex items-center justify-center gap-1 shadow-[2px_2px_0px_#0f172a] font-black text-xs uppercase cursor-pointer"
-                            >
-                                <span>Join Team</span>
-                                <span>↗</span>
-                            </button>
+                        {/* Direct Action Button */}
+                        <div className="pt-1 flex flex-col gap-2">
                             <button
                                 onClick={() => {
                                     setMobileOpen(false);
                                     if (onOpenSponsor) onOpenSponsor();
                                     else window.location.hash = '#sponsor';
                                 }}
-                                className="p-2.5 bg-sky-500 text-white border-2 border-slate-900 text-center font-black text-xs uppercase shadow-[2px_2px_0px_#0f172a] cursor-pointer"
+                                className="w-full p-2.5 bg-sky-500 text-white border-2 border-slate-900 text-center flex items-center justify-center gap-1.5 shadow-[2px_2px_0px_#0f172a] font-black text-xs uppercase cursor-pointer hover:bg-sky-400"
                             >
-                                Sponsor Team
+                                <span>Sponsor Asterix Racing</span>
+                                <span>↗</span>
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setMobileOpen(false);
+                                    onOpenFreshersRecruitment?.();
+                                }}
+                                className="w-full border-2 border-slate-900 bg-sky-100 p-2.5 text-center font-black text-xs uppercase text-slate-900 shadow-[2px_2px_0px_#0f172a] hover:bg-sky-200 cursor-pointer"
+                            >
+                                First Year Freshers Recruitment ↗
                             </button>
                         </div>
-                        <button
-                            onClick={() => {
-                                setMobileOpen(false);
-                                onOpenFreshersRecruitment?.();
-                            }}
-                            className="w-full border-2 border-slate-900 bg-sky-100 p-2.5 text-center font-black text-xs uppercase text-slate-900 shadow-[2px_2px_0px_#0f172a] hover:bg-sky-200"
-                        >
-                            First Year Freshers Recruitment ↗
-                        </button>
                     </div>
                 )}
 
@@ -660,15 +635,15 @@ export default function CyberNavbar({ onSelectSubsystem, isDetailPage, currentPa
                         <span>MENU</span>
                     </button>
 
-                    {/* Quick CTA Pill: Join or Sponsor */}
+                    {/* Quick CTA Pill: Sponsor */}
                     <button
                         onClick={() => {
-                            if (onOpenRecruitment) onOpenRecruitment();
-                            else window.location.hash = '#join';
+                            if (onOpenSponsor) onOpenSponsor();
+                            else window.location.hash = '#sponsor';
                         }}
-                        className="press px-2.5 py-1.5 border-2 border-slate-900 bg-amber-300 text-slate-900 rounded-lg text-xs font-black uppercase shadow-[2px_2px_0px_#0f172a] cursor-pointer flex items-center gap-0.5"
+                        className="press px-2.5 py-1.5 border-2 border-slate-900 bg-sky-500 text-white rounded-lg text-xs font-black uppercase shadow-[2px_2px_0px_#0f172a] cursor-pointer flex items-center gap-0.5"
                     >
-                        <span>JOIN</span>
+                        <span>SPONSOR</span>
                         <span className="text-[10px]">↗</span>
                     </button>
                 </nav>

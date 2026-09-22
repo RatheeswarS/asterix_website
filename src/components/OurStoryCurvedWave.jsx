@@ -3,7 +3,7 @@ import { useWebsiteData } from '../context/WebsiteDataContext';
 
 const COLLAPSED_HEIGHT = 118;
 
-export default function OurStoryCurvedWave({ onOpenRecruitment }) {
+export default function OurStoryCurvedWave({ onOpenSponsor }) {
     const { siteData } = useWebsiteData();
     const [isExpanded, setIsExpanded] = useState(false);
     const storyParagraphs = (siteData.story || "").split(/\n\n+/).filter(Boolean);
@@ -97,12 +97,12 @@ export default function OurStoryCurvedWave({ onOpenRecruitment }) {
 
                         <button
                             onClick={() => {
-                                if (onOpenRecruitment) onOpenRecruitment();
-                                else window.location.hash = '#join';
+                                if (onOpenSponsor) onOpenSponsor();
+                                else window.location.hash = '#sponsor';
                             }}
                             className="press cyber-button px-7 py-3.5 text-xs font-black tracking-wider uppercase inline-block self-start md:self-auto cursor-pointer whitespace-nowrap shadow-[4px_4px_0px_#0f172a]"
                         >
-                            JOIN OUR CREW →
+                            SPONSOR TEAM →
                         </button>
                     </div>
 

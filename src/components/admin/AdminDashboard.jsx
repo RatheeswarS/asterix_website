@@ -4,7 +4,6 @@ import { apiUrl } from '../../lib/api';
 import Icon from '../Icon';
 import ImageField from './ImageField';
 import RecruitmentAdmin from './RecruitmentAdmin';
-import SubmissionsAdmin from './SubmissionsAdmin';
 import teamLogo from '../../assets/Screenshot 2026-08-26 232320.png';
 
 export default function AdminDashboard({ onExit }) {
@@ -504,8 +503,7 @@ export default function AdminDashboard({ onExit }) {
         { id: 'story', label: 'Our Story', icon: 'book' },
         { id: 'subsystems', label: 'Subsystems & Squad', icon: 'vehicle' },
         { id: 'sponsorship', label: 'Sponsorship Portal', icon: 'folder' },
-        { id: 'recruitment', label: 'Recruitment Portal', icon: 'users' },
-        { id: 'submissions', label: 'Phase 1 Submissions', icon: 'folder' },
+        { id: 'recruitment', label: 'Freshers & Recruitment', icon: 'users' },
         { id: 'gallery', label: 'Media Gallery', icon: 'camera' },
         { id: 'updates', label: 'Team Updates', icon: 'megaphone' },
         { id: 'subscribers', label: 'Alliance Leads', icon: 'inbox' },
@@ -716,9 +714,10 @@ export default function AdminDashboard({ onExit }) {
                                         onClick={() => setActiveTab('recruitment')}
                                         className="press press-flat p-3 border-2 border-slate-900 bg-slate-50 hover:bg-sky-50 text-left font-mono font-bold text-xs flex items-center justify-between cursor-pointer"
                                     >
-                                        <span>Manage Recruitment Tracks & Forms</span>
+                                        <span>Manage Freshers Announcement & Tracks</span>
                                         <span>→</span>
                                     </button>
+
                                     <button
                                         onClick={() => setActiveTab('accounts')}
                                         className="press press-flat p-3 border-2 border-slate-900 bg-slate-50 hover:bg-sky-50 text-left font-mono font-bold text-xs flex items-center justify-between cursor-pointer"
@@ -1468,12 +1467,10 @@ export default function AdminDashboard({ onExit }) {
                         </div>
                     )}
 
+
+
                     {activeTab === 'recruitment' && (
                         <RecruitmentAdmin showStatus={showStatus} onImageUpload={handleImageUpload} />
-                    )}
-
-                    {activeTab === 'submissions' && (
-                        <SubmissionsAdmin showStatus={showStatus} />
                     )}
 
                     {/* TAB 5: GALLERY & MEDIA */}
