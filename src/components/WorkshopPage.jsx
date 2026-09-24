@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { apiUrl } from '../lib/api';
+import { useWebsiteData } from '../context/WebsiteDataContext';
 /* Shared with the backend so the page and the server can never disagree on
    what a package includes or costs. The server still looks the price up on
    its own side when it creates the order; this import is for display only. */
@@ -85,7 +86,12 @@ export default function WorkshopPage({ onBack }) {
     const registerRef = useRef(null);
     const detailRef = useRef(null);
 
-    const track = WORKSHOP_TRACKS[activeTrack];
+    const { siteData } = useWebsiteData();
+    const dynamicTracks = siteData?.workshop?.tracks || {};
+    const track = {
+        ...WORKSHOP_TRACKS[activeTrack],
+        ...(dynamicTracks[activeTrack] || {})
+    };
     const selectedPkg = WORKSHOP_PACKAGES.find(p => p.id === form.package) || null;
     const anyPriced = WORKSHOP_PACKAGES.some(isPriced);
 
@@ -474,15 +480,76 @@ function TrackDetail({ track, onRegister }) {
             </div>
 
             <h4 className="mt-8 font-mono text-xs font-black uppercase tracking-widest text-sky-600">Plan</h4>
-            <ol className="mt-3 divide-y-2 divide-slate-200 border-2 border-slate-900">
-                {track.schedule.map(item => (
-                    <li key={item.label} className="grid grid-cols-[5.5rem_1fr] gap-3 p-3 sm:grid-cols-[7rem_8rem_1fr]">
-                        <span className="font-mono text-xs font-black uppercase text-slate-900">{item.label}</span>
-                        <span className="hidden font-mono text-xs font-bold text-slate-500 sm:block">{item.date}</span>
-                        <span className="text-sm font-bold">{item.title}</span>
-                    </li>
-                ))}
-            </ol>
+            
+            <div className="mt-3 border-2 border-slate-900 overflow-hidden">
+                <div className="hidden sm:grid sm:grid-cols-[6.5rem_7.5rem_8.5rem_1fr] gap-3 p-3 bg-slate-900 text-white font-mono text-[10px] font-black uppercase tracking-wider">
+                    <span>Week</span>
+                    <span>Days</span>
+                    <span>Dates</span>
+                    <span>Session Topic</span>
+                </div>
+
+                <ol className="divide-y-2 divide-slate-200 bg-white">
+                    {track.schedule.map((item, index) => {
+                        const isOngoing = track.ongoingWeek && (
+                            item.label?.trim().toLowerCase() === track.ongoingWeek?.trim().toLowerCase() ||
+                            item.id === track.ongoingWeek ||
+                            (!track.schedule.some(s => s.label?.trim().toLowerCase() === track.ongoingWeek?.trim().toLowerCase()) && index === 0)
+                        );
+
+                        return (
+                            <li 
+                                key={item.id || item.label || index} 
+                                className={`p-3.5 transition-colors ${isOngoing ? 'bg-sky-50/80 border-l-4 border-l-sky-500' : 'hover:bg-slate-50'}`}
+                            >
+                                <div className="grid grid-cols-1 sm:grid-cols-[6.5rem_7.5rem_8.5rem_1fr] gap-2 sm:gap-3 items-start sm:items-center">
+                                    <div className="flex items-center gap-2">
+                                        <span className="font-mono text-xs font-black uppercase text-slate-900">{item.label}</span>
+                                        {isOngoing && (
+                                            <span className="px-1.5 py-0.5 text-[8px] font-mono font-black uppercase tracking-wider bg-emerald-400 text-slate-900 border border-slate-900 shadow-[1px_1px_0px_#0f172a]">
+                                                Ongoing
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className="font-mono text-xs font-bold text-slate-600 flex items-center gap-1.5">
+                                        <span className="sm:hidden text-[10px] font-mono font-black text-slate-400 uppercase">Days:</span>
+                                        <span>{item.days || '—'}</span>
+                                    </div>
+                                    <div className="font-mono text-xs font-bold text-slate-500 flex items-center gap-1.5">
+                                        <span className="sm:hidden text-[10px] font-mono font-black text-slate-400 uppercase">Dates:</span>
+                                        <span>{item.date || '—'}</span>
+                                    </div>
+                                    <div className="text-sm font-bold text-slate-900">
+                                        {item.title}
+                                    </div>
+                                </div>
+
+                                {/* Venue Details and Reporting Instructions - Automatically Open below the Ongoing Week */}
+                                {isOngoing && (track.venue || track.reportingInstructions) && (
+                                    <div className="mt-3 p-3.5 bg-white border-2 border-slate-900 shadow-[3px_3px_0px_#0f172a] space-y-2">
+                                        <div className="flex items-center gap-2 text-[10px] font-mono font-black uppercase tracking-widest text-sky-700">
+                                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                            <span>Current Session Details & Venue</span>
+                                        </div>
+                                        {track.venue && (
+                                            <div className="text-xs font-mono">
+                                                <span className="font-black uppercase text-slate-700 mr-1.5">📍 Venue:</span>
+                                                <span className="font-bold text-slate-900">{track.venue}</span>
+                                            </div>
+                                        )}
+                                        {track.reportingInstructions && (
+                                            <div className="text-xs font-mono">
+                                                <span className="font-black uppercase text-slate-700 mr-1.5">📋 Reporting Instructions:</span>
+                                                <span className="font-medium text-slate-800 leading-relaxed">{track.reportingInstructions}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </li>
+                        );
+                    })}
+                </ol>
+            </div>
             <p className="mt-3 text-sm font-bold text-slate-600">✦ {track.bonus}</p>
 
             <div className="mt-8 flex flex-wrap gap-3">

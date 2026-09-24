@@ -3,6 +3,7 @@ import { WebsiteDataContext } from './WebsiteContext';
 import { subsystems as initialSubsystems } from '../data/subsystemsData';
 import { apiUrl } from '../lib/api';
 import { SOFTWARE_PERCEPTION_DATA, POWERTRAIN_CHALLENGE_DATA, POWERTRAIN_TEST_DATA, MECHANICAL_MYSTERY_DATA } from '../data/recruitmentProblemStatements';
+import { WORKSHOP_TRACKS } from '../../server/src/config/workshopPackages.js';
 
 import imgPaddock from '../assets/gallery/01_team_paddock.jpg';
 import imgWelding from '../assets/gallery/02_workshop_welding.jpg';
@@ -394,6 +395,48 @@ const normalizeRecruitment = (rec) => {
     };
 };
 
+const initialWorkshopData = {
+    tracks: WORKSHOP_TRACKS
+};
+
+const normalizeWorkshop = (ws) => {
+    const source = ws && typeof ws === 'object' ? ws : {};
+    const tracksSource = source.tracks && typeof source.tracks === 'object' ? source.tracks : {};
+    const mergedTracks = {};
+    for (const key of Object.keys(WORKSHOP_TRACKS)) {
+        const canonical = WORKSHOP_TRACKS[key];
+        const incoming = tracksSource[key] || {};
+        mergedTracks[key] = {
+            ...canonical,
+            ...incoming,
+            id: canonical.id,
+            name: incoming.name || canonical.name,
+            syllabus: incoming.syllabus || canonical.syllabus,
+            timing: incoming.timing || canonical.timing,
+            dates: incoming.dates || canonical.dates,
+            days: incoming.days || canonical.days,
+            startLabel: incoming.startLabel || canonical.startLabel,
+            format: incoming.format || canonical.format,
+            audience: incoming.audience || canonical.audience,
+            venue: incoming.venue !== undefined ? incoming.venue : (canonical.venue || ''),
+            reportingInstructions: incoming.reportingInstructions !== undefined ? incoming.reportingInstructions : (canonical.reportingInstructions || ''),
+            ongoingWeek: incoming.ongoingWeek || canonical.ongoingWeek || 'Week 1',
+            schedule: Array.isArray(incoming.schedule) && incoming.schedule.length > 0
+                ? incoming.schedule.map((item, idx) => ({
+                    id: item?.id || `sch-${key}-${idx}`,
+                    label: item?.label || `Week ${idx}`,
+                    days: item?.days || '',
+                    date: item?.date || '',
+                    title: item?.title || ''
+                }))
+                : canonical.schedule
+        };
+    }
+    return {
+        tracks: mergedTracks
+    };
+};
+
 // Helper to ensure 4 subsystems are active without discarding user edits
 const normalizeSubsystems = (subs) => {
     if (!subs || !Array.isArray(subs) || subs.length === 0) {
@@ -481,6 +524,7 @@ export function WebsiteDataProvider({ children }) {
                     accounts: parsed.accounts || initialAccounts,
                     sponsorship: parsed.sponsorship || initialSponsorshipData,
                     recruitment: normalizeRecruitment(parsed.recruitment),
+                    workshop: normalizeWorkshop(parsed.workshop),
                     lastModified: parsed.lastModified || '1970-01-01T00:00:00.000Z'
                 };
             }
@@ -497,6 +541,7 @@ export function WebsiteDataProvider({ children }) {
             accounts: initialAccounts,
             sponsorship: initialSponsorshipData,
             recruitment: initialRecruitment,
+            workshop: normalizeWorkshop(initialWorkshopData),
             lastModified: '1970-01-01T00:00:00.000Z'
         };
     });
@@ -547,6 +592,7 @@ export function WebsiteDataProvider({ children }) {
                             contact: data.contact || prev.contact,
                             sponsorship: data.sponsorship || prev.sponsorship || initialSponsorshipData,
                             recruitment: normalizeRecruitment(data.recruitment || prev.recruitment),
+                            workshop: normalizeWorkshop(data.workshop || prev.workshop),
                             lastModified: data.lastModified || prev.lastModified
                         };
                         try {
@@ -902,6 +948,14 @@ export function WebsiteDataProvider({ children }) {
         }));
     };
 
+    const updateWorkshop = (fields) => {
+        setSiteData(prev => ({
+            ...prev,
+            workshop: normalizeWorkshop({ ...(prev.workshop || initialWorkshopData), ...fields }),
+            lastModified: new Date().toISOString()
+        }));
+    };
+
     const resetToDefaults = () => {
         const defaults = {
             hero: initialHeroData,
@@ -913,6 +967,7 @@ export function WebsiteDataProvider({ children }) {
             accounts: initialAccounts,
             sponsorship: initialSponsorshipData,
             recruitment: initialRecruitment,
+            workshop: normalizeWorkshop(initialWorkshopData),
             lastModified: new Date().toISOString()
         };
         setSiteData(defaults);
@@ -959,6 +1014,7 @@ export function WebsiteDataProvider({ children }) {
             deleteAccount,
             updateSponsorship,
             updateRecruitment,
+            updateWorkshop,
             syncState,
             syncError,
             resetToDefaults,
@@ -982,6 +1038,7 @@ const fallbackWebsiteData = {
         accounts: initialAccounts,
         sponsorship: initialSponsorshipData,
         recruitment: initialRecruitment,
+        workshop: normalizeWorkshop(initialWorkshopData),
         lastModified: '1970-01-01T00:00:00.000Z'
     },
     isServerConnected: false,
@@ -1010,6 +1067,7 @@ const fallbackWebsiteData = {
     deleteAccount: () => {},
     updateSponsorship: () => {},
     updateRecruitment: () => {},
+    updateWorkshop: () => {},
     syncState: 'idle',
     syncError: null,
     resetToDefaults: () => {},
