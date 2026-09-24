@@ -1,15 +1,10 @@
-import dotenv from 'dotenv';
+// Must stay the first import: it loads .env before any module reads process.env.
+import './loadEnv.js';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-// Load environment variables before importing dependent modules
-dotenv.config({ path: path.resolve(__dirname, '../.env') });
-dotenv.config({ path: path.resolve(__dirname, '../../.env') });
-dotenv.config({ path: path.resolve(process.cwd(), '.env') });
-dotenv.config({ path: path.resolve(process.cwd(), 'server/.env') });
 
 import express from 'express';
 import cors from 'cors';
@@ -26,6 +21,7 @@ import subscriberRoutes from './routes/subscribers.js';
 import sponsorInquiryRoutes from './routes/sponsorInquiries.js';
 import uploadRoutes from './routes/upload.js';
 import submissionRoutes from './routes/submissions.js';
+import workshopRoutes from './routes/workshop.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -52,6 +48,10 @@ app.use(cors({
     },
     credentials: true
 }));
+
+// The Razorpay webhook signature is computed over the exact request bytes, so
+// that one path keeps its raw body. express.json below skips a body already read.
+app.use('/api/workshop/webhook', express.raw({ type: 'application/json', limit: '1mb' }));
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
@@ -106,6 +106,7 @@ app.use('/api/subscribers', subscriberRoutes);
 app.use('/api/sponsor-inquiries', sponsorInquiryRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/submissions', submissionRoutes);
+app.use('/api/workshop', workshopRoutes);
 
 // Global error handler
 app.use((err, req, res, _next) => {
