@@ -28,6 +28,7 @@ async function autoMigrateLegacySiteData() {
                     contact: legacy.contact || {},
                     sponsorship: legacy.sponsorship || {},
                     recruitment: legacy.recruitment || {},
+                    workshop: legacy.workshop || {},
                     lastModified: legacy.lastModified || new Date().toISOString()
                 }
             },
@@ -187,6 +188,7 @@ router.get('/', async (req, res) => {
             contact: config?.contact || null,
             sponsorship: config?.sponsorship || null,
             recruitment: config?.recruitment || null,
+            workshop: config?.workshop || null,
             lastModified: config?.lastModified || config?.updatedAt?.toISOString() || new Date().toISOString()
         });
     } catch (err) {
@@ -202,8 +204,13 @@ router.put('/', authenticateToken, async (req, res) => {
         const now = new Date().toISOString();
 
         // 1. Update SiteConfig
+        // If workshop data is being modified, enforce Admin / SuperAdmin authorization
+        if (payload.workshop !== undefined && !['Admin', 'SuperAdmin'].includes(req.user?.accessLevel)) {
+            return res.status(403).json({ error: 'Forbidden: Only administrators can modify workshop syllabus, timing, and venue configurations.' });
+        }
+
         const configFields = { lastModified: now };
-        for (const field of ['hero', 'story', 'contact', 'sponsorship', 'recruitment']) {
+        for (const field of ['hero', 'story', 'contact', 'sponsorship', 'recruitment', 'workshop']) {
             if (payload[field] !== undefined) {
                 configFields[field] = payload[field];
             }
