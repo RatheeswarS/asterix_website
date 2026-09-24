@@ -23,8 +23,28 @@ const EMPTY_FORM = {
     package: ''
 };
 
-const inputClass =
-    'w-full p-3 bg-slate-50 border-2 border-slate-950 font-mono text-sm font-bold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500';
+const FIELD_LABELS = {
+    name: 'Full name',
+    rollNo: 'Registered number',
+    department: 'Department',
+    year: 'Year',
+    email: 'Email ID',
+    phone: 'Phone',
+    package: 'Your choice'
+};
+
+function inputClass(hasError) {
+    return `w-full p-3 border-2 font-mono text-sm font-bold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 ${
+        hasError ? 'border-red-600 bg-red-50' : 'border-slate-950 bg-slate-50'
+    }`;
+}
+
+/* Same rule as the server: keep the last 10 digits, so "+91 98765 43210"
+   and "098765 43210" are accepted as the number they are. */
+function normalizePhone(phone) {
+    const digits = String(phone || '').replace(/\D/g, '');
+    return digits.length >= 10 ? digits.slice(-10) : digits;
+}
 
 function formatPrice(pkg) {
     return isPriced(pkg) ? `₹${pkg.price.toLocaleString('en-IN')}` : 'TBD';
@@ -54,7 +74,7 @@ function validate(form) {
     if (form.department.trim().length < 2) errors.department = 'Enter your department.';
     if (!['1', '2'].includes(form.year)) errors.year = 'Select 1st or 2nd year.';
     if (!EMAIL_RE.test(form.email.trim())) errors.email = 'Enter a valid email address.';
-    if (form.phone.replace(/\D/g, '').length !== 10) errors.phone = 'Enter a valid 10-digit phone number.';
+    if (normalizePhone(form.phone).length !== 10) errors.phone = 'Enter a valid 10-digit phone number.';
     const pkg = WORKSHOP_PACKAGES.find(p => p.id === form.package);
     if (!pkg) errors.package = 'Choose a package.';
     else if (!isPriced(pkg)) errors.package = 'Pricing for this package is not announced yet.';
@@ -110,7 +130,7 @@ export default function WorkshopPage({ onBack }) {
         const errors = validate(form);
         setFieldErrors(errors);
         if (Object.keys(errors).length > 0) {
-            setError('Please fix the highlighted fields.');
+            setError(`Please fix: ${Object.keys(errors).map(key => FIELD_LABELS[key] || key).join(', ')}.`);
             return;
         }
         setError('');
@@ -159,7 +179,7 @@ export default function WorkshopPage({ onBack }) {
         try {
             result = await postJson('/api/workshop/register', {
                 ...form,
-                phone: form.phone.replace(/\D/g, '')
+                phone: normalizePhone(form.phone)
             });
         } catch {
             setError('Could not reach the server. Check your connection and try again.');
@@ -338,13 +358,13 @@ export default function WorkshopPage({ onBack }) {
                                     )}
                                     <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                                         <Field label="Full name" error={fieldErrors.name}>
-                                            <input className={inputClass} value={form.name} onChange={e => updateField('name', e.target.value)} autoComplete="name" maxLength={100} />
+                                            <input className={inputClass(fieldErrors.name)} value={form.name} onChange={e => updateField('name', e.target.value)} autoComplete="name" maxLength={100} />
                                         </Field>
                                         <Field label="Registered number" error={fieldErrors.rollNo}>
-                                            <input className={inputClass} value={form.rollNo} onChange={e => updateField('rollNo', e.target.value)} maxLength={40} />
+                                            <input className={inputClass(fieldErrors.rollNo)} value={form.rollNo} onChange={e => updateField('rollNo', e.target.value)} maxLength={40} />
                                         </Field>
                                         <Field label="Department" error={fieldErrors.department}>
-                                            <input className={inputClass} value={form.department} onChange={e => updateField('department', e.target.value)} maxLength={100} />
+                                            <input className={inputClass(fieldErrors.department)} value={form.department} onChange={e => updateField('department', e.target.value)} maxLength={100} />
                                         </Field>
                                         <Field label="Year" error={fieldErrors.year}>
                                             <div className="grid grid-cols-2 gap-2">
@@ -354,8 +374,10 @@ export default function WorkshopPage({ onBack }) {
                                                         type="button"
                                                         onClick={() => updateField('year', y)}
                                                         aria-pressed={form.year === y}
-                                                        className={`press border-2 border-slate-950 p-3 font-mono text-sm font-black uppercase ${
-                                                            form.year === y ? 'bg-sky-500 text-white' : 'bg-slate-50 hover:bg-sky-100'
+                                                        className={`press border-2 p-3 font-mono text-sm font-black uppercase ${
+                                                            fieldErrors.year ? 'border-red-600' : 'border-slate-950'
+                                                        } ${
+                                                            form.year === y ? 'bg-sky-500 text-white' : fieldErrors.year ? 'bg-red-50 hover:bg-sky-100' : 'bg-slate-50 hover:bg-sky-100'
                                                         }`}
                                                     >
                                                         {y === '1' ? '1st year' : '2nd year'}
@@ -364,10 +386,10 @@ export default function WorkshopPage({ onBack }) {
                                             </div>
                                         </Field>
                                         <Field label="Email ID" error={fieldErrors.email}>
-                                            <input type="email" className={inputClass} value={form.email} onChange={e => updateField('email', e.target.value)} autoComplete="email" maxLength={254} />
+                                            <input type="email" className={inputClass(fieldErrors.email)} value={form.email} onChange={e => updateField('email', e.target.value)} autoComplete="email" maxLength={254} />
                                         </Field>
                                         <Field label="Phone" error={fieldErrors.phone}>
-                                            <input type="tel" inputMode="numeric" className={inputClass} value={form.phone} onChange={e => updateField('phone', e.target.value)} autoComplete="tel" maxLength={15} placeholder="10-digit mobile" />
+                                            <input type="tel" inputMode="numeric" className={inputClass(fieldErrors.phone)} value={form.phone} onChange={e => updateField('phone', e.target.value)} autoComplete="tel" maxLength={20} placeholder="10-digit mobile" />
                                         </Field>
                                     </div>
 
@@ -523,7 +545,7 @@ function ReviewPanel({ form, pkg, error, busy, onEdit, onPay }) {
         ['Department', form.department],
         ['Year', form.year === '1' ? '1st year' : '2nd year'],
         ['Email', form.email],
-        ['Phone', form.phone.replace(/\D/g, '')],
+        ['Phone', normalizePhone(form.phone)],
         ['Package', pkg?.name]
     ];
 

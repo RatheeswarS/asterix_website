@@ -139,26 +139,26 @@ export const WORKSHOP_TRACKS = {
     }
 };
 
-// TODO: set prices before opening registrations. null = TBD (payments refused).
+// Whole rupees. null = TBD (shown as TBD, payments refused).
 export const WORKSHOP_PACKAGES = [
     {
         id: 'software',
         name: 'Software & Perception',
-        price: null,
+        price: 899,
         tracksIncluded: ['software'],
         open: true
     },
     {
         id: 'powertrain',
         name: 'Electronics & Powertrain',
-        price: null,
+        price: 899,
         tracksIncluded: ['powertrain'],
         open: true
     },
     {
         id: 'combo',
         name: 'Combo: both tracks',
-        price: null,
+        price: 1399,
         tracksIncluded: ['software', 'powertrain'],
         open: true
     }
