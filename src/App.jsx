@@ -21,6 +21,7 @@ const BajaModelPage = lazy(() => import("./components/BajaModelPage"));
 const AdminDashboard = lazy(() => import("./components/admin/AdminDashboard"));
 const SponsorPage = lazy(() => import("./components/SponsorPage"));
 const FreshersRecruitmentPage = lazy(() => import("./components/FreshersRecruitmentPage"));
+const WorkshopPage = lazy(() => import("./components/WorkshopPage"));
 
 function MainApp() {
     const [selectedSubsystem, setSelectedSubsystem] = useState(null);
@@ -28,6 +29,7 @@ function MainApp() {
     const [isAdminOpen, setIsAdminOpen] = useState(() => window.location.hash.startsWith('#admin'));
     const [isSponsorPage, setIsSponsorPage] = useState(() => window.location.hash === '#sponsor');
     const [isFreshersRecruitmentPage, setIsFreshersRecruitmentPage] = useState(() => window.location.hash === '#freshers-recruitment');
+    const [isWorkshopPage, setIsWorkshopPage] = useState(() => window.location.hash === '#workshop');
     const [lenisInstance, setLenisInstance] = useState(null);
 
     const scrollToTop = () => {
@@ -49,6 +51,7 @@ function MainApp() {
             setIsAdminOpen(hash.startsWith('#admin'));
             setIsSponsorPage(hash === '#sponsor');
             setIsFreshersRecruitmentPage(hash === '#freshers-recruitment');
+            setIsWorkshopPage(hash === '#workshop');
             if (hash === '#model') setIsModelPage(true);
             scrollToTop();
         };
@@ -64,7 +67,7 @@ function MainApp() {
 
     useEffect(() => {
         scrollToTop();
-    }, [isSponsorPage, isFreshersRecruitmentPage, selectedSubsystem, isModelPage, isAdminOpen]);
+    }, [isSponsorPage, isFreshersRecruitmentPage, isWorkshopPage, selectedSubsystem, isModelPage, isAdminOpen]);
 
     useEffect(() => {
         // Readers who ask for reduced motion get the browser's native scroll.
@@ -123,6 +126,7 @@ function MainApp() {
         setIsAdminOpen(false);
         setIsSponsorPage(false);
         setIsFreshersRecruitmentPage(false);
+        setIsWorkshopPage(false);
     };
 
     const handleSelectSubsystem = (id) => {
@@ -151,6 +155,13 @@ function MainApp() {
         scrollToTop();
     };
 
+    const handleOpenWorkshop = () => {
+        closeAll();
+        setIsWorkshopPage(true);
+        window.location.hash = '#workshop';
+        scrollToTop();
+    };
+
     const handleOpenAdmin = () => {
         closeAll();
         setIsAdminOpen(true);
@@ -161,7 +172,7 @@ function MainApp() {
     const handleBackToHome = () => {
         closeAll();
         const hash = window.location.hash;
-        if (hash.startsWith('#admin') || ['#sponsor', '#freshers-recruitment', '#model'].includes(hash)) {
+        if (hash.startsWith('#admin') || ['#sponsor', '#freshers-recruitment', '#workshop', '#model'].includes(hash)) {
             window.history.replaceState(null, '', window.location.pathname);
         }
         scrollToTop();
@@ -187,6 +198,14 @@ function MainApp() {
         return (
             <Suspense fallback={pageFallback}>
                 <FreshersRecruitmentPage onBack={handleBackToHome} />
+            </Suspense>
+        );
+    }
+
+    if (isWorkshopPage) {
+        return (
+            <Suspense fallback={pageFallback}>
+                <WorkshopPage onBack={handleBackToHome} />
             </Suspense>
         );
     }
@@ -228,6 +247,7 @@ function MainApp() {
                     onBackToHome={handleBackToHome}
                     onOpenSponsor={handleOpenSponsor}
                     onOpenFreshersRecruitment={handleOpenFreshersRecruitment}
+                    onOpenWorkshop={handleOpenWorkshop}
                 />
 
                 {isModelPage ? (

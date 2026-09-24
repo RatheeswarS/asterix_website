@@ -4,7 +4,7 @@ import TextDock, { DockTextItem } from './Dock';
 import { useWebsiteData } from '../context/WebsiteDataContext';
 import Icon from './Icon';
 
-export default function CyberNavbar({ onSelectSubsystem, isDetailPage, currentPage = 'home', onBackToHome, onOpenSponsor, onOpenFreshersRecruitment }) {
+export default function CyberNavbar({ onSelectSubsystem, isDetailPage, currentPage = 'home', onBackToHome, onOpenSponsor, onOpenFreshersRecruitment, onOpenWorkshop }) {
     const { siteData } = useWebsiteData();
     const subsystems = siteData.subsystems;
     const { contact } = siteData;
@@ -375,6 +375,20 @@ export default function CyberNavbar({ onSelectSubsystem, isDetailPage, currentPa
                                         )}
                                     </div>
 
+                                    {/* Workshop Button -- amber so it stands apart from the sky links */}
+                                    <DockTextItem
+                                        mouseX={mouseX}
+                                        onClick={() => onOpenWorkshop?.()}
+                                        className={`border-slate-900 bg-amber-300 text-slate-900 hover:bg-amber-400 font-black flex items-center gap-1 cursor-pointer ${
+                                            isScrolled
+                                                ? 'px-2.5 py-1 text-[11px] rounded-md border hover:shadow-[2px_2px_0px_#0f172a]'
+                                                : 'px-3.5 py-1.5 text-xs border-2 shadow-[2px_2px_0px_#0f172a] hover:shadow-[3px_3px_0px_#0f172a]'
+                                        }`}
+                                    >
+                                        <span>WORKSHOP</span>
+                                        <span className="text-[9px]">✦</span>
+                                    </DockTextItem>
+
                                     {/* Freshers Recruitment Button */}
                                     <DockTextItem
                                         mouseX={mouseX}
@@ -438,6 +452,13 @@ export default function CyberNavbar({ onSelectSubsystem, isDetailPage, currentPa
                     />
                 </button>
                 <div className="flex items-center gap-2">
+                    <button
+                        type="button"
+                        onClick={() => onOpenWorkshop?.()}
+                        className="press px-2.5 py-1 border-2 border-slate-900 bg-amber-300 text-[11px] font-black uppercase text-slate-900 shadow-[2px_2px_0px_#0f172a] cursor-pointer"
+                    >
+                        Workshop ✦
+                    </button>
                     <span className="px-2 py-0.5 border border-slate-900 bg-sky-100 text-[10px] font-mono font-black uppercase text-sky-950">
                         BAJA 2026
                     </span>
@@ -568,6 +589,16 @@ export default function CyberNavbar({ onSelectSubsystem, isDetailPage, currentPa
 
                         {/* Direct Action Button */}
                         <div className="pt-1 flex flex-col gap-2">
+                            <button
+                                onClick={() => {
+                                    setMobileOpen(false);
+                                    onOpenWorkshop?.();
+                                }}
+                                className="w-full p-2.5 bg-amber-300 text-slate-900 border-2 border-slate-900 text-center flex items-center justify-center gap-1.5 shadow-[2px_2px_0px_#0f172a] font-black text-xs uppercase cursor-pointer hover:bg-amber-400"
+                            >
+                                <span>Workshops 2026</span>
+                                <span>✦</span>
+                            </button>
                             <button
                                 onClick={() => {
                                     setMobileOpen(false);
