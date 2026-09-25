@@ -14,6 +14,7 @@ import {
 } from '../config/workshopPackages.js';
 import {
     isRazorpayConfigured,
+    isWebhookConfigured,
     getRazorpayKeyId,
     createRazorpayOrder,
     verifyPaymentSignature,
@@ -249,6 +250,12 @@ router.post('/verify', requireDb, async (req, res) => {
  */
 router.post('/webhook', async (req, res) => {
     try {
+        if (!isWebhookConfigured()) {
+            // Secret not added yet: say so plainly instead of "invalid signature".
+            // Non-2xx also means Razorpay keeps the event and retries it later.
+            console.warn('Workshop webhook received but RAZORPAY_WEBHOOK_SECRET is not set.');
+            return res.status(503).json({ error: 'Webhook not configured.' });
+        }
         const rawBody = Buffer.isBuffer(req.body) ? req.body : null;
         if (!verifyWebhookSignature(rawBody, req.headers['x-razorpay-signature'])) {
             return res.status(400).json({ error: 'Invalid signature.' });
