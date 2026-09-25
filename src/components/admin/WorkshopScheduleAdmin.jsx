@@ -9,6 +9,12 @@ const btnDanger = `${btn} bg-rose-400 hover:bg-rose-300 text-slate-900`;
 const input = 'w-full px-2.5 py-1.5 border border-slate-900 bg-white text-xs font-mono font-medium focus:outline-none focus:ring-1 focus:ring-sky-500';
 const labelClass = 'block text-[10px] font-mono font-black uppercase text-slate-700 mb-1';
 
+// Unique id for a new schedule row. Kept outside the component so the linter
+// does not mistake this click-time call for an impure call during render.
+function newScheduleId(trackId) {
+    return `sch-${trackId}-${Date.now().toString(36)}`;
+}
+
 export default function WorkshopScheduleAdmin({ currentUser, isAdmin, showStatus, onImageUpload }) {
     const { siteData, updateWorkshop } = useWebsiteData();
     const workshop = siteData.workshop || { tracks: WORKSHOP_TRACKS };
@@ -63,7 +69,7 @@ export default function WorkshopScheduleAdmin({ currentUser, isAdmin, showStatus
     const addScheduleItem = () => {
         const nextIdx = schedule.length;
         const newItem = {
-            id: `sch-${selectedTrackId}-${Date.now().toString(36)}`,
+            id: newScheduleId(selectedTrackId),
             label: `Week ${nextIdx}`,
             days: currentTrack.days || 'Tue & Thu',
             date: 'TBD',
