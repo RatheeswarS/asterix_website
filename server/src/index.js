@@ -22,6 +22,7 @@ import sponsorInquiryRoutes from './routes/sponsorInquiries.js';
 import uploadRoutes from './routes/upload.js';
 import submissionRoutes from './routes/submissions.js';
 import workshopRoutes from './routes/workshop.js';
+import { describeRazorpayStatus } from './lib/razorpay.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -121,4 +122,5 @@ const HOST = process.env.HOST || '0.0.0.0';
 app.listen(PORT, HOST, () => {
     console.log(`🚀 Asterix Server & MongoDB API running on http://${HOST === '0.0.0.0' ? 'localhost' : HOST}:${PORT}`);
     console.log(`📁 Uploads available at http://${HOST === '0.0.0.0' ? 'localhost' : HOST}:${PORT}/uploads/`);
+    console.log(`💳 ${describeRazorpayStatus()}`);
 });
