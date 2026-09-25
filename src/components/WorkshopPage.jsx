@@ -13,6 +13,8 @@ import {
 const TRACK_ORDER = ['software', 'powertrain'];
 const RAZORPAY_CHECKOUT_SRC = 'https://checkout.razorpay.com/v1/checkout.js';
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+// Payments are paused for now: the Pay button renders disabled. Flip to true to reopen.
+const PAYMENTS_ENABLED = false;
 
 const EMPTY_FORM = {
     name: '',
@@ -616,7 +618,7 @@ function ReviewPanel({ form, pkg, error, busy, onEdit, onPay }) {
                 <button type="button" onClick={onEdit} disabled={busy} className="press border-2 border-slate-900 bg-white px-5 py-3 font-mono text-xs font-black uppercase shadow-[4px_4px_0px_#0f172a] hover:bg-sky-100 disabled:opacity-50">
                     ← Edit details
                 </button>
-                <button type="button" onClick={onPay} disabled={busy} className="press border-2 border-slate-900 bg-sky-500 px-6 py-3 font-mono text-sm font-black uppercase text-white shadow-[4px_4px_0px_#0f172a] hover:bg-sky-400 disabled:opacity-60">
+                <button type="button" onClick={onPay} disabled={busy || !PAYMENTS_ENABLED} className="press border-2 border-slate-900 bg-sky-500 px-6 py-3 font-mono text-sm font-black uppercase text-white shadow-[4px_4px_0px_#0f172a] hover:bg-sky-400 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-sky-500">
                     {busy ? 'Opening payment…' : `Pay ${formatPrice(pkg)} →`}
                 </button>
             </div>
