@@ -453,7 +453,9 @@ const normalizeWorkshop = (ws) => {
                         label: item?.label || canMatch?.label || `Week ${idx}`,
                         days: item?.days || canMatch?.days || '',
                         date: (isStale && canMatch) ? canMatch.date : (item?.date || canMatch?.date || ''),
-                        title: item?.title || canMatch?.title || ''
+                        title: item?.title || canMatch?.title || '',
+                        venue: item?.venue !== undefined ? item.venue : (canMatch?.venue || 'To be announced'),
+                        reportingInstructions: item?.reportingInstructions !== undefined ? item.reportingInstructions : (canMatch?.reportingInstructions || 'Arrive 10 minutes prior to session timing.')
                     };
                 });
             } else {

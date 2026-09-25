@@ -75,13 +75,69 @@ export const WORKSHOP_TRACKS = {
             }
         ],
         schedule: [
-            { id: 'sch-sw-0', label: 'Week 0', days: 'Tuesday', date: '29 Sep', title: 'Pre-workshop online beginner session' },
-            { id: 'sch-sw-1', label: 'Week 1', days: 'Tue & Thu', date: '6 & 8 Oct', title: 'System Design' },
-            { id: 'sch-sw-2', label: 'Week 2', days: 'Tue & Thu', date: '13 & 15 Oct', title: 'Computer Vision · ML' },
-            { id: 'sch-sw-b1', label: 'Bonus I', days: 'Saturday', date: '17 Oct', title: 'Powertrain & Embedded / Electrical' },
-            { id: 'sch-sw-3', label: 'Week 3', days: 'Tue & Thu', date: '20 & 22 Oct', title: 'ML · ROS' },
-            { id: 'sch-sw-b2', label: 'Bonus II', days: 'Saturday', date: '24 Oct', title: 'Mechanical Fundamentals' },
-            { id: 'sch-sw-4', label: 'Week 4', days: 'Tue & Thu', date: '27 & 29 Oct', title: 'Agentic AI I · Agentic AI II' }
+            {
+                id: 'sch-sw-0',
+                label: 'Week 0',
+                days: 'Tuesday',
+                date: '29 Sep',
+                title: 'Pre-workshop online beginner session',
+                venue: 'Online (Meeting link will be shared)',
+                reportingInstructions: 'Online pre-session talk covering prerequisites, requirements, and necessary setup for Ubuntu 22.04 LTS / ROS.'
+            },
+            {
+                id: 'sch-sw-1',
+                label: 'Week 1',
+                days: 'Tue & Thu',
+                date: '6 & 8 Oct',
+                title: 'System Design',
+                venue: 'Autonomous Systems & Robotics Lab (Room 302, PSG iTech)',
+                reportingInstructions: 'Bring laptops with chargers. Ubuntu 22.04 LTS or dual boot recommended. Arrive 10 minutes prior to session timing. Closed-toe shoes mandatory.'
+            },
+            {
+                id: 'sch-sw-2',
+                label: 'Week 2',
+                days: 'Tue & Thu',
+                date: '13 & 15 Oct',
+                title: 'Computer Vision · ML',
+                venue: 'Autonomous Systems & Robotics Lab (Room 302, PSG iTech)',
+                reportingInstructions: 'Bring laptops with chargers and Python 3 / OpenCV environment ready. Arrive 10 minutes prior to session timing. Closed-toe shoes mandatory.'
+            },
+            {
+                id: 'sch-sw-b1',
+                label: 'Bonus I',
+                days: 'Saturday',
+                date: '17 Oct',
+                title: 'Powertrain & Embedded / Electrical',
+                venue: 'Electrical Machines & Power Electronics Lab (Ground Floor, PSG iTech)',
+                reportingInstructions: 'Arrive 10 minutes prior to session timing. Closed-toe shoes mandatory.'
+            },
+            {
+                id: 'sch-sw-3',
+                label: 'Week 3',
+                days: 'Tue & Thu',
+                date: '20 & 22 Oct',
+                title: 'ML · ROS',
+                venue: 'Autonomous Systems & Robotics Lab (Room 302, PSG iTech)',
+                reportingInstructions: 'Bring laptops with ROS 2 / ROS packages installed. Arrive 10 minutes prior to session timing. Closed-toe shoes mandatory.'
+            },
+            {
+                id: 'sch-sw-b2',
+                label: 'Bonus II',
+                days: 'Saturday',
+                date: '24 Oct',
+                title: 'Mechanical Fundamentals',
+                venue: 'BAJA Workshop / Mechanical Bay (PSG iTech)',
+                reportingInstructions: 'Arrive 10 minutes prior to session timing. Closed-toe shoes mandatory.'
+            },
+            {
+                id: 'sch-sw-4',
+                label: 'Week 4',
+                days: 'Tue & Thu',
+                date: '27 & 29 Oct',
+                title: 'Agentic AI I · Agentic AI II',
+                venue: 'Autonomous Systems & Robotics Lab (Room 302, PSG iTech)',
+                reportingInstructions: 'Bring laptops with chargers for interactive AI agent development and mini projects. Arrive 10 minutes prior to session timing. Closed-toe shoes mandatory.'
+            }
         ],
         bonus: 'Two complimentary sessions: Powertrain & Embedded/Electrical (Sat 17 Oct) and Mechanical Fundamentals (Sat 24 Oct).'
     },
@@ -140,14 +196,78 @@ export const WORKSHOP_TRACKS = {
             }
         ],
         schedule: [
-            { id: 'sch-pt-0', label: 'Week 0', days: 'Tuesday', date: '29 Sep', title: 'Pre-workshop online beginner session' },
-            { id: 'sch-pt-1', label: 'Week 1', days: 'Wed & Fri', date: '7 & 9 Oct', title: 'Circuit Basics · Diodes & Transistors' },
-            { id: 'sch-pt-2', label: 'Week 2', days: 'Mon, Wed & Fri', date: '12, 14 & 16 Oct', title: 'Hands-on 1 · ESP32 Basics · How Our Buggy Starts Up' },
-            { id: 'sch-pt-b1', label: 'Bonus I', days: 'Saturday', date: '17 Oct', title: 'Autonomous Perception' },
-            { id: 'sch-pt-3', label: 'Week 3', days: 'Mon, Wed & Fri', date: '19, 21 & 23 Oct', title: 'Hands-on 2 · Buck & Boost · Op-Amps & Filters' },
-            { id: 'sch-pt-b2', label: 'Bonus II', days: 'Saturday', date: '24 Oct', title: 'Mechanical Fundamentals' },
-            { id: 'sch-pt-4', label: 'Week 4', days: 'Mon, Wed & Fri', date: '26, 28 & 30 Oct', title: 'Electric Motors · PCB Design I · PCB Design II' },
-            { id: 'sch-pt-5', label: 'Week 5', days: 'Monday', date: '2 Nov', title: 'Hands-on 3' }
+            {
+                id: 'sch-pt-0',
+                label: 'Week 0',
+                days: 'Tuesday',
+                date: '29 Sep',
+                title: 'Pre-workshop online beginner session',
+                venue: 'Online (Meeting link will be shared)',
+                reportingInstructions: 'Online pre-session talk covering prerequisites, software requirements, and overview.'
+            },
+            {
+                id: 'sch-pt-1',
+                label: 'Week 1',
+                days: 'Wed & Fri',
+                date: '7 & 9 Oct',
+                title: 'Circuit Basics · Diodes & Transistors',
+                venue: 'Electrical Machines & Power Electronics Lab (Ground Floor, PSG iTech)',
+                reportingInstructions: 'Basic stationery required. Arrive 10 minutes prior to session timing. Safety shoes required inside the lab.'
+            },
+            {
+                id: 'sch-pt-2',
+                label: 'Week 2',
+                days: 'Mon, Wed & Fri',
+                date: '12, 14 & 16 Oct',
+                title: 'Hands-on 1 · ESP32 Basics · How Our Buggy Starts Up',
+                venue: 'Electrical Machines & Power Electronics Lab (Ground Floor, PSG iTech)',
+                reportingInstructions: 'Bring laptop with LTspice / PSpice and Arduino IDE installed. Safety shoes required inside the lab. Arrive 10 minutes prior to session timing.'
+            },
+            {
+                id: 'sch-pt-b1',
+                label: 'Bonus I',
+                days: 'Saturday',
+                date: '17 Oct',
+                title: 'Autonomous Perception',
+                venue: 'Autonomous Systems & Robotics Lab (Room 302, PSG iTech)',
+                reportingInstructions: 'Arrive 10 minutes prior to session timing. Closed-toe shoes mandatory.'
+            },
+            {
+                id: 'sch-pt-3',
+                label: 'Week 3',
+                days: 'Mon, Wed & Fri',
+                date: '19, 21 & 23 Oct',
+                title: 'Hands-on 2 · Buck & Boost · Op-Amps & Filters',
+                venue: 'Electrical Machines & Power Electronics Lab (Ground Floor, PSG iTech)',
+                reportingInstructions: 'Bring laptop with free Tinkercad account created and Arduino IDE ready. Safety shoes required inside the lab. Arrive 10 minutes prior to session timing.'
+            },
+            {
+                id: 'sch-pt-b2',
+                label: 'Bonus II',
+                days: 'Saturday',
+                date: '24 Oct',
+                title: 'Mechanical Fundamentals',
+                venue: 'BAJA Workshop / Mechanical Bay (PSG iTech)',
+                reportingInstructions: 'Arrive 10 minutes prior to session timing. Closed-toe shoes mandatory.'
+            },
+            {
+                id: 'sch-pt-4',
+                label: 'Week 4',
+                days: 'Mon, Wed & Fri',
+                date: '26, 28 & 30 Oct',
+                title: 'Electric Motors · PCB Design I · PCB Design II',
+                venue: 'Electrical Machines & Power Electronics Lab (Ground Floor, PSG iTech)',
+                reportingInstructions: 'Bring laptop for PCB layout demonstration. Safety shoes required inside the lab. Arrive 10 minutes prior to session timing.'
+            },
+            {
+                id: 'sch-pt-5',
+                label: 'Week 5',
+                days: 'Monday',
+                date: '2 Nov',
+                title: 'Hands-on 3',
+                venue: 'Electrical Machines & Power Electronics Lab (Ground Floor, PSG iTech)',
+                reportingInstructions: 'Bring laptop with PCB design software (EasyEDA / KiCad) installed. Safety shoes required inside the lab. Arrive 10 minutes prior to session timing.'
+            }
         ],
         bonus: 'Two complimentary sessions: Autonomous Perception (Sat 17 Oct) and Mechanical Fundamentals (Sat 24 Oct).'
     }

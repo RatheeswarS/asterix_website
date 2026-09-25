@@ -67,7 +67,9 @@ export default function WorkshopScheduleAdmin({ currentUser, isAdmin, showStatus
             label: `Week ${nextIdx}`,
             days: currentTrack.days || 'Tue & Thu',
             date: 'TBD',
-            title: 'New Session Topic'
+            title: 'New Session Topic',
+            venue: 'To be announced',
+            reportingInstructions: 'Arrive 10 minutes prior to session timing.'
         };
         setSchedule([...schedule, newItem]);
         showStatus?.('New milestone added.');
@@ -127,7 +129,7 @@ export default function WorkshopScheduleAdmin({ currentUser, isAdmin, showStatus
             <div className="border-b-2 border-slate-200 pb-4">
                 <h2 className="text-2xl font-black uppercase text-slate-900">Workshop Management</h2>
                 <p className="text-xs font-bold text-slate-500 font-mono mt-1">
-                    Manage workshop curriculum PDFs, batch timings, venue location, reporting instructions, and weekly schedules.
+                    Manage workshop curriculum PDFs, batch timings, milestone venues, reporting instructions, and weekly schedules.
                 </p>
             </div>
 
@@ -206,53 +208,32 @@ export default function WorkshopScheduleAdmin({ currentUser, isAdmin, showStatus
                 </div>
             </div>
 
-            {/* SECTION 2: VENUE & REPORTING INSTRUCTIONS */}
+            {/* SECTION 2: ONGOING WEEK OVERRIDE */}
             <div className="p-5 bg-white border-2 border-slate-900 shadow-[3px_3px_0px_#0f172a] space-y-4">
                 <div className="border-b border-slate-200 pb-3">
                     <h3 className="text-lg font-black uppercase text-slate-900">
-                        Venue Details & Reporting Instructions
+                        Ongoing Week Selection
                     </h3>
+                    <p className="text-xs font-mono font-bold text-slate-500 mt-1">
+                        The live website automatically detects and highlights the ongoing week in real-time based on the session dates and IST clock. You can also manually set or override the active week below.
+                    </p>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div className="sm:col-span-1">
-                        <label className={labelClass}>
-                            Active / Ongoing Week
-                        </label>
-                        <select
-                            value={currentTrack.ongoingWeek || 'Week 1'}
-                            onChange={(e) => patchTrack({ ongoingWeek: e.target.value })}
-                            className={`${input} font-black uppercase bg-white cursor-pointer`}
-                        >
-                            {schedule.map((item) => (
-                                <option key={item.id || item.label} value={item.label}>
-                                    {item.label} — {item.title}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div className="sm:col-span-2">
-                        <label className={labelClass}>Physical Venue & Lab Location</label>
-                        <input
-                            type="text"
-                            value={currentTrack.venue || ''}
-                            onChange={(e) => patchTrack({ venue: e.target.value })}
-                            placeholder="e.g. Autonomous Systems & Robotics Lab (Room 302, PSG iTech)"
-                            className={input}
-                        />
-                    </div>
-
-                    <div className="sm:col-span-3">
-                        <label className={labelClass}>Reporting Instructions & Prerequisites</label>
-                        <textarea
-                            rows={3}
-                            value={currentTrack.reportingInstructions || ''}
-                            onChange={(e) => patchTrack({ reportingInstructions: e.target.value })}
-                            placeholder="e.g. Bring laptops with chargers. Ubuntu 22.04 LTS or dual boot recommended. Arrive 10 minutes prior to session timing. Closed-toe shoes mandatory."
-                            className={`${input} resize-y leading-relaxed`}
-                        />
-                    </div>
+                <div className="max-w-md">
+                    <label className={labelClass}>
+                        Active / Ongoing Week
+                    </label>
+                    <select
+                        value={currentTrack.ongoingWeek || 'Week 0'}
+                        onChange={(e) => patchTrack({ ongoingWeek: e.target.value })}
+                        className={`${input} font-black uppercase bg-white cursor-pointer`}
+                    >
+                        {schedule.map((item) => (
+                            <option key={item.id || item.label} value={item.label}>
+                                {item.label} — {item.title} ({item.date || 'TBD'})
+                            </option>
+                        ))}
+                    </select>
                 </div>
             </div>
 
@@ -336,12 +317,17 @@ export default function WorkshopScheduleAdmin({ currentUser, isAdmin, showStatus
                     </div>
                 </div>
 
-                {/* Subheading 2: Plan Milestones (Separate Days & Dates) */}
+                {/* Subheading 2: Plan Milestones (Separate Days, Dates, Venue & Instructions) */}
                 <div className="space-y-4 pt-4 border-t-2 border-slate-100">
                     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-3">
-                        <h3 className="text-lg font-black uppercase text-slate-900">
-                            Plan Milestones (Separate Days & Dates)
-                        </h3>
+                        <div>
+                            <h3 className="text-lg font-black uppercase text-slate-900">
+                                Plan Milestones & Session Venues
+                            </h3>
+                            <p className="text-xs font-mono font-bold text-slate-500 mt-0.5">
+                                Set session dates, topics, physical venue/lab location, and reporting prerequisites for each milestone.
+                            </p>
+                        </div>
 
                         <button
                             type="button"
@@ -352,15 +338,15 @@ export default function WorkshopScheduleAdmin({ currentUser, isAdmin, showStatus
                         </button>
                     </div>
 
-                    <div className="space-y-2.5">
+                    <div className="space-y-3">
                         {schedule.map((item, index) => {
                             const isCurrent = (currentTrack.ongoingWeek || '').toLowerCase() === (item.label || '').toLowerCase();
 
                             return (
                                 <div
                                     key={item.id || index}
-                                    className={`p-3 border border-slate-900 transition-colors ${
-                                        isCurrent ? 'bg-sky-50' : 'bg-slate-50'
+                                    className={`p-4 border-2 border-slate-900 transition-colors space-y-3 ${
+                                        isCurrent ? 'bg-sky-50 shadow-[2px_2px_0px_#0284c7]' : 'bg-slate-50'
                                     }`}
                                 >
                                     <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-center">
@@ -405,7 +391,7 @@ export default function WorkshopScheduleAdmin({ currentUser, isAdmin, showStatus
                                                 type="text"
                                                 value={item.date || ''}
                                                 onChange={(e) => patchScheduleItem(index, { date: e.target.value })}
-                                                placeholder="e.g. 1 Oct & 3 Oct"
+                                                placeholder="e.g. 6 & 8 Oct"
                                                 className={input}
                                             />
                                         </div>
@@ -450,6 +436,35 @@ export default function WorkshopScheduleAdmin({ currentUser, isAdmin, showStatus
                                             >
                                                 &times;
                                             </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Milestone Specific Venue & Reporting Instructions */}
+                                    <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 pt-2 border-t border-slate-200">
+                                        <div className="sm:col-span-5">
+                                            <label className="block text-[9px] font-mono font-black uppercase text-slate-600 mb-0.5">
+                                                📍 Session Venue
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={item.venue !== undefined ? item.venue : 'To be announced'}
+                                                onChange={(e) => patchScheduleItem(index, { venue: e.target.value })}
+                                                placeholder="e.g. Autonomous Systems & Robotics Lab (Room 302, PSG iTech)"
+                                                className={input}
+                                            />
+                                        </div>
+
+                                        <div className="sm:col-span-7">
+                                            <label className="block text-[9px] font-mono font-black uppercase text-slate-600 mb-0.5">
+                                                📋 Reporting Instructions & Prerequisites
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={item.reportingInstructions !== undefined ? item.reportingInstructions : 'Arrive 10 minutes prior to session timing.'}
+                                                onChange={(e) => patchScheduleItem(index, { reportingInstructions: e.target.value })}
+                                                placeholder="e.g. Bring laptops with chargers. Ubuntu 22.04 LTS recommended."
+                                                className={input}
+                                            />
                                         </div>
                                     </div>
                                 </div>

@@ -637,24 +637,20 @@ function TrackDetail({ track, onRegister, nowIST }) {
                                 </div>
 
                                 {/* Venue Details and Reporting Instructions - Automatically Open below the Ongoing Week */}
-                                {isOngoing && (track.venue || track.reportingInstructions) && (
+                                {isOngoing && (
                                     <div className="mt-3 p-3.5 bg-white border-2 border-slate-900 shadow-[3px_3px_0px_#0f172a] space-y-2">
                                         <div className="flex items-center gap-2 text-[10px] font-mono font-black uppercase tracking-widest text-sky-700">
                                             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                                             <span>Current Session Details & Venue</span>
                                         </div>
-                                        {track.venue && (
-                                            <div className="text-xs font-mono">
-                                                <span className="font-black uppercase text-slate-700 mr-1.5">📍 Venue:</span>
-                                                <span className="font-bold text-slate-900">{track.venue}</span>
-                                            </div>
-                                        )}
-                                        {track.reportingInstructions && (
-                                            <div className="text-xs font-mono">
-                                                <span className="font-black uppercase text-slate-700 mr-1.5">📋 Reporting Instructions:</span>
-                                                <span className="font-medium text-slate-800 leading-relaxed">{track.reportingInstructions}</span>
-                                            </div>
-                                        )}
+                                        <div className="text-xs font-mono">
+                                            <span className="font-black uppercase text-slate-700 mr-1.5">📍 Venue:</span>
+                                            <span className="font-bold text-slate-900">{item.venue || track.venue || 'To be announced'}</span>
+                                        </div>
+                                        <div className="text-xs font-mono">
+                                            <span className="font-black uppercase text-slate-700 mr-1.5">📋 Reporting Instructions:</span>
+                                            <span className="font-medium text-slate-800 leading-relaxed">{item.reportingInstructions || track.reportingInstructions || 'Arrive 10 minutes prior to session timing.'}</span>
+                                        </div>
                                     </div>
                                 )}
                             </li>
