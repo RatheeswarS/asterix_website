@@ -7,6 +7,7 @@ import { useWebsiteData } from '../context/WebsiteDataContext';
 import {
     WORKSHOP_TRACKS,
     WORKSHOP_PACKAGES,
+    WORKSHOP_DEPARTMENTS,
     isPriced
 } from '../../server/src/config/workshopPackages.js';
 
@@ -54,7 +55,7 @@ function validate(form) {
     const errors = {};
     if (form.name.trim().length < 2) errors.name = 'Enter your full name.';
     if (!form.rollNo.trim()) errors.rollNo = 'Enter your registered number.';
-    if (form.department.trim().length < 2) errors.department = 'Enter your department.';
+    if (!WORKSHOP_DEPARTMENTS.includes(form.department)) errors.department = 'Select your department.';
     if (!['1', '2'].includes(form.year)) errors.year = 'Select 1st or 2nd year.';
     if (!EMAIL_RE.test(form.email.trim())) errors.email = 'Enter a valid email address.';
     if (form.phone.replace(/\D/g, '').length !== 10) errors.phone = 'Enter a valid 10-digit phone number.';
@@ -352,7 +353,12 @@ export default function WorkshopPage({ onBack }) {
                                             <input className={inputClass} value={form.rollNo} onChange={e => updateField('rollNo', e.target.value)} maxLength={40} />
                                         </Field>
                                         <Field label="Department" error={fieldErrors.department}>
-                                            <input className={inputClass} value={form.department} onChange={e => updateField('department', e.target.value)} maxLength={100} />
+                                            <select className={inputClass(fieldErrors.department)} value={form.department} onChange={e => updateField('department', e.target.value)}>
+                                                <option value="" disabled>Select department</option>
+                                                {WORKSHOP_DEPARTMENTS.map(dept => (
+                                                    <option key={dept} value={dept}>{dept}</option>
+                                                ))}
+                                            </select>
                                         </Field>
                                         <Field label="Year" error={fieldErrors.year}>
                                             <div className="grid grid-cols-2 gap-2">

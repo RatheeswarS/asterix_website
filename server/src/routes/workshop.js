@@ -8,6 +8,7 @@ import {
     WORKSHOP_PACKAGES,
     WORKSHOP_TRACKS,
     WORKSHOP_CURRENCY,
+    WORKSHOP_DEPARTMENTS,
     getWorkshopPackage,
     isPriced
 } from '../config/workshopPackages.js';
@@ -112,7 +113,7 @@ function validateRegistration(body) {
     if (!EMAIL_RE.test(data.email)) errors.email = 'Enter a valid email address.';
     if (data.phone.length !== 10) errors.phone = 'Enter a valid 10-digit phone number.';
     if (!VALID_YEARS.includes(data.year)) errors.year = 'Select 1st or 2nd year.';
-    if (data.department.length < 2) errors.department = 'Enter your department.';
+    if (!WORKSHOP_DEPARTMENTS.includes(data.department)) errors.department = 'Select your department.';
     if (!data.rollNo) errors.rollNo = 'Enter your roll number.';
 
     const pkg = getWorkshopPackage(data.package);

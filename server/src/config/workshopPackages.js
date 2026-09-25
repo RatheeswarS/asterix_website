@@ -172,6 +172,18 @@ export const WORKSHOP_PACKAGES = [
     }
 ];
 
+// Options for the Department dropdown, kept in alphabetical order. The server
+// only accepts these exact values.
+export const WORKSHOP_DEPARTMENTS = [
+    'Artificial Intelligence and Data Science',
+    'Computer Science and Engineering',
+    'Electrical and Electronics Engineering',
+    'Electronics and Communication Engineering',
+    'Electronics Engineering (VLSI Design and Technology)',
+    'Mechanical Engineering',
+    'Robotics and Artificial Intelligence'
+].sort((a, b) => a.localeCompare(b));
+
 export function getWorkshopPackage(id) {
     const key = String(id || '').toLowerCase().trim();
     return WORKSHOP_PACKAGES.find(p => p.id === key) || null;
