@@ -113,137 +113,62 @@ function useNowIST() {
 }
 
 // ---------------------------------------------------------------------------
-// Parse a schedule item's date string into an array of JS Dates.
-// Handles formats like:
-//   "29 Sep"  |  "1 Oct & 3 Oct"  |  "7 – 9 Oct"  |  "12 – 16 Oct"  |  "TBD"
-// anchorYear is the full calendar year (e.g. 2026) inferred from startDate.
+// Schedule Date Resolution & Ongoing Week Detection (IST)
 // ---------------------------------------------------------------------------
 const MONTH_MAP = {
     jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5,
     jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11
 };
 
-function parseDateToken(token, fallbackMonth, year) {
-    // token examples: "1 Oct", "3 Oct", "29 Sep", "9" (day only)
-    const parts = token.trim().split(/\s+/);
-    const day = parseInt(parts[0], 10);
-    const mon = parts[1] ? MONTH_MAP[parts[1].toLowerCase().slice(0, 3)] : fallbackMonth;
+// Extracts the primary start date for a schedule row (e.g. "29 Sep", "6 & 8 Oct", "12, 14 & 16 Oct")
+function parseFirstSessionDate(dateStr, year) {
+    if (!dateStr || typeof dateStr !== 'string') return null;
+    const match = dateStr.match(/(\d{1,2})\s*(?:[,\u2013\-&]|\band\b)?.*?([a-zA-Z]{3})/i);
+    if (!match) return null;
+    const day = parseInt(match[1], 10);
+    const mon = MONTH_MAP[match[2].toLowerCase().slice(0, 3)];
     if (isNaN(day) || mon === undefined) return null;
     return new Date(year, mon, day);
 }
 
-function parseScheduleDateRange(dateStr, anchorYear) {
-    if (!dateStr || dateStr.trim() === '' || dateStr.trim().toUpperCase() === 'TBD') return [];
-    const year = anchorYear || new Date().getFullYear();
-    const str = dateStr.trim();
-
-    // "7 – 9 Oct" or "12 – 16 Oct" (en-dash or hyphen range, month at end)
-    const rangeMatch = str.match(/^(\d{1,2})\s*[\u2013\-]\s*(\d{1,2})\s+(\w+)$/);
-    if (rangeMatch) {
-        const mon = MONTH_MAP[rangeMatch[3].toLowerCase().slice(0, 3)];
-        if (mon !== undefined) {
-            const d1 = new Date(year, mon, parseInt(rangeMatch[1], 10));
-            const d2 = new Date(year, mon, parseInt(rangeMatch[2], 10));
-            return [d1, d2];
-        }
-    }
-
-    // Split by delimiters: comma, ampersand, or 'and'
-    // Handles formats like "12, 14 & 16 Oct", "6 & 8 Oct", "7 & 9 Oct", "29 Sep"
-    const rawTokens = str.split(/[,&]|\band\b/i).map(t => t.trim()).filter(Boolean);
-    if (!rawTokens.length) return [];
-
-    // Parse tokens from right to left so that trailing month applies to earlier day-only tokens
-    let lastMonth = undefined;
-    const parsedReversed = [];
-    for (let i = rawTokens.length - 1; i >= 0; i--) {
-        const tok = rawTokens[i];
-        const parts = tok.split(/\s+/);
-        const day = parseInt(parts[0], 10);
-        const mon = parts[1] ? MONTH_MAP[parts[1].toLowerCase().slice(0, 3)] : lastMonth;
-        if (mon !== undefined) {
-            lastMonth = mon;
-        }
-        if (!isNaN(day) && mon !== undefined) {
-            parsedReversed.push(new Date(year, mon, day));
-        }
-    }
-
-    return parsedReversed.reverse();
-}
-
-function getMondayOfWeek(date) {
-    const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-    const day = d.getDay(); // 0 is Sunday, 1 is Monday ... 6 is Saturday
-    const diff = day === 0 ? -6 : 1 - day;
-    d.setDate(d.getDate() + diff);
-    d.setHours(0, 0, 0, 0);
-    return d;
-}
-
-// ---------------------------------------------------------------------------
-// Determine which schedule row is currently "ongoing" based on IST wall-clock.
-// Uses a Monday-to-Sunday week boundary:
-//  1. Each row's effective start begins on the Monday of its week (or its own
-//     date if a previous session exists earlier in that same Monday–Sunday week).
-//  2. Before the workshop begins → pins to Week 0.
-//  3. After the workshop ends → stays on the final session row.
-//  4. If no dates can be parsed, falls back to the admin-set ongoingWeek string.
-// ---------------------------------------------------------------------------
+// Determines which schedule row is ongoing based on IST wall-clock (Mon-Sun week boundary)
 function resolveOngoingWeek(track, nowIST) {
-    const schedule = Array.isArray(track.schedule) ? track.schedule : [];
-    if (!schedule.length) return track.ongoingWeek || '';
+    const schedule = Array.isArray(track?.schedule) ? track.schedule : [];
+    if (!schedule.length) return track?.ongoingWeek || '';
 
-    const anchorYear = track.startDate
+    const year = track?.startDate
         ? new Date(track.startDate).getFullYear()
         : new Date().getFullYear();
 
-    const rowDates = schedule.map(item =>
-        parseScheduleDateRange(item.date || '', anchorYear)
-    );
+    const today = new Date(nowIST.getFullYear(), nowIST.getMonth(), nowIST.getDate());
 
-    const hasAnyDates = rowDates.some(d => d.length > 0);
-    if (!hasAnyDates) {
+    // Map each row to its effective start date
+    const rowStarts = schedule.map(item => {
+        const sessionDate = parseFirstSessionDate(item.date, year);
+        if (!sessionDate) return null;
+
+        // Regular week rows start on the Monday of that week; Bonus sessions start on their date
+        const isBonus = item.label?.toLowerCase().includes('bonus');
+        if (isBonus) {
+            return sessionDate;
+        }
+        const monday = new Date(sessionDate);
+        monday.setDate(sessionDate.getDate() - ((sessionDate.getDay() + 6) % 7));
+        return monday;
+    });
+
+    const firstKnown = rowStarts.find(d => d !== null);
+    if (!firstKnown) {
         return track.ongoingWeek || (schedule[0]?.label ?? '');
     }
 
-    const today = new Date(nowIST.getFullYear(), nowIST.getMonth(), nowIST.getDate());
-
-    // Calculate effective start date for each schedule row
-    const effectiveStarts = [];
-    for (let i = 0; i < schedule.length; i++) {
-        const dates = rowDates[i];
-        if (!dates || !dates.length) {
-            effectiveStarts.push(null);
-            continue;
-        }
-        const earliestDate = dates[0];
-        const monday = getMondayOfWeek(earliestDate);
-
-        // Check if there is an earlier row in the same Monday–Sunday week
-        let hasEarlierInSameWeek = false;
-        for (let j = 0; j < i; j++) {
-            if (effectiveStarts[j] && effectiveStarts[j] >= monday) {
-                hasEarlierInSameWeek = true;
-                break;
-            }
-        }
-
-        // If it's the first row of that week, start from Monday; otherwise start on its date
-        const start = hasEarlierInSameWeek ? earliestDate : monday;
-        effectiveStarts.push(start);
-    }
-
-    // Before workshop starts → pin to first row
-    const firstKnown = effectiveStarts.find(d => d !== null);
-    if (firstKnown && today < firstKnown) {
+    if (today < firstKnown) {
         return schedule[0].label;
     }
 
-    // Find the latest row whose effectiveStart <= today
     let ongoingIndex = 0;
     for (let i = 0; i < schedule.length; i++) {
-        if (effectiveStarts[i] && today >= effectiveStarts[i]) {
+        if (rowStarts[i] && today >= rowStarts[i]) {
             ongoingIndex = i;
         }
     }
