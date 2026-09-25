@@ -510,7 +510,7 @@ export default function AdminDashboard({ onExit }) {
         { id: 'subsystems', label: 'Subsystems & Squad', icon: 'vehicle' },
         { id: 'sponsorship', label: 'Sponsorship Portal', icon: 'folder' },
         { id: 'recruitment', label: 'Freshers & Recruitment', icon: 'users' },
-        { id: 'workshop-schedule', label: 'Syllabus & Timings', icon: 'calendar', adminOnly: true },
+        { id: 'workshop-schedule', label: 'Workshop', icon: 'calendar', adminOnly: true },
         { id: 'gallery', label: 'Media Gallery', icon: 'camera' },
         { id: 'updates', label: 'Team Updates', icon: 'megaphone' },
         { id: 'subscribers', label: 'Alliance Leads', icon: 'inbox' },
@@ -737,7 +737,7 @@ export default function AdminDashboard({ onExit }) {
                                         onClick={() => setActiveTab('workshop-schedule')}
                                         className="press press-flat p-3 border-2 border-slate-900 bg-slate-50 hover:bg-sky-50 text-left font-mono font-bold text-xs flex items-center justify-between cursor-pointer"
                                     >
-                                        <span>Manage Syllabus PDF, Timings & Venue</span>
+                                        <span>Manage Workshop Details, Timings & Venue</span>
                                         <span>→</span>
                                     </button>
 

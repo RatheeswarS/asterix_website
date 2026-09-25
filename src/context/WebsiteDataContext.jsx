@@ -399,6 +399,33 @@ const initialWorkshopData = {
     tracks: WORKSHOP_TRACKS
 };
 
+const STALE_WORKSHOP_DATES = [
+    'From 1 Oct 2026 · 4 weeks',
+    '1 Oct – 6 Nov 2026',
+    '1 Oct - 6 Nov 2026',
+    '29 Sep – 6 Nov 2026'
+];
+const STALE_WORKSHOP_START_LABELS = [
+    'First session 1 Oct 2026',
+    'First session Wed 7 Oct 2026'
+];
+const STALE_WORKSHOP_REMOVED_IDS = ['sch-pt-b3', 'sch-pt-b4'];
+const STALE_WORKSHOP_ITEM_DATES = [
+    '1 Oct & 3 Oct',
+    '8 Oct & 10 Oct',
+    '15 Oct & 17 Oct',
+    '22 Oct & 24 Oct',
+    '6 Oct & 8 Oct',
+    '13 Oct & 15 Oct',
+    '20 Oct & 22 Oct',
+    '27 Oct & 29 Oct',
+    '7 – 9 Oct',
+    '12 – 16 Oct',
+    '19 – 23 Oct',
+    '26 – 30 Oct',
+    '2 – 6 Nov'
+];
+
 const normalizeWorkshop = (ws) => {
     const source = ws && typeof ws === 'object' ? ws : {};
     const tracksSource = source.tracks && typeof source.tracks === 'object' ? source.tracks : {};
@@ -406,6 +433,35 @@ const normalizeWorkshop = (ws) => {
     for (const key of Object.keys(WORKSHOP_TRACKS)) {
         const canonical = WORKSHOP_TRACKS[key];
         const incoming = tracksSource[key] || {};
+
+        // Reconcile schedule: Ensure Week 0 is present for both software and powertrain,
+        // and migrate legacy date ranges/stale strings to canonical dates.
+        let reconciledSchedule = canonical.schedule;
+        if (Array.isArray(incoming.schedule) && incoming.schedule.length > 0) {
+            const validIncoming = incoming.schedule.filter(
+                s => !STALE_WORKSHOP_REMOVED_IDS.includes(s?.id) && s?.label !== 'Bonus III' && s?.label !== 'Bonus IV'
+            );
+            const hasWeek0 = validIncoming.some(
+                s => s?.id === `sch-${key === 'software' ? 'sw' : 'pt'}-0` || s?.label?.trim().toLowerCase() === 'week 0'
+            );
+            if (hasWeek0) {
+                reconciledSchedule = validIncoming.map((item, idx) => {
+                    const isStale = STALE_WORKSHOP_ITEM_DATES.includes(item?.date?.trim());
+                    const canMatch = canonical.schedule.find(c => c.id === item?.id || c.label === item?.label);
+                    return {
+                        id: item?.id || canMatch?.id || `sch-${key}-${idx}`,
+                        label: item?.label || canMatch?.label || `Week ${idx}`,
+                        days: item?.days || canMatch?.days || '',
+                        date: (isStale && canMatch) ? canMatch.date : (item?.date || canMatch?.date || ''),
+                        title: item?.title || canMatch?.title || ''
+                    };
+                });
+            } else {
+                // Incoming cache is from pre-Week 0 schema -> load canonical schedule with Week 0
+                reconciledSchedule = canonical.schedule;
+            }
+        }
+
         mergedTracks[key] = {
             ...canonical,
             ...incoming,
@@ -413,23 +469,17 @@ const normalizeWorkshop = (ws) => {
             name: incoming.name || canonical.name,
             syllabus: incoming.syllabus || canonical.syllabus,
             timing: incoming.timing || canonical.timing,
-            dates: incoming.dates || canonical.dates,
+            dates: (incoming.dates && !STALE_WORKSHOP_DATES.includes(incoming.dates.trim())) ? incoming.dates : canonical.dates,
             days: incoming.days || canonical.days,
-            startLabel: incoming.startLabel || canonical.startLabel,
+            startLabel: (incoming.startLabel && !STALE_WORKSHOP_START_LABELS.includes(incoming.startLabel.trim())) ? incoming.startLabel : canonical.startLabel,
             format: incoming.format || canonical.format,
             audience: incoming.audience || canonical.audience,
             venue: incoming.venue !== undefined ? incoming.venue : (canonical.venue || ''),
             reportingInstructions: incoming.reportingInstructions !== undefined ? incoming.reportingInstructions : (canonical.reportingInstructions || ''),
-            ongoingWeek: incoming.ongoingWeek || canonical.ongoingWeek || 'Week 1',
-            schedule: Array.isArray(incoming.schedule) && incoming.schedule.length > 0
-                ? incoming.schedule.map((item, idx) => ({
-                    id: item?.id || `sch-${key}-${idx}`,
-                    label: item?.label || `Week ${idx}`,
-                    days: item?.days || '',
-                    date: item?.date || '',
-                    title: item?.title || ''
-                }))
-                : canonical.schedule
+            bonus: canonical.bonus,
+            ongoingWeek: incoming.ongoingWeek || canonical.ongoingWeek || 'Week 0',
+            startDate: canonical.startDate,
+            schedule: reconciledSchedule
         };
     }
     return {

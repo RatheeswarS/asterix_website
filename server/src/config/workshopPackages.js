@@ -26,8 +26,11 @@ export const WORKSHOP_TRACKS = {
             'A four-week, hands-on workshop run by the team that writes the autonomous stack on the ' +
             'Asterix buggy. Every topic is anchored to a real vehicle problem and backed by handbooks, ' +
             'guides and a mini project.',
-        dates: 'From 1 Oct 2026 · 4 weeks',
-        startLabel: 'Pre-session talk 29 Sep 2026 · first session Thu 1 Oct 2026',
+        dates: '29 Sep – 29 Oct 2026',
+        startLabel: 'Pre-session talk 29 Sep 2026 · first session Tue 6 Oct 2026',
+        // startDate: ISO date (YYYY-MM-DD) of the first session in IST — used by the
+        // WorkshopPage to auto-detect which schedule row is currently ongoing.
+        startDate: '2026-09-29',
         days: 'Tuesday & Thursday',
         timing: '5:10 PM – 6:50 PM',
         format: '8 core sessions over 4 weeks + 2 bonus sessions',
@@ -35,7 +38,7 @@ export const WORKSHOP_TRACKS = {
         syllabus: '/workshop/software-perception-syllabus.pdf',
         venue: 'Autonomous Systems & Robotics Lab (Room 302, PSG iTech)',
         reportingInstructions: 'Bring laptops with chargers. Ubuntu 22.04 LTS or dual boot recommended. Arrive 10 minutes prior to session timing. Closed-toe shoes mandatory.',
-        ongoingWeek: 'Week 1',
+        ongoingWeek: 'Week 0',
         topics: [
             {
                 title: 'ROS',
@@ -73,14 +76,14 @@ export const WORKSHOP_TRACKS = {
         ],
         schedule: [
             { id: 'sch-sw-0', label: 'Week 0', days: 'Tuesday', date: '29 Sep', title: 'Pre-workshop online beginner session' },
-            { id: 'sch-sw-1', label: 'Week 1', days: 'Tue & Thu', date: '1 Oct & 3 Oct', title: 'System Design' },
-            { id: 'sch-sw-2', label: 'Week 2', days: 'Tue & Thu', date: '6 Oct & 8 Oct', title: 'Computer Vision · ML' },
-            { id: 'sch-sw-b1', label: 'Bonus I', days: 'Saturday', date: '10 Oct', title: 'Powertrain & Embedded / Electrical' },
-            { id: 'sch-sw-3', label: 'Week 3', days: 'Tue & Thu', date: '13 Oct & 15 Oct', title: 'ML · ROS' },
-            { id: 'sch-sw-b2', label: 'Bonus II', days: 'Saturday', date: '17 Oct', title: 'Mechanical Fundamentals' },
-            { id: 'sch-sw-4', label: 'Week 4', days: 'Tue & Thu', date: '20 Oct & 22 Oct', title: 'Agentic AI I · Agentic AI II' }
+            { id: 'sch-sw-1', label: 'Week 1', days: 'Tue & Thu', date: '6 & 8 Oct', title: 'System Design' },
+            { id: 'sch-sw-2', label: 'Week 2', days: 'Tue & Thu', date: '13 & 15 Oct', title: 'Computer Vision · ML' },
+            { id: 'sch-sw-b1', label: 'Bonus I', days: 'Saturday', date: '17 Oct', title: 'Powertrain & Embedded / Electrical' },
+            { id: 'sch-sw-3', label: 'Week 3', days: 'Tue & Thu', date: '20 & 22 Oct', title: 'ML · ROS' },
+            { id: 'sch-sw-b2', label: 'Bonus II', days: 'Saturday', date: '24 Oct', title: 'Mechanical Fundamentals' },
+            { id: 'sch-sw-4', label: 'Week 4', days: 'Tue & Thu', date: '27 & 29 Oct', title: 'Agentic AI I · Agentic AI II' }
         ],
-        bonus: 'Two complimentary sessions: Powertrain & Embedded/Electrical, and Mechanical Fundamentals. Timings announced later.'
+        bonus: 'Two complimentary sessions: Powertrain & Embedded/Electrical (Sat 17 Oct) and Mechanical Fundamentals (Sat 24 Oct).'
     },
     powertrain: {
         id: 'powertrain',
@@ -90,8 +93,10 @@ export const WORKSHOP_TRACKS = {
             'Learn the basics of circuits, electronic parts, microcontrollers and motors, and see how ' +
             'the electronics inside the Team Asterix autonomous buggy actually work. Includes hands-on ' +
             'sessions with free circuit simulators and a PCB design tool.',
-        dates: '7 Oct – 6 Nov 2026',
-        startLabel: 'First session Wed 7 Oct 2026 · last core session Mon 2 Nov 2026',
+        dates: '29 Sep – 2 Nov 2026',
+        startLabel: 'Pre-session talk 29 Sep 2026 · first session Wed 7 Oct 2026',
+        // startDate: ISO date (YYYY-MM-DD) of the first session in IST.
+        startDate: '2026-09-29',
         days: 'Monday, Wednesday & Friday',
         timing: '5:15 PM – 6:45 PM',
         format: '9 talks + 3 hands-on sessions + 2 complimentary sessions (21 hours)',
@@ -99,7 +104,7 @@ export const WORKSHOP_TRACKS = {
         syllabus: '/workshop/powertrain-syllabus.pdf',
         venue: 'Electrical Machines & Power Electronics Lab (Ground Floor, PSG iTech)',
         reportingInstructions: 'Basic stationery and laptop with LTspice installed required. Safety shoes required inside the lab.',
-        ongoingWeek: 'Week 1',
+        ongoingWeek: 'Week 0',
         topics: [
             {
                 title: 'Circuits & Devices',
@@ -135,15 +140,16 @@ export const WORKSHOP_TRACKS = {
             }
         ],
         schedule: [
-            { id: 'sch-pt-1', label: 'Week 1', days: 'Mon, Wed & Fri', date: '7 – 9 Oct', title: 'Circuit Basics · Diodes & Transistors' },
-            { id: 'sch-pt-2', label: 'Week 2', days: 'Mon, Wed & Fri', date: '12 – 16 Oct', title: 'Hands-on 1 · ESP32 Basics · How Our Buggy Starts Up' },
+            { id: 'sch-pt-0', label: 'Week 0', days: 'Tuesday', date: '29 Sep', title: 'Pre-workshop online beginner session' },
+            { id: 'sch-pt-1', label: 'Week 1', days: 'Wed & Fri', date: '7 & 9 Oct', title: 'Circuit Basics · Diodes & Transistors' },
+            { id: 'sch-pt-2', label: 'Week 2', days: 'Mon, Wed & Fri', date: '12, 14 & 16 Oct', title: 'Hands-on 1 · ESP32 Basics · How Our Buggy Starts Up' },
             { id: 'sch-pt-b1', label: 'Bonus I', days: 'Saturday', date: '17 Oct', title: 'Autonomous Perception' },
-            { id: 'sch-pt-3', label: 'Week 3', days: 'Mon, Wed & Fri', date: '19 – 23 Oct', title: 'Hands-on 2 · Buck & Boost · Op-Amps & Filters' },
+            { id: 'sch-pt-3', label: 'Week 3', days: 'Mon, Wed & Fri', date: '19, 21 & 23 Oct', title: 'Hands-on 2 · Buck & Boost · Op-Amps & Filters' },
             { id: 'sch-pt-b2', label: 'Bonus II', days: 'Saturday', date: '24 Oct', title: 'Mechanical Fundamentals' },
-            { id: 'sch-pt-4', label: 'Week 4', days: 'Mon, Wed & Fri', date: '26 – 30 Oct', title: 'Electric Motors · PCB Design I · PCB Design II' },
-            { id: 'sch-pt-5', label: 'Week 5', days: 'Mon, Wed & Fri', date: '2 – 6 Nov', title: 'Hands-on 3 · Mechanical Basics · Software Basics + Valedictory' }
+            { id: 'sch-pt-4', label: 'Week 4', days: 'Mon, Wed & Fri', date: '26, 28 & 30 Oct', title: 'Electric Motors · PCB Design I · PCB Design II' },
+            { id: 'sch-pt-5', label: 'Week 5', days: 'Monday', date: '2 Nov', title: 'Hands-on 3' }
         ],
-        bonus: 'Two complimentary sessions: Mechanical Basics (4 Nov) and Software Basics + Valedictory (6 Nov).'
+        bonus: 'Two complimentary sessions: Autonomous Perception (Sat 17 Oct) and Mechanical Fundamentals (Sat 24 Oct).'
     }
 };
 

@@ -125,7 +125,7 @@ export default function WorkshopScheduleAdmin({ currentUser, isAdmin, showStatus
         <div className="space-y-6">
             {/* Header */}
             <div className="border-b-2 border-slate-200 pb-4">
-                <h2 className="text-2xl font-black uppercase text-slate-900">Syllabus, Timings & Venue</h2>
+                <h2 className="text-2xl font-black uppercase text-slate-900">Workshop Management</h2>
                 <p className="text-xs font-bold text-slate-500 font-mono mt-1">
                     Manage workshop curriculum PDFs, batch timings, venue location, reporting instructions, and weekly schedules.
                 </p>

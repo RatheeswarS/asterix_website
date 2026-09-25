@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { apiUrl } from '../lib/api';
 import { useWebsiteData } from '../context/WebsiteDataContext';
 /* Shared with the backend so the page and the server can never disagree on
@@ -77,6 +77,161 @@ async function postJson(path, body) {
 
 const wait = (ms) => new Promise(r => setTimeout(r, ms));
 
+// ---------------------------------------------------------------------------
+// IST (Mumbai) real-time clock — updated every 60 s
+// ---------------------------------------------------------------------------
+function useNowIST() {
+    const getNow = () => new Date(
+        new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })
+    );
+    const [now, setNow] = useState(getNow);
+    useEffect(() => {
+        const id = setInterval(() => setNow(getNow()), 60_000);
+        return () => clearInterval(id);
+    }, []);
+    return now;
+}
+
+// ---------------------------------------------------------------------------
+// Parse a schedule item's date string into an array of JS Dates.
+// Handles formats like:
+//   "29 Sep"  |  "1 Oct & 3 Oct"  |  "7 – 9 Oct"  |  "12 – 16 Oct"  |  "TBD"
+// anchorYear is the full calendar year (e.g. 2026) inferred from startDate.
+// ---------------------------------------------------------------------------
+const MONTH_MAP = {
+    jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5,
+    jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11
+};
+
+function parseDateToken(token, fallbackMonth, year) {
+    // token examples: "1 Oct", "3 Oct", "29 Sep", "9" (day only)
+    const parts = token.trim().split(/\s+/);
+    const day = parseInt(parts[0], 10);
+    const mon = parts[1] ? MONTH_MAP[parts[1].toLowerCase().slice(0, 3)] : fallbackMonth;
+    if (isNaN(day) || mon === undefined) return null;
+    return new Date(year, mon, day);
+}
+
+function parseScheduleDateRange(dateStr, anchorYear) {
+    if (!dateStr || dateStr.trim() === '' || dateStr.trim().toUpperCase() === 'TBD') return [];
+    const year = anchorYear || new Date().getFullYear();
+    const str = dateStr.trim();
+
+    // "7 – 9 Oct" or "12 – 16 Oct" (en-dash or hyphen range, month at end)
+    const rangeMatch = str.match(/^(\d{1,2})\s*[\u2013\-]\s*(\d{1,2})\s+(\w+)$/);
+    if (rangeMatch) {
+        const mon = MONTH_MAP[rangeMatch[3].toLowerCase().slice(0, 3)];
+        if (mon !== undefined) {
+            const d1 = new Date(year, mon, parseInt(rangeMatch[1], 10));
+            const d2 = new Date(year, mon, parseInt(rangeMatch[2], 10));
+            return [d1, d2];
+        }
+    }
+
+    // Split by delimiters: comma, ampersand, or 'and'
+    // Handles formats like "12, 14 & 16 Oct", "6 & 8 Oct", "7 & 9 Oct", "29 Sep"
+    const rawTokens = str.split(/[,&]|\band\b/i).map(t => t.trim()).filter(Boolean);
+    if (!rawTokens.length) return [];
+
+    // Parse tokens from right to left so that trailing month applies to earlier day-only tokens
+    let lastMonth = undefined;
+    const parsedReversed = [];
+    for (let i = rawTokens.length - 1; i >= 0; i--) {
+        const tok = rawTokens[i];
+        const parts = tok.split(/\s+/);
+        const day = parseInt(parts[0], 10);
+        const mon = parts[1] ? MONTH_MAP[parts[1].toLowerCase().slice(0, 3)] : lastMonth;
+        if (mon !== undefined) {
+            lastMonth = mon;
+        }
+        if (!isNaN(day) && mon !== undefined) {
+            parsedReversed.push(new Date(year, mon, day));
+        }
+    }
+
+    return parsedReversed.reverse();
+}
+
+function getMondayOfWeek(date) {
+    const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const day = d.getDay(); // 0 is Sunday, 1 is Monday ... 6 is Saturday
+    const diff = day === 0 ? -6 : 1 - day;
+    d.setDate(d.getDate() + diff);
+    d.setHours(0, 0, 0, 0);
+    return d;
+}
+
+// ---------------------------------------------------------------------------
+// Determine which schedule row is currently "ongoing" based on IST wall-clock.
+// Uses a Monday-to-Sunday week boundary:
+//  1. Each row's effective start begins on the Monday of its week (or its own
+//     date if a previous session exists earlier in that same Monday–Sunday week).
+//  2. Before the workshop begins → pins to Week 0.
+//  3. After the workshop ends → stays on the final session row.
+//  4. If no dates can be parsed, falls back to the admin-set ongoingWeek string.
+// ---------------------------------------------------------------------------
+function resolveOngoingWeek(track, nowIST) {
+    const schedule = Array.isArray(track.schedule) ? track.schedule : [];
+    if (!schedule.length) return track.ongoingWeek || '';
+
+    const anchorYear = track.startDate
+        ? new Date(track.startDate).getFullYear()
+        : new Date().getFullYear();
+
+    const rowDates = schedule.map(item =>
+        parseScheduleDateRange(item.date || '', anchorYear)
+    );
+
+    const hasAnyDates = rowDates.some(d => d.length > 0);
+    if (!hasAnyDates) {
+        return track.ongoingWeek || (schedule[0]?.label ?? '');
+    }
+
+    const today = new Date(nowIST.getFullYear(), nowIST.getMonth(), nowIST.getDate());
+
+    // Calculate effective start date for each schedule row
+    const effectiveStarts = [];
+    for (let i = 0; i < schedule.length; i++) {
+        const dates = rowDates[i];
+        if (!dates || !dates.length) {
+            effectiveStarts.push(null);
+            continue;
+        }
+        const earliestDate = dates[0];
+        const monday = getMondayOfWeek(earliestDate);
+
+        // Check if there is an earlier row in the same Monday–Sunday week
+        let hasEarlierInSameWeek = false;
+        for (let j = 0; j < i; j++) {
+            if (effectiveStarts[j] && effectiveStarts[j] >= monday) {
+                hasEarlierInSameWeek = true;
+                break;
+            }
+        }
+
+        // If it's the first row of that week, start from Monday; otherwise start on its date
+        const start = hasEarlierInSameWeek ? earliestDate : monday;
+        effectiveStarts.push(start);
+    }
+
+    // Before workshop starts → pin to first row
+    const firstKnown = effectiveStarts.find(d => d !== null);
+    if (firstKnown && today < firstKnown) {
+        return schedule[0].label;
+    }
+
+    // Find the latest row whose effectiveStart <= today
+    let ongoingIndex = 0;
+    for (let i = 0; i < schedule.length; i++) {
+        if (effectiveStarts[i] && today >= effectiveStarts[i]) {
+            ongoingIndex = i;
+        }
+    }
+
+    return schedule[ongoingIndex]?.label || schedule[0].label;
+}
+
+
 export default function WorkshopPage({ onBack }) {
     const [activeTrack, setActiveTrack] = useState('software');
     const [registerOpen, setRegisterOpen] = useState(false);
@@ -97,6 +252,7 @@ export default function WorkshopPage({ onBack }) {
     };
     const selectedPkg = WORKSHOP_PACKAGES.find(p => p.id === form.package) || null;
     const anyPriced = WORKSHOP_PACKAGES.some(isPriced);
+    const nowIST = useNowIST();
 
     const openRegister = () => {
         setRegisterOpen(true);
@@ -252,9 +408,13 @@ export default function WorkshopPage({ onBack }) {
                             Learn from the team that builds the buggy
                         </h1>
                         <p className="mt-6 max-w-3xl text-base font-bold leading-relaxed sm:text-xl">
-                            Two hands-on tracks taught by Team Asterix: the software that lets our autonomous
-                            BAJA buggy see and steer, and the electronics and powertrain that make it move.
-                            Pick one track, or take both with the combo package.
+                            Explore the two systems that bring an autonomous BAJA buggy to life: the
+                            software behind autonomous perception and control, and the electronics
+                            and powertrain that power the buggy. Learn by building, testing, and
+                            understanding the technology behind it.
+                        </p>
+                        <p className="mt-3 max-w-3xl text-base font-bold leading-relaxed sm:text-xl">
+                            Choose your track, or master both with the combo package.
                         </p>
                         <div className="mt-8 flex flex-wrap gap-3">
                             <button type="button" onClick={openRegister} className="press border-2 border-slate-900 bg-slate-900 px-5 py-3 font-mono text-xs font-black uppercase text-amber-300 shadow-[4px_4px_0px_#0284c7] hover:bg-slate-800">
@@ -284,9 +444,8 @@ export default function WorkshopPage({ onBack }) {
                                         role="tab"
                                         aria-selected={active}
                                         onClick={() => selectTrack(id)}
-                                        className={`press border-4 border-slate-900 p-5 text-left shadow-[6px_6px_0px_#0f172a] transition-colors sm:p-6 ${
-                                            active ? 'bg-slate-900 text-white' : 'bg-white text-slate-900 hover:bg-amber-100'
-                                        }`}
+                                        className={`press border-4 border-slate-900 p-5 text-left shadow-[6px_6px_0px_#0f172a] transition-colors sm:p-6 ${active ? 'bg-slate-900 text-white' : 'bg-white text-slate-900 hover:bg-amber-100'
+                                            }`}
                                     >
                                         <span className={`font-mono text-xs font-black uppercase tracking-widest ${active ? 'text-amber-300' : 'text-sky-600'}`}>
                                             {active ? '● Selected' : 'Track'}
@@ -298,7 +457,7 @@ export default function WorkshopPage({ onBack }) {
                             })}
                         </div>
 
-                        <TrackDetail key={track.id} track={track} onRegister={openRegister} />
+                        <TrackDetail key={track.id} track={track} onRegister={openRegister} nowIST={nowIST} />
                     </div>
                 </section>
 
@@ -368,9 +527,8 @@ export default function WorkshopPage({ onBack }) {
                                                         type="button"
                                                         onClick={() => updateField('year', y)}
                                                         aria-pressed={form.year === y}
-                                                        className={`press border-2 border-slate-950 p-3 font-mono text-sm font-black uppercase ${
-                                                            form.year === y ? 'bg-sky-500 text-white' : 'bg-slate-50 hover:bg-sky-100'
-                                                        }`}
+                                                        className={`press border-2 border-slate-950 p-3 font-mono text-sm font-black uppercase ${form.year === y ? 'bg-sky-500 text-white' : 'bg-slate-50 hover:bg-sky-100'
+                                                            }`}
                                                     >
                                                         {y === '1' ? '1st year' : '2nd year'}
                                                     </button>
@@ -393,9 +551,8 @@ export default function WorkshopPage({ onBack }) {
                                                 return (
                                                     <label
                                                         key={pkg.id}
-                                                        className={`press flex cursor-pointer items-center justify-between gap-4 border-2 border-slate-950 p-4 ${
-                                                            selected ? 'bg-amber-300 shadow-[4px_4px_0px_#0f172a]' : 'bg-slate-50 hover:bg-amber-50'
-                                                        }`}
+                                                        className={`press flex cursor-pointer items-center justify-between gap-4 border-2 border-slate-950 p-4 ${selected ? 'bg-amber-300 shadow-[4px_4px_0px_#0f172a]' : 'bg-slate-50 hover:bg-amber-50'
+                                                            }`}
                                                     >
                                                         <span className="flex items-center gap-3">
                                                             <input
@@ -445,7 +602,7 @@ export default function WorkshopPage({ onBack }) {
     );
 }
 
-function TrackDetail({ track, onRegister }) {
+function TrackDetail({ track, onRegister, nowIST }) {
     const facts = [
         ['Dates', track.dates],
         ['Schedule', track.days],
@@ -488,7 +645,7 @@ function TrackDetail({ track, onRegister }) {
             </div>
 
             <h4 className="mt-8 font-mono text-xs font-black uppercase tracking-widest text-sky-600">Plan</h4>
-            
+
             <div className="mt-3 border-2 border-slate-900 overflow-hidden">
                 <div className="hidden sm:grid sm:grid-cols-[6.5rem_7.5rem_8.5rem_1fr] gap-3 p-3 bg-slate-900 text-white font-mono text-[10px] font-black uppercase tracking-wider">
                     <span>Week</span>
@@ -499,15 +656,14 @@ function TrackDetail({ track, onRegister }) {
 
                 <ol className="divide-y-2 divide-slate-200 bg-white">
                     {track.schedule.map((item, index) => {
-                        const isOngoing = track.ongoingWeek && (
-                            item.label?.trim().toLowerCase() === track.ongoingWeek?.trim().toLowerCase() ||
-                            item.id === track.ongoingWeek ||
-                            (!track.schedule.some(s => s.label?.trim().toLowerCase() === track.ongoingWeek?.trim().toLowerCase()) && index === 0)
-                        );
+                        // Auto-detect ongoing week from real IST time; falls back
+                        // to the admin-set ongoingWeek if no dates are parseable.
+                        const activeLabel = resolveOngoingWeek(track, nowIST || new Date());
+                        const isOngoing = item.label?.trim().toLowerCase() === activeLabel.trim().toLowerCase();
 
                         return (
-                            <li 
-                                key={item.id || item.label || index} 
+                            <li
+                                key={item.id || item.label || index}
                                 className={`p-3.5 transition-colors ${isOngoing ? 'bg-sky-50/80 border-l-4 border-l-sky-500' : 'hover:bg-slate-50'}`}
                             >
                                 <div className="grid grid-cols-1 sm:grid-cols-[6.5rem_7.5rem_8.5rem_1fr] gap-2 sm:gap-3 items-start sm:items-center">
