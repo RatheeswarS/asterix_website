@@ -27,6 +27,10 @@ const SiteConfigSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.Mixed,
         default: {}
     },
+    workshop: {
+        type: mongoose.Schema.Types.Mixed,
+        default: {}
+    },
     lastModified: {
         type: String,
         default: () => new Date().toISOString()

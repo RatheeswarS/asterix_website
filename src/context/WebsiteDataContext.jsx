@@ -3,6 +3,7 @@ import { WebsiteDataContext } from './WebsiteContext';
 import { subsystems as initialSubsystems } from '../data/subsystemsData';
 import { apiUrl } from '../lib/api';
 import { SOFTWARE_PERCEPTION_DATA, POWERTRAIN_CHALLENGE_DATA, POWERTRAIN_TEST_DATA, MECHANICAL_MYSTERY_DATA } from '../data/recruitmentProblemStatements';
+import { WORKSHOP_TRACKS } from '../../server/src/config/workshopPackages.js';
 
 import imgPaddock from '../assets/gallery/01_team_paddock.jpg';
 import imgWelding from '../assets/gallery/02_workshop_welding.jpg';
@@ -394,6 +395,100 @@ const normalizeRecruitment = (rec) => {
     };
 };
 
+const initialWorkshopData = {
+    tracks: WORKSHOP_TRACKS
+};
+
+const STALE_WORKSHOP_DATES = [
+    'From 1 Oct 2026 · 4 weeks',
+    '1 Oct – 6 Nov 2026',
+    '1 Oct - 6 Nov 2026',
+    '29 Sep – 6 Nov 2026'
+];
+const STALE_WORKSHOP_START_LABELS = [
+    'First session 1 Oct 2026',
+    'First session Wed 7 Oct 2026'
+];
+const STALE_WORKSHOP_REMOVED_IDS = ['sch-pt-b3', 'sch-pt-b4'];
+const STALE_WORKSHOP_ITEM_DATES = [
+    '1 Oct & 3 Oct',
+    '8 Oct & 10 Oct',
+    '15 Oct & 17 Oct',
+    '22 Oct & 24 Oct',
+    '6 Oct & 8 Oct',
+    '13 Oct & 15 Oct',
+    '20 Oct & 22 Oct',
+    '27 Oct & 29 Oct',
+    '7 – 9 Oct',
+    '12 – 16 Oct',
+    '19 – 23 Oct',
+    '26 – 30 Oct',
+    '2 – 6 Nov'
+];
+
+const normalizeWorkshop = (ws) => {
+    const source = ws && typeof ws === 'object' ? ws : {};
+    const tracksSource = source.tracks && typeof source.tracks === 'object' ? source.tracks : {};
+    const mergedTracks = {};
+    for (const key of Object.keys(WORKSHOP_TRACKS)) {
+        const canonical = WORKSHOP_TRACKS[key];
+        const incoming = tracksSource[key] || {};
+
+        // Reconcile schedule: Ensure Week 0 is present for both software and powertrain,
+        // and migrate legacy date ranges/stale strings to canonical dates.
+        let reconciledSchedule = canonical.schedule;
+        if (Array.isArray(incoming.schedule) && incoming.schedule.length > 0) {
+            const validIncoming = incoming.schedule.filter(
+                s => !STALE_WORKSHOP_REMOVED_IDS.includes(s?.id) && s?.label !== 'Bonus III' && s?.label !== 'Bonus IV'
+            );
+            const hasWeek0 = validIncoming.some(
+                s => s?.id === `sch-${key === 'software' ? 'sw' : 'pt'}-0` || s?.label?.trim().toLowerCase() === 'week 0'
+            );
+            if (hasWeek0) {
+                reconciledSchedule = validIncoming.map((item, idx) => {
+                    const isStale = STALE_WORKSHOP_ITEM_DATES.includes(item?.date?.trim());
+                    const canMatch = canonical.schedule.find(c => c.id === item?.id || c.label === item?.label);
+                    return {
+                        id: item?.id || canMatch?.id || `sch-${key}-${idx}`,
+                        label: item?.label || canMatch?.label || `Week ${idx}`,
+                        days: item?.days || canMatch?.days || '',
+                        date: (isStale && canMatch) ? canMatch.date : (item?.date || canMatch?.date || ''),
+                        title: item?.title || canMatch?.title || '',
+                        venue: item?.venue !== undefined ? item.venue : (canMatch?.venue || 'To be announced'),
+                        reportingInstructions: item?.reportingInstructions !== undefined ? item.reportingInstructions : (canMatch?.reportingInstructions || 'Arrive 10 minutes prior to session timing.')
+                    };
+                });
+            } else {
+                // Incoming cache is from pre-Week 0 schema -> load canonical schedule with Week 0
+                reconciledSchedule = canonical.schedule;
+            }
+        }
+
+        mergedTracks[key] = {
+            ...canonical,
+            ...incoming,
+            id: canonical.id,
+            name: incoming.name || canonical.name,
+            syllabus: incoming.syllabus || canonical.syllabus,
+            timing: incoming.timing || canonical.timing,
+            dates: (incoming.dates && !STALE_WORKSHOP_DATES.includes(incoming.dates.trim())) ? incoming.dates : canonical.dates,
+            days: incoming.days || canonical.days,
+            startLabel: (incoming.startLabel && !STALE_WORKSHOP_START_LABELS.includes(incoming.startLabel.trim())) ? incoming.startLabel : canonical.startLabel,
+            format: incoming.format || canonical.format,
+            audience: incoming.audience || canonical.audience,
+            venue: incoming.venue !== undefined ? incoming.venue : (canonical.venue || ''),
+            reportingInstructions: incoming.reportingInstructions !== undefined ? incoming.reportingInstructions : (canonical.reportingInstructions || ''),
+            bonus: canonical.bonus,
+            ongoingWeek: incoming.ongoingWeek || canonical.ongoingWeek || 'Week 0',
+            startDate: canonical.startDate,
+            schedule: reconciledSchedule
+        };
+    }
+    return {
+        tracks: mergedTracks
+    };
+};
+
 // Helper to ensure 4 subsystems are active without discarding user edits
 const normalizeSubsystems = (subs) => {
     if (!subs || !Array.isArray(subs) || subs.length === 0) {
@@ -481,6 +576,7 @@ export function WebsiteDataProvider({ children }) {
                     accounts: parsed.accounts || initialAccounts,
                     sponsorship: parsed.sponsorship || initialSponsorshipData,
                     recruitment: normalizeRecruitment(parsed.recruitment),
+                    workshop: normalizeWorkshop(parsed.workshop),
                     lastModified: parsed.lastModified || '1970-01-01T00:00:00.000Z'
                 };
             }
@@ -497,6 +593,7 @@ export function WebsiteDataProvider({ children }) {
             accounts: initialAccounts,
             sponsorship: initialSponsorshipData,
             recruitment: initialRecruitment,
+            workshop: normalizeWorkshop(initialWorkshopData),
             lastModified: '1970-01-01T00:00:00.000Z'
         };
     });
@@ -547,6 +644,7 @@ export function WebsiteDataProvider({ children }) {
                             contact: data.contact || prev.contact,
                             sponsorship: data.sponsorship || prev.sponsorship || initialSponsorshipData,
                             recruitment: normalizeRecruitment(data.recruitment || prev.recruitment),
+                            workshop: normalizeWorkshop(data.workshop || prev.workshop),
                             lastModified: data.lastModified || prev.lastModified
                         };
                         try {
@@ -902,6 +1000,14 @@ export function WebsiteDataProvider({ children }) {
         }));
     };
 
+    const updateWorkshop = (fields) => {
+        setSiteData(prev => ({
+            ...prev,
+            workshop: normalizeWorkshop({ ...(prev.workshop || initialWorkshopData), ...fields }),
+            lastModified: new Date().toISOString()
+        }));
+    };
+
     const resetToDefaults = () => {
         const defaults = {
             hero: initialHeroData,
@@ -913,6 +1019,7 @@ export function WebsiteDataProvider({ children }) {
             accounts: initialAccounts,
             sponsorship: initialSponsorshipData,
             recruitment: initialRecruitment,
+            workshop: normalizeWorkshop(initialWorkshopData),
             lastModified: new Date().toISOString()
         };
         setSiteData(defaults);
@@ -959,6 +1066,7 @@ export function WebsiteDataProvider({ children }) {
             deleteAccount,
             updateSponsorship,
             updateRecruitment,
+            updateWorkshop,
             syncState,
             syncError,
             resetToDefaults,
@@ -982,6 +1090,7 @@ const fallbackWebsiteData = {
         accounts: initialAccounts,
         sponsorship: initialSponsorshipData,
         recruitment: initialRecruitment,
+        workshop: normalizeWorkshop(initialWorkshopData),
         lastModified: '1970-01-01T00:00:00.000Z'
     },
     isServerConnected: false,
@@ -1010,6 +1119,7 @@ const fallbackWebsiteData = {
     deleteAccount: () => {},
     updateSponsorship: () => {},
     updateRecruitment: () => {},
+    updateWorkshop: () => {},
     syncState: 'idle',
     syncError: null,
     resetToDefaults: () => {},

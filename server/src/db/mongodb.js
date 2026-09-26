@@ -21,13 +21,16 @@ export async function connectMongoDB() {
         return false;
     }
 
+    // MONGODB_DB_NAME overrides the database; unset keeps the historical 'asterix'.
+    const dbName = process.env.MONGODB_DB_NAME?.trim() || 'asterix';
+
     try {
         await mongoose.connect(uri, {
             serverSelectionTimeoutMS: 8000,
-            dbName: 'asterix'
+            dbName
         });
         isConnected = true;
-        console.log('🍃 Successfully connected to MongoDB Atlas (database: asterix)!');
+        console.log(`🍃 Successfully connected to MongoDB Atlas (database: ${dbName})!`);
         await seedDatabaseIfNeeded();
         return true;
     } catch (err) {
@@ -37,10 +40,10 @@ export async function connectMongoDB() {
             await mongoose.connect(uri, {
                 serverSelectionTimeoutMS: 8000,
                 tlsAllowInvalidCertificates: true,
-                dbName: 'asterix'
+                dbName
             });
             isConnected = true;
-            console.log('🍃 Successfully connected to MongoDB Atlas (TLS fallback enabled, database: asterix)!');
+            console.log(`🍃 Successfully connected to MongoDB Atlas (TLS fallback enabled, database: ${dbName})!`);
             await seedDatabaseIfNeeded();
             return true;
         } catch (retryErr) {

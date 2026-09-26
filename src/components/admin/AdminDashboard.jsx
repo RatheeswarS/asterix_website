@@ -4,6 +4,7 @@ import { apiUrl } from '../../lib/api';
 import Icon from '../Icon';
 import ImageField from './ImageField';
 import RecruitmentAdmin from './RecruitmentAdmin';
+import WorkshopScheduleAdmin from './WorkshopScheduleAdmin';
 import teamLogo from '../../assets/Screenshot 2026-08-26 232320.png';
 
 export default function AdminDashboard({ onExit }) {
@@ -495,7 +496,12 @@ export default function AdminDashboard({ onExit }) {
         );
     }
 
-    const currentSubsystem = siteData.subsystems.find(s => s.id === selectedSubsystemId) || siteData.subsystems[0];
+    const isAdmin = currentUser && (
+        currentUser.accessLevel === 'Admin' ||
+        currentUser.accessLevel === 'SuperAdmin' ||
+        currentUser.role === 'Admin' ||
+        currentUser.role === 'SuperAdmin'
+    );
 
     const tabs = [
         { id: 'overview', label: 'Overview', icon: 'overview' },
@@ -504,6 +510,7 @@ export default function AdminDashboard({ onExit }) {
         { id: 'subsystems', label: 'Subsystems & Squad', icon: 'vehicle' },
         { id: 'sponsorship', label: 'Sponsorship Portal', icon: 'folder' },
         { id: 'recruitment', label: 'Freshers & Recruitment', icon: 'users' },
+        { id: 'workshop-schedule', label: 'Workshop', icon: 'calendar', adminOnly: true },
         { id: 'gallery', label: 'Media Gallery', icon: 'camera' },
         { id: 'updates', label: 'Team Updates', icon: 'megaphone' },
         { id: 'subscribers', label: 'Alliance Leads', icon: 'inbox' },
@@ -602,23 +609,32 @@ export default function AdminDashboard({ onExit }) {
                     <span className="text-[10px] font-mono font-black text-sky-600 uppercase tracking-widest block mb-2 px-2">
                         // NAVIGATION
                     </span>
-                    {tabs.map(tab => (
-                        <button
-                            key={tab.id}
-                            onClick={() => setActiveTab(tab.id)}
-                            className={`press press-flat w-full text-left px-3.5 py-2.5 border-2 font-mono font-black text-xs uppercase cursor-pointer flex items-center justify-between gap-2 ${activeTab === tab.id
-                                ? 'bg-sky-500 text-white border-slate-900 shadow-[2px_2px_0px_#0f172a] translate-x-1'
-                                : 'bg-white hover:bg-sky-50 text-slate-800 border-transparent hover:border-slate-300'
-                                }`}
-                            aria-current={activeTab === tab.id ? 'page' : undefined}
-                        >
-                            <span className="flex items-center gap-2">
-                                <Icon name={tab.icon} className="w-4 h-4" />
-                                {tab.label}
-                            </span>
-                            <span aria-hidden="true">→</span>
-                        </button>
-                    ))}
+                    {tabs.map(tab => {
+                        const isTabRestricted = tab.adminOnly && !isAdmin;
+                        return (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`press press-flat w-full text-left px-3.5 py-2.5 border-2 font-mono font-black text-xs uppercase cursor-pointer flex items-center justify-between gap-2 ${activeTab === tab.id
+                                    ? 'bg-sky-500 text-white border-slate-900 shadow-[2px_2px_0px_#0f172a] translate-x-1'
+                                    : 'bg-white hover:bg-sky-50 text-slate-800 border-transparent hover:border-slate-300'
+                                    }`}
+                                aria-current={activeTab === tab.id ? 'page' : undefined}
+                            >
+                                <span className="flex items-center gap-2">
+                                    <Icon name={tab.icon} className="w-4 h-4" />
+                                    <span>{tab.label}</span>
+                                </span>
+                                {isTabRestricted ? (
+                                    <span className="text-[8px] font-mono font-black text-amber-700 bg-amber-100 border border-amber-400 px-1 py-0.5">
+                                        ADMIN
+                                    </span>
+                                ) : (
+                                    <span aria-hidden="true">→</span>
+                                )}
+                            </button>
+                        );
+                    })}
 
                     <div className="mt-6 pt-4 border-t-2 border-slate-200">
                         <div className="text-[10px] font-mono text-slate-500 space-y-1">
@@ -715,6 +731,13 @@ export default function AdminDashboard({ onExit }) {
                                         className="press press-flat p-3 border-2 border-slate-900 bg-slate-50 hover:bg-sky-50 text-left font-mono font-bold text-xs flex items-center justify-between cursor-pointer"
                                     >
                                         <span>Manage Freshers Announcement & Tracks</span>
+                                        <span>→</span>
+                                    </button>
+                                    <button
+                                        onClick={() => setActiveTab('workshop-schedule')}
+                                        className="press press-flat p-3 border-2 border-slate-900 bg-slate-50 hover:bg-sky-50 text-left font-mono font-bold text-xs flex items-center justify-between cursor-pointer"
+                                    >
+                                        <span>Manage Workshop Details, Timings & Venue</span>
                                         <span>→</span>
                                     </button>
 
@@ -1471,6 +1494,15 @@ export default function AdminDashboard({ onExit }) {
 
                     {activeTab === 'recruitment' && (
                         <RecruitmentAdmin showStatus={showStatus} onImageUpload={handleImageUpload} />
+                    )}
+
+                    {activeTab === 'workshop-schedule' && (
+                        <WorkshopScheduleAdmin
+                            currentUser={currentUser}
+                            isAdmin={isAdmin}
+                            showStatus={showStatus}
+                            onImageUpload={handleImageUpload}
+                        />
                     )}
 
                     {/* TAB 5: GALLERY & MEDIA */}
