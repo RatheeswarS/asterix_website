@@ -9,7 +9,7 @@ export default function CyberFooter({ onOpenAdmin, onOpenSponsor, onOpenWorkshop
     return (
         <footer
             id="site-footer"
-            className="relative z-10 w-full bg-slate-50 border-t-4 border-slate-900 text-slate-900 pt-8 sm:pt-12 pb-6 sm:pb-8 px-4 sm:px-8 select-none"
+            className="sticky bottom-0 z-0 w-full bg-slate-50 border-t-4 border-slate-900 text-slate-900 pt-8 sm:pt-12 pb-6 sm:pb-8 px-4 sm:px-8 select-none"
         >
             <div className="max-w-7xl mx-auto w-full flex flex-col gap-6 sm:gap-8">
 
