@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState } from 'react';
 import { apiUrl } from '../lib/api';
 import { useWebsiteData } from '../context/WebsiteDataContext';
 /* Shared with the backend so the page and the server can never disagree on
@@ -34,11 +34,13 @@ const FIELD_LABELS = {
     year: 'Year',
     email: 'Email ID',
     phone: 'Phone',
-    package: 'Your choice'
+    package: 'Track'
 };
 
+/* text-base (16px) on phones: anything smaller makes iOS Safari zoom the page
+   in when a field is tapped, which then has to be pinched back out. */
 function inputClass(hasError) {
-    return `w-full p-3 border-2 font-mono text-sm font-bold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 ${
+    return `w-full min-h-12 px-3 py-3 border-2 font-mono text-base font-bold text-slate-900 placeholder:font-medium placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 sm:text-sm ${
         hasError ? 'border-red-600 bg-red-50' : 'border-slate-950 bg-slate-50'
     }`;
 }
@@ -72,16 +74,18 @@ function loadRazorpayCheckout() {
 }
 
 function validate(form) {
+    // Checked in the order the fields appear on the page (track choice first),
+    // so the first key is the topmost problem.
     const errors = {};
+    const pkg = WORKSHOP_PACKAGES.find(p => p.id === form.package);
+    if (!pkg) errors.package = 'Choose a track.';
+    else if (!isPriced(pkg)) errors.package = 'Pricing for this package is not announced yet.';
     if (form.name.trim().length < 2) errors.name = 'Enter your full name.';
     if (!form.rollNo.trim()) errors.rollNo = 'Enter your registered number.';
     if (!WORKSHOP_DEPARTMENTS.includes(form.department)) errors.department = 'Select your department.';
     if (!['1', '2'].includes(form.year)) errors.year = 'Select 1st or 2nd year.';
     if (!EMAIL_RE.test(form.email.trim())) errors.email = 'Enter a valid email address.';
     if (normalizePhone(form.phone).length !== 10) errors.phone = 'Enter a valid 10-digit phone number.';
-    const pkg = WORKSHOP_PACKAGES.find(p => p.id === form.package);
-    if (!pkg) errors.package = 'Choose a package.';
-    else if (!isPriced(pkg)) errors.package = 'Pricing for this package is not announced yet.';
     return errors;
 }
 
@@ -96,86 +100,6 @@ async function postJson(path, body) {
 }
 
 const wait = (ms) => new Promise(r => setTimeout(r, ms));
-
-// ---------------------------------------------------------------------------
-// IST (Mumbai) real-time clock — updated every 60 s
-// ---------------------------------------------------------------------------
-function useNowIST() {
-    const getNow = () => new Date(
-        new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })
-    );
-    const [now, setNow] = useState(getNow);
-    useEffect(() => {
-        const id = setInterval(() => setNow(getNow()), 60_000);
-        return () => clearInterval(id);
-    }, []);
-    return now;
-}
-
-// ---------------------------------------------------------------------------
-// Schedule Date Resolution & Ongoing Week Detection (IST)
-// ---------------------------------------------------------------------------
-const MONTH_MAP = {
-    jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5,
-    jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11
-};
-
-// Extracts the primary start date for a schedule row (e.g. "29 Sep", "6 & 8 Oct", "12, 14 & 16 Oct")
-function parseFirstSessionDate(dateStr, year) {
-    if (!dateStr || typeof dateStr !== 'string') return null;
-    const match = dateStr.match(/(\d{1,2})\s*(?:[,\u2013\-&]|\band\b)?.*?([a-zA-Z]{3})/i);
-    if (!match) return null;
-    const day = parseInt(match[1], 10);
-    const mon = MONTH_MAP[match[2].toLowerCase().slice(0, 3)];
-    if (isNaN(day) || mon === undefined) return null;
-    return new Date(year, mon, day);
-}
-
-// Determines which schedule row is ongoing based on IST wall-clock (Mon-Sun week boundary)
-function resolveOngoingWeek(track, nowIST) {
-    const schedule = Array.isArray(track?.schedule) ? track.schedule : [];
-    if (!schedule.length) return track?.ongoingWeek || '';
-
-    const year = track?.startDate
-        ? new Date(track.startDate).getFullYear()
-        : new Date().getFullYear();
-
-    const today = new Date(nowIST.getFullYear(), nowIST.getMonth(), nowIST.getDate());
-
-    // Map each row to its effective start date
-    const rowStarts = schedule.map(item => {
-        const sessionDate = parseFirstSessionDate(item.date, year);
-        if (!sessionDate) return null;
-
-        // Regular week rows start on the Monday of that week; Bonus sessions start on their date
-        const isBonus = item.label?.toLowerCase().includes('bonus');
-        if (isBonus) {
-            return sessionDate;
-        }
-        const monday = new Date(sessionDate);
-        monday.setDate(sessionDate.getDate() - ((sessionDate.getDay() + 6) % 7));
-        return monday;
-    });
-
-    const firstKnown = rowStarts.find(d => d !== null);
-    if (!firstKnown) {
-        return track.ongoingWeek || (schedule[0]?.label ?? '');
-    }
-
-    if (today < firstKnown) {
-        return schedule[0].label;
-    }
-
-    let ongoingIndex = 0;
-    for (let i = 0; i < schedule.length; i++) {
-        if (rowStarts[i] && today >= rowStarts[i]) {
-            ongoingIndex = i;
-        }
-    }
-
-    return schedule[ongoingIndex]?.label || schedule[0].label;
-}
-
 
 export default function WorkshopPage({ onBack }) {
     const [activeTrack, setActiveTrack] = useState('software');
@@ -197,7 +121,6 @@ export default function WorkshopPage({ onBack }) {
     };
     const selectedPkg = WORKSHOP_PACKAGES.find(p => p.id === form.package) || null;
     const anyPriced = WORKSHOP_PACKAGES.some(isPriced);
-    const nowIST = useNowIST();
 
     const openRegister = () => {
         setRegisterOpen(true);
@@ -219,12 +142,22 @@ export default function WorkshopPage({ onBack }) {
         event.preventDefault();
         const errors = validate(form);
         setFieldErrors(errors);
-        if (Object.keys(errors).length > 0) {
-            setError(`Please fix: ${Object.keys(errors).map(key => FIELD_LABELS[key] || key).join(', ')}.`);
+        const keys = Object.keys(errors);
+        if (keys.length > 0) {
+            setError(`Please fix: ${keys.map(key => FIELD_LABELS[key] || key).join(', ')}.`);
+            // On a phone the first problem is usually off screen: take them to it.
+            // validate() adds keys in form order, so keys[0] is the topmost field.
+            const target = registerRef.current?.querySelector(`[data-field="${keys[0]}"]`);
+            if (target) {
+                scrollToEl(target.closest('[data-field-wrap]') || target);
+                target.focus({ preventScroll: true });
+            }
             return;
         }
         setError('');
         setStage('review');
+        // The review card is much shorter than the form; bring its top into view.
+        setTimeout(() => scrollToEl(registerRef.current), 60);
     };
 
     /* The signature check in /verify is what confirms a payment. If that call
@@ -448,7 +381,7 @@ export default function WorkshopPage({ onBack }) {
                             })}
                         </div>
 
-                        <TrackDetail key={track.id} track={track} onRegister={openRegister} nowIST={nowIST} />
+                        <TrackDetail key={track.id} track={track} onRegister={openRegister} />
                     </div>
                 </section>
 
@@ -489,21 +422,63 @@ export default function WorkshopPage({ onBack }) {
                             ) : stage === 'verifying' ? (
                                 <StatusCard title="Confirming your payment…" body="Hold on, this only takes a few seconds. Please do not close this page." />
                             ) : stage === 'form' ? (
-                                <form onSubmit={handleConfirm} noValidate className="mt-8 border-4 border-slate-900 bg-white p-5 shadow-[8px_8px_0px_#0f172a] sm:p-8">
+                                <form onSubmit={handleConfirm} noValidate className="mt-6 border-4 border-slate-900 bg-white p-4 shadow-[6px_6px_0px_#0f172a] sm:mt-8 sm:p-8 sm:shadow-[8px_8px_0px_#0f172a]">
                                     {!anyPriced && (
                                         <p className="mb-6 border-2 border-slate-900 bg-amber-100 p-3 font-mono text-xs font-black uppercase">
                                             Prices are yet to be announced. Payments open as soon as they are.
                                         </p>
                                     )}
-                                    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+
+                                    {/* Package first: it is what they came here to pick. */}
+                                    <fieldset data-field-wrap>
+                                        <legend className="mb-2 font-mono text-xs font-black uppercase tracking-widest text-slate-700">1. Choose your track</legend>
+                                        <div className="grid grid-cols-1 gap-2.5 sm:gap-3">
+                                            {WORKSHOP_PACKAGES.map((pkg, index) => {
+                                                const selected = form.package === pkg.id;
+                                                return (
+                                                    <label
+                                                        key={pkg.id}
+                                                        className={`press flex min-h-14 cursor-pointer items-center justify-between gap-3 border-2 p-3.5 sm:p-4 ${
+                                                            fieldErrors.package ? 'border-red-600' : 'border-slate-950'
+                                                        } ${selected ? 'bg-amber-300 shadow-[4px_4px_0px_#0f172a]' : 'bg-slate-50 hover:bg-amber-50'}`}
+                                                    >
+                                                        <span className="flex min-w-0 items-center gap-3">
+                                                            <input
+                                                                type="radio"
+                                                                name="package"
+                                                                value={pkg.id}
+                                                                checked={selected}
+                                                                onChange={() => updateField('package', pkg.id)}
+                                                                data-field={index === 0 ? 'package' : undefined}
+                                                                className="h-5 w-5 shrink-0 accent-slate-900"
+                                                            />
+                                                            <span className="min-w-0">
+                                                                <span className="block text-sm font-black uppercase">{pkg.name}</span>
+                                                                {pkg.tracksIncluded.length > 1 && (
+                                                                    <span className="block font-mono text-[11px] font-bold text-slate-600">
+                                                                        {pkg.tracksIncluded.map(id => WORKSHOP_TRACKS[id].name).join(' + ')}
+                                                                    </span>
+                                                                )}
+                                                            </span>
+                                                        </span>
+                                                        <span className="shrink-0 font-mono text-base font-black sm:text-lg">{formatPrice(pkg)}</span>
+                                                    </label>
+                                                );
+                                            })}
+                                        </div>
+                                        {fieldErrors.package && <p className="mt-2 font-mono text-xs font-black text-red-600">{fieldErrors.package}</p>}
+                                    </fieldset>
+
+                                    <p className="mb-2 mt-7 font-mono text-xs font-black uppercase tracking-widest text-slate-700">2. Your details</p>
+                                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5">
                                         <Field label="Full name" error={fieldErrors.name}>
-                                            <input className={inputClass(fieldErrors.name)} value={form.name} onChange={e => updateField('name', e.target.value)} autoComplete="name" maxLength={100} />
+                                            <input data-field="name" className={inputClass(fieldErrors.name)} value={form.name} onChange={e => updateField('name', e.target.value)} autoComplete="name" autoCapitalize="words" enterKeyHint="next" maxLength={100} placeholder="As on your ID card" />
                                         </Field>
                                         <Field label="Registered number" error={fieldErrors.rollNo}>
-                                            <input className={inputClass(fieldErrors.rollNo)} value={form.rollNo} onChange={e => updateField('rollNo', e.target.value)} maxLength={40} />
+                                            <input data-field="rollNo" className={inputClass(fieldErrors.rollNo)} value={form.rollNo} onChange={e => updateField('rollNo', e.target.value)} autoComplete="off" autoCapitalize="characters" autoCorrect="off" spellCheck={false} enterKeyHint="next" maxLength={40} placeholder="College register number" />
                                         </Field>
                                         <Field label="Department" error={fieldErrors.department}>
-                                            <select className={inputClass(fieldErrors.department)} value={form.department} onChange={e => updateField('department', e.target.value)}>
+                                            <select data-field="department" className={inputClass(fieldErrors.department)} value={form.department} onChange={e => updateField('department', e.target.value)}>
                                                 <option value="" disabled>Select department</option>
                                                 {WORKSHOP_DEPARTMENTS.map(dept => (
                                                     <option key={dept} value={dept}>{dept}</option>
@@ -518,7 +493,8 @@ export default function WorkshopPage({ onBack }) {
                                                         type="button"
                                                         onClick={() => updateField('year', y)}
                                                         aria-pressed={form.year === y}
-                                                        className={`press border-2 p-3 font-mono text-sm font-black uppercase ${
+                                                        data-field={y === '1' ? 'year' : undefined}
+                                                        className={`press min-h-12 border-2 p-3 font-mono text-sm font-black uppercase ${
                                                             fieldErrors.year ? 'border-red-600' : 'border-slate-950'
                                                         } ${
                                                             form.year === y ? 'bg-sky-500 text-white' : fieldErrors.year ? 'bg-red-50 hover:bg-sky-100' : 'bg-slate-50 hover:bg-sky-100'
@@ -530,52 +506,17 @@ export default function WorkshopPage({ onBack }) {
                                             </div>
                                         </Field>
                                         <Field label="Email ID" error={fieldErrors.email}>
-                                            <input type="email" className={inputClass(fieldErrors.email)} value={form.email} onChange={e => updateField('email', e.target.value)} autoComplete="email" maxLength={254} />
+                                            <input data-field="email" type="email" inputMode="email" className={inputClass(fieldErrors.email)} value={form.email} onChange={e => updateField('email', e.target.value)} autoComplete="email" autoCapitalize="none" autoCorrect="off" spellCheck={false} enterKeyHint="next" maxLength={254} placeholder="you@example.com" />
                                         </Field>
                                         <Field label="Phone" error={fieldErrors.phone}>
-                                            <input type="tel" inputMode="numeric" className={inputClass(fieldErrors.phone)} value={form.phone} onChange={e => updateField('phone', e.target.value)} autoComplete="tel" maxLength={20} placeholder="10-digit mobile" />
+                                            <input data-field="phone" type="tel" inputMode="tel" className={inputClass(fieldErrors.phone)} value={form.phone} onChange={e => updateField('phone', e.target.value)} autoComplete="tel" enterKeyHint="done" maxLength={20} placeholder="10-digit mobile number" />
                                         </Field>
                                     </div>
-
-                                    <fieldset className="mt-6">
-                                        <legend className="mb-2 font-mono text-xs font-black uppercase tracking-widest text-slate-700">Your choice</legend>
-                                        <div className="grid grid-cols-1 gap-3">
-                                            {WORKSHOP_PACKAGES.map(pkg => {
-                                                const selected = form.package === pkg.id;
-                                                return (
-                                                    <label
-                                                        key={pkg.id}
-                                                        className={`press flex cursor-pointer items-center justify-between gap-4 border-2 border-slate-950 p-4 ${selected ? 'bg-amber-300 shadow-[4px_4px_0px_#0f172a]' : 'bg-slate-50 hover:bg-amber-50'
-                                                            }`}
-                                                    >
-                                                        <span className="flex items-center gap-3">
-                                                            <input
-                                                                type="radio"
-                                                                name="package"
-                                                                value={pkg.id}
-                                                                checked={selected}
-                                                                onChange={() => updateField('package', pkg.id)}
-                                                                className="h-4 w-4 accent-slate-900"
-                                                            />
-                                                            <span>
-                                                                <span className="block text-sm font-black uppercase">{pkg.name}</span>
-                                                                <span className="block font-mono text-[11px] font-bold text-slate-600">
-                                                                    {pkg.tracksIncluded.map(id => WORKSHOP_TRACKS[id].name).join(' + ')}
-                                                                </span>
-                                                            </span>
-                                                        </span>
-                                                        <span className="shrink-0 font-mono text-lg font-black">{formatPrice(pkg)}</span>
-                                                    </label>
-                                                );
-                                            })}
-                                        </div>
-                                        {fieldErrors.package && <p className="mt-2 font-mono text-xs font-black text-red-600">{fieldErrors.package}</p>}
-                                    </fieldset>
 
                                     {error && <p className="mt-6 border-2 border-red-600 bg-red-50 p-3 font-mono text-xs font-black text-red-700">{error}</p>}
 
                                     <button type="submit" className="press mt-6 w-full border-2 border-slate-900 bg-slate-900 px-5 py-4 font-mono text-sm font-black uppercase text-amber-300 shadow-[4px_4px_0px_#0284c7] hover:bg-slate-800 sm:w-auto">
-                                        Confirm details →
+                                        Review &amp; continue →
                                     </button>
                                 </form>
                             ) : (
@@ -596,7 +537,7 @@ export default function WorkshopPage({ onBack }) {
     );
 }
 
-function TrackDetail({ track, onRegister, nowIST }) {
+function TrackDetail({ track, onRegister }) {
     const facts = [
         ['Dates', track.dates],
         ['Schedule', track.days],
@@ -620,91 +561,11 @@ function TrackDetail({ track, onRegister, nowIST }) {
             <p className="mt-3 font-mono text-xs font-bold text-slate-600">{track.startLabel} · {track.format}</p>
             <p className="mt-1 font-mono text-xs font-bold text-slate-600">{track.audience}</p>
 
-            <h4 className="mt-8 font-mono text-xs font-black uppercase tracking-widest text-sky-600">What you will learn</h4>
-            <div className="mt-3 grid grid-cols-1 gap-4 md:grid-cols-2">
-                {track.topics.map((topic, index) => (
-                    <div key={topic.title} className="border-2 border-slate-900 bg-slate-50 p-4">
-                        <span className="font-mono text-xs font-black text-sky-600">{String(index + 1).padStart(2, '0')}</span>
-                        <h5 className="mt-1 text-lg font-black uppercase">{topic.title}</h5>
-                        <ul className="mt-2 space-y-1">
-                            {topic.points.map(point => (
-                                <li key={point} className="flex gap-2 text-sm font-bold text-slate-700">
-                                    <span className="text-sky-600">→</span>
-                                    <span>{point}</span>
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-                ))}
-            </div>
-
-            <h4 className="mt-8 font-mono text-xs font-black uppercase tracking-widest text-sky-600">Plan</h4>
-
-            <div className="mt-3 border-2 border-slate-900 overflow-hidden">
-                <div className="hidden sm:grid sm:grid-cols-[6.5rem_7.5rem_8.5rem_1fr] gap-3 p-3 bg-slate-900 text-white font-mono text-[10px] font-black uppercase tracking-wider">
-                    <span>Week</span>
-                    <span>Days</span>
-                    <span>Dates</span>
-                    <span>Session Topic</span>
-                </div>
-
-                <ol className="divide-y-2 divide-slate-200 bg-white">
-                    {track.schedule.map((item, index) => {
-                        // Auto-detect ongoing week from real IST time; falls back
-                        // to the admin-set ongoingWeek if no dates are parseable.
-                        const activeLabel = resolveOngoingWeek(track, nowIST || new Date());
-                        const isOngoing = item.label?.trim().toLowerCase() === activeLabel.trim().toLowerCase();
-
-                        return (
-                            <li
-                                key={item.id || item.label || index}
-                                className={`p-3.5 transition-colors ${isOngoing ? 'bg-sky-50/80 border-l-4 border-l-sky-500' : 'hover:bg-slate-50'}`}
-                            >
-                                <div className="grid grid-cols-1 sm:grid-cols-[6.5rem_7.5rem_8.5rem_1fr] gap-2 sm:gap-3 items-start sm:items-center">
-                                    <div className="flex items-center gap-2">
-                                        <span className="font-mono text-xs font-black uppercase text-slate-900">{item.label}</span>
-                                        {isOngoing && (
-                                            <span className="px-1.5 py-0.5 text-[8px] font-mono font-black uppercase tracking-wider bg-emerald-400 text-slate-900 border border-slate-900 shadow-[1px_1px_0px_#0f172a]">
-                                                Ongoing
-                                            </span>
-                                        )}
-                                    </div>
-                                    <div className="font-mono text-xs font-bold text-slate-600 flex items-center gap-1.5">
-                                        <span className="sm:hidden text-[10px] font-mono font-black text-slate-400 uppercase">Days:</span>
-                                        <span>{item.days || '—'}</span>
-                                    </div>
-                                    <div className="font-mono text-xs font-bold text-slate-500 flex items-center gap-1.5">
-                                        <span className="sm:hidden text-[10px] font-mono font-black text-slate-400 uppercase">Dates:</span>
-                                        <span>{item.date || '—'}</span>
-                                    </div>
-                                    <div className="text-sm font-bold text-slate-900">
-                                        {item.title}
-                                    </div>
-                                </div>
-
-                                {/* Venue Details and Reporting Instructions - Automatically Open below the Ongoing Week */}
-                                {isOngoing && (
-                                    <div className="mt-3 p-3.5 bg-white border-2 border-slate-900 shadow-[3px_3px_0px_#0f172a] space-y-2">
-                                        <div className="flex items-center gap-2 text-[10px] font-mono font-black uppercase tracking-widest text-sky-700">
-                                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                                            <span>Current Session Details & Venue</span>
-                                        </div>
-                                        <div className="text-xs font-mono">
-                                            <span className="font-black uppercase text-slate-700 mr-1.5">📍 Venue:</span>
-                                            <span className="font-bold text-slate-900">{item.venue || track.venue || 'To be announced'}</span>
-                                        </div>
-                                        <div className="text-xs font-mono">
-                                            <span className="font-black uppercase text-slate-700 mr-1.5">📋 Reporting Instructions:</span>
-                                            <span className="font-medium text-slate-800 leading-relaxed">{item.reportingInstructions || track.reportingInstructions || 'Arrive 10 minutes prior to session timing.'}</span>
-                                        </div>
-                                    </div>
-                                )}
-                            </li>
-                        );
-                    })}
-                </ol>
-            </div>
-            <p className="mt-3 text-sm font-bold text-slate-600">✦ {track.bonus}</p>
+            <h4 className="mt-6 font-mono text-xs font-black uppercase tracking-widest text-sky-600">What you will learn</h4>
+            <p className="mt-2 text-sm font-bold leading-relaxed text-slate-700">
+                {track.topics.map(topic => topic.title).join(' · ')}.
+            </p>
+            <p className="mt-1 text-xs font-bold text-slate-500">Full topic list and weekly plan in the syllabus PDF.</p>
 
             <div className="mt-8 flex flex-wrap gap-3">
                 <a
@@ -729,7 +590,7 @@ function TrackDetail({ track, onRegister, nowIST }) {
 
 function Field({ label, error, children }) {
     return (
-        <label className="block">
+        <label className="block" data-field-wrap>
             <span className="mb-1.5 block font-mono text-xs font-black uppercase tracking-widest text-slate-700">{label}</span>
             {children}
             {error && <span className="mt-1 block font-mono text-xs font-black text-red-600">{error}</span>}
@@ -745,7 +606,7 @@ function ReviewPanel({ form, pkg, error, busy, onEdit, onPay }) {
         ['Year', form.year === '1' ? '1st year' : '2nd year'],
         ['Email', form.email],
         ['Phone', normalizePhone(form.phone)],
-        ['Package', pkg?.name]
+        ['Track', pkg?.name]
     ];
 
     return (
@@ -753,12 +614,12 @@ function ReviewPanel({ form, pkg, error, busy, onEdit, onPay }) {
             <p className="font-mono text-xs font-black uppercase tracking-widest text-sky-600">Check your details before paying</p>
             <dl className="mt-4 divide-y-2 divide-slate-200 border-2 border-slate-900">
                 {rows.map(([label, value]) => (
-                    <div key={label} className="grid grid-cols-[9rem_1fr] gap-3 p-3">
+                    <div key={label} className="grid grid-cols-[6.5rem_1fr] gap-3 p-3 sm:grid-cols-[9rem_1fr]">
                         <dt className="font-mono text-xs font-black uppercase text-slate-500">{label}</dt>
-                        <dd className="break-words text-sm font-black">{value}</dd>
+                        <dd className="min-w-0 break-words text-sm font-black">{value}</dd>
                     </div>
                 ))}
-                <div className="grid grid-cols-[9rem_1fr] gap-3 bg-amber-300 p-3">
+                <div className="grid grid-cols-[6.5rem_1fr] gap-3 bg-amber-300 p-3 sm:grid-cols-[9rem_1fr]">
                     <dt className="font-mono text-xs font-black uppercase">Amount</dt>
                     <dd className="font-mono text-lg font-black">{formatPrice(pkg)}</dd>
                 </div>
@@ -766,11 +627,12 @@ function ReviewPanel({ form, pkg, error, busy, onEdit, onPay }) {
 
             {error && <p className="mt-6 border-2 border-red-600 bg-red-50 p-3 font-mono text-xs font-black text-red-700">{error}</p>}
 
-            <div className="mt-6 flex flex-wrap gap-3">
-                <button type="button" onClick={onEdit} disabled={busy} className="press border-2 border-slate-900 bg-white px-5 py-3 font-mono text-xs font-black uppercase shadow-[4px_4px_0px_#0f172a] hover:bg-sky-100 disabled:opacity-50">
+            {/* Pay on top on phones (thumb reach); side by side from sm up. */}
+            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:flex-wrap">
+                <button type="button" onClick={onEdit} disabled={busy} className="press min-h-12 border-2 border-slate-900 bg-white px-5 py-3 font-mono text-xs font-black uppercase shadow-[4px_4px_0px_#0f172a] hover:bg-sky-100 disabled:opacity-50">
                     ← Edit details
                 </button>
-                <button type="button" onClick={onPay} disabled={busy || !PAYMENTS_ENABLED} className="press border-2 border-slate-900 bg-sky-500 px-6 py-3 font-mono text-sm font-black uppercase text-white shadow-[4px_4px_0px_#0f172a] hover:bg-sky-400 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-sky-500">
+                <button type="button" onClick={onPay} disabled={busy || !PAYMENTS_ENABLED} className="press min-h-12 border-2 border-slate-900 bg-sky-500 px-6 py-3 font-mono text-sm font-black uppercase text-white shadow-[4px_4px_0px_#0f172a] hover:bg-sky-400 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-sky-500">
                     {busy ? 'Opening payment…' : `Pay ${formatPrice(pkg)} →`}
                 </button>
             </div>
