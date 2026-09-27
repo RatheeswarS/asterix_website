@@ -278,21 +278,21 @@ export const WORKSHOP_PACKAGES = [
     {
         id: 'software',
         name: 'Software & Perception',
-        price: 899,
+        price: 1000,
         tracksIncluded: ['software'],
         open: true
     },
     {
         id: 'powertrain',
         name: 'Electronics & Powertrain',
-        price: 899,
+        price: 1000,
         tracksIncluded: ['powertrain'],
         open: true
     },
     {
         id: 'combo',
         name: 'Combo: both tracks',
-        price: 1399,
+        price: 1750,
         tracksIncluded: ['software', 'powertrain'],
         open: true
     }
