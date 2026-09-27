@@ -91,7 +91,7 @@ export default function TeamGallery() {
     const [viewMode, setViewMode] = useState('wall'); // 'wall' | 'grid'
 
     return (
-        <section id="gallery" className="py-28 px-4 sm:px-8 bg-white border-t-4 border-slate-900 relative overflow-hidden z-10 select-none">
+        <section id="gallery" className="py-16 sm:py-28 px-4 sm:px-8 bg-white border-t-4 border-slate-900 relative overflow-hidden z-10 select-none">
 
             {/* Background Parallax Watermark (Option A: Slow layer) */}
             <div

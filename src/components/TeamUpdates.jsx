@@ -5,7 +5,7 @@ export default function TeamUpdates() {
     const { siteData } = useWebsiteData();
     const updateItems = siteData.updates;
     return (
-        <section id="updates" className="py-28 px-4 sm:px-8 bg-sky-50/60 border-t-4 border-slate-900 relative overflow-hidden z-10 select-none">
+        <section id="updates" className="py-16 sm:py-28 px-4 sm:px-8 bg-sky-50/60 border-t-4 border-slate-900 relative overflow-hidden z-10 select-none">
 
             {/* Background Parallax Watermark (Option A: Slow layer) */}
             <div

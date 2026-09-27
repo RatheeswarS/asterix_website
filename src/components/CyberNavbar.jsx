@@ -4,7 +4,7 @@ import TextDock, { DockTextItem } from './Dock';
 import { useWebsiteData } from '../context/WebsiteDataContext';
 import Icon from './Icon';
 
-export default function CyberNavbar({ onSelectSubsystem, isDetailPage, currentPage = 'home', onBackToHome, onOpenSponsor, onOpenFreshersRecruitment, onOpenWorkshop }) {
+export default function CyberNavbar({ onSelectSubsystem, isDetailPage, currentPage = 'home', onBackToHome, onOpenSponsor, onOpenWorkshop }) {
     const { siteData } = useWebsiteData();
     const subsystems = siteData.subsystems;
     const { contact } = siteData;
@@ -13,13 +13,27 @@ export default function CyberNavbar({ onSelectSubsystem, isDetailPage, currentPa
     const [mobileOpen, setMobileOpen] = useState(false);
     const [mobileContactOpen, setMobileContactOpen] = useState(false);
     const [isScrolled, setIsScrolled] = useState(false);
+    const [isFooterVisible, setIsFooterVisible] = useState(false);
 
     useEffect(() => {
         let lastScrollY = window.scrollY || document.documentElement.scrollTop;
         const handleScroll = () => {
             const currentScrollY = window.scrollY || document.documentElement.scrollTop;
-            const scrolled = currentScrollY > 30;
+            const windowHeight = window.innerHeight;
+            const docHeight = Math.max(
+                document.body.scrollHeight,
+                document.documentElement.scrollHeight,
+                document.body.offsetHeight,
+                document.documentElement.offsetHeight
+            );
+
+            const scrolled = currentScrollY > 40;
             setIsScrolled(scrolled);
+
+            // True only when user scrolls near the bottom of the page where the footer is revealed
+            const atFooter = currentScrollY + windowHeight >= docHeight - 350;
+            setIsFooterVisible(atFooter);
+
             if (Math.abs(currentScrollY - lastScrollY) > 60) {
                 setShopOpen(false);
                 setContactOpen(false);
@@ -30,7 +44,27 @@ export default function CyberNavbar({ onSelectSubsystem, isDetailPage, currentPa
 
         handleScroll();
         window.addEventListener('scroll', handleScroll, { passive: true });
-        return () => window.removeEventListener('scroll', handleScroll);
+
+        // Sentinel observer targeting the non-sticky end of main
+        let observer;
+        const sentinelEl = document.getElementById('footer-sentinel');
+        if (sentinelEl) {
+            observer = new IntersectionObserver(
+                ([entry]) => {
+                    if (entry.isIntersecting) {
+                        setIsFooterVisible(true);
+                        setMobileOpen(false);
+                    }
+                },
+                { threshold: 0.1 }
+            );
+            observer.observe(sentinelEl);
+        }
+
+        return () => {
+            window.removeEventListener('scroll', handleScroll);
+            if (observer && sentinelEl) observer.unobserve(sentinelEl);
+        };
     }, []);
 
     const socialLinks = [
@@ -389,23 +423,6 @@ export default function CyberNavbar({ onSelectSubsystem, isDetailPage, currentPa
                                         <span className="text-[9px]">✦</span>
                                     </DockTextItem>
 
-                                    {/* Freshers Recruitment Button */}
-                                    <DockTextItem
-                                        mouseX={mouseX}
-                                        onClick={() => onOpenFreshersRecruitment?.()}
-                                        className={`border-slate-900 bg-sky-100 text-slate-900 hover:bg-sky-200 flex items-center gap-1 cursor-pointer ${
-                                            currentPage === 'freshers'
-                                                ? 'bg-sky-300 font-black shadow-[inset_2px_2px_0px_#000]'
-                                                : ''
-                                        } ${
-                                            isScrolled
-                                                ? 'px-2.5 py-1 text-[11px] rounded-md border font-bold hover:shadow-[2px_2px_0px_#0f172a]'
-                                                : 'px-3 py-1.5 text-xs border-2 shadow-[2px_2px_0px_#0f172a] hover:shadow-[3px_3px_0px_#0f172a]'
-                                        }`}
-                                    >
-                                        <span>Freshers</span>
-                                        <span className="text-[9px]">↗</span>
-                                    </DockTextItem>
 
                                     {/* Sponsor Team Button */}
                                     <DockTextItem
@@ -436,40 +453,51 @@ export default function CyberNavbar({ onSelectSubsystem, isDetailPage, currentPa
             </header>
 
             {/* =========================================================================
-                MOBILE STATIC TOP BRAND HEADER (< md)
-                Scrolls naturally out of the way to grant 100% full-screen 3D view
+                MOBILE DYNAMIC TOP BRAND HEADER (< md)
+                Shown on the first page, smoothly slides away on scroll
                 ========================================================================= */}
-            <div className="md:hidden w-full bg-white/95 border-b-2 border-slate-900 px-4 py-2.5 flex items-center justify-between select-none relative z-30">
+            <header
+                className={`md:hidden fixed top-0 inset-x-0 h-[46px] z-50 bg-white/95 backdrop-blur-md border-b-2 border-slate-900 px-3.5 py-1.5 flex items-center justify-between select-none shadow-[0_2px_4px_rgba(15,23,42,0.08)] transition-all duration-300 ease-out ${
+                    isScrolled ? '-translate-y-full opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'
+                }`}
+            >
                 <button
                     onClick={onBackToHome}
-                    className="flex items-center gap-2 cursor-pointer focus:outline-none"
+                    className="flex items-center gap-1.5 cursor-pointer focus:outline-none"
                     aria-label="Asterix Racing Home"
                 >
                     <img
                         src={teamLogo}
                         alt="Asterix Racing"
-                        className="h-8 w-auto object-contain"
+                        className="h-6 w-auto object-contain"
                     />
                 </button>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
                     <button
                         type="button"
                         onClick={() => onOpenWorkshop?.()}
-                        className="press px-2.5 py-1 border-2 border-slate-900 bg-amber-300 text-[11px] font-black uppercase text-slate-900 shadow-[2px_2px_0px_#0f172a] cursor-pointer"
+                        className="press px-2 py-0.5 rounded border border-slate-900 bg-amber-300 text-[10px] font-black uppercase text-slate-900 shadow-[1px_1px_0px_#0f172a] cursor-pointer flex items-center gap-1"
                     >
-                        Workshop ✦
+                        <span>Workshop</span>
+                        <span className="text-[9px]">✦</span>
                     </button>
-                    <span className="px-2 py-0.5 border border-slate-900 bg-sky-100 text-[10px] font-mono font-black uppercase text-sky-950">
+                    <span className="px-1.5 py-0.5 rounded border border-slate-300 bg-slate-100 text-[9px] font-mono font-bold uppercase text-slate-700">
                         BAJA 2026
                     </span>
                 </div>
-            </div>
+            </header>
 
             {/* =========================================================================
                 MOBILE NAVIGATION: Option 3 — Cockpit Telemetry Bottom Dock (< md)
-                Permanently accessible at thumb reach without blocking the top screen
+                Slides up into view only AFTER scrolling past first page, and slides away at footer
                 ========================================================================= */}
-            <div className="md:hidden fixed bottom-3 inset-x-3 z-50 flex flex-col items-center select-none pointer-events-none">
+            <div
+                className={`md:hidden fixed bottom-3 inset-x-3 z-50 flex flex-col items-center select-none transition-all duration-500 ease-out ${
+                    isScrolled && !isFooterVisible
+                        ? 'translate-y-0 opacity-100 pointer-events-auto'
+                        : 'translate-y-36 opacity-0 pointer-events-none'
+                }`}
+            >
                 
                 {/* Mobile Slide-Up Cockpit Drawer */}
                 {mobileOpen && (
@@ -610,15 +638,7 @@ export default function CyberNavbar({ onSelectSubsystem, isDetailPage, currentPa
                                 <span>Sponsor Asterix Racing</span>
                                 <span>↗</span>
                             </button>
-                            <button
-                                onClick={() => {
-                                    setMobileOpen(false);
-                                    onOpenFreshersRecruitment?.();
-                                }}
-                                className="w-full border-2 border-slate-900 bg-sky-100 p-2.5 text-center font-black text-xs uppercase text-slate-900 shadow-[2px_2px_0px_#0f172a] hover:bg-sky-200 cursor-pointer"
-                            >
-                                First Year Freshers Recruitment ↗
-                            </button>
+
                         </div>
                     </div>
                 )}

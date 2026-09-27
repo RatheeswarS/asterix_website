@@ -5,7 +5,7 @@ export default function CyberHero({ onOpenModelViewer }) {
     const { hero } = siteData;
 
     return (
-        <section id="hero" className="min-h-screen pt-28 sm:pt-32 pb-12 px-4 sm:px-8 md:px-12 lg:px-16 relative overflow-hidden flex flex-col justify-between select-none">
+        <section id="hero" className="min-h-screen pt-24 sm:pt-32 pb-12 px-4 sm:px-8 md:px-12 lg:px-16 relative overflow-hidden flex flex-col justify-between select-none">
 
             {/* Background Parallax Watermark (Option A: Slow layer) */}
             <div
