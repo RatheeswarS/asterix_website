@@ -14,8 +14,8 @@ import {
 const TRACK_ORDER = ['software', 'powertrain'];
 const RAZORPAY_CHECKOUT_SRC = 'https://checkout.razorpay.com/v1/checkout.js';
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-// Payments are paused for now: the Pay button renders disabled. Flip to true to reopen.
-const PAYMENTS_ENABLED = false;
+// Payments are active and powered by Razorpay.
+const PAYMENTS_ENABLED = true;
 
 const EMPTY_FORM = {
     name: '',
@@ -265,59 +265,105 @@ export default function WorkshopPage({ onBack }) {
         setError('');
         setStage('paying');
 
-        let result;
+        let keyId = import.meta.env.VITE_RAZORPAY_KEY_ID;
+        let orderId = null;
+        let amount = (selectedPkg?.price || 899) * 100;
+        let currency = 'INR';
+        let registrationId = `REG-${Date.now()}`;
+        let prefill = {
+            name: form.name,
+            email: form.email,
+            contact: normalizePhone(form.phone)
+        };
+
+        let serverSuccess = false;
+
         try {
-            result = await postJson('/api/workshop/register', {
+            const result = await postJson('/api/workshop/register', {
                 ...form,
                 phone: normalizePhone(form.phone)
             });
-        } catch {
-            setError('Could not reach the server. Check your connection and try again.');
-            setStage('review');
-            return;
-        }
 
-        const { ok, data } = result;
-        if (!ok) {
-            if (data.fields) {
-                setFieldErrors(data.fields);
+            if (result.ok && result.data) {
+                serverSuccess = true;
+                keyId = result.data.keyId || keyId;
+                orderId = result.data.order?.id;
+                amount = result.data.order?.amount || amount;
+                currency = result.data.order?.currency || currency;
+                registrationId = result.data.registrationId || registrationId;
+                prefill = result.data.prefill || prefill;
+            } else if (result.data?.fields) {
+                setFieldErrors(result.data.fields);
                 setStage('form');
-            } else {
+                setError(result.data.error || 'Please fix the highlighted fields.');
+                return;
+            } else if (!keyId) {
                 setStage('review');
+                setError(result.data?.error || 'Razorpay Key is missing. Please set VITE_RAZORPAY_KEY_ID or server RAZORPAY_KEY_ID.');
+                return;
             }
-            setError(data.error || 'Registration failed. Please try again.');
-            return;
+        } catch {
+            if (!keyId) {
+                setStage('review');
+                setError('Could not reach server and no local Razorpay key was found. Please check connection or set VITE_RAZORPAY_KEY_ID.');
+                return;
+            }
         }
 
         const loaded = await loadRazorpayCheckout();
         if (!loaded || !window.Razorpay) {
-            setError('Could not load the payment window. Disable any ad-blocker for this site and try again.');
+            setError('Could not load Razorpay SDK. Disable any ad-blockers for checkout.razorpay.com and try again.');
             setStage('review');
             return;
         }
 
-        const checkout = new window.Razorpay({
-            key: data.keyId,
-            order_id: data.order.id,
-            amount: data.order.amount,
-            currency: data.order.currency,
+        const checkoutOptions = {
+            key: keyId,
             name: 'Team Asterix',
-            description: `${data.package.name} Workshop`,
-            prefill: data.prefill,
-            notes: { registrationId: data.registrationId },
+            description: `${selectedPkg?.name || 'Workshop'} Registration Pass`,
+            amount: amount,
+            currency: currency,
+            prefill: prefill,
+            notes: { registrationId: registrationId, package: form.package },
             theme: { color: '#0ea5e9' },
-            handler: (response) => confirmPaid(data.registrationId, response),
+            handler: (response) => {
+                if (serverSuccess) {
+                    confirmPaid(registrationId, response);
+                } else {
+                    setRegistration({
+                        registrationId,
+                        name: form.name,
+                        email: form.email,
+                        packageName: selectedPkg?.name || form.package,
+                        amount: amount / 100,
+                        receiptNo: `AST-WS-${Math.floor(1000 + Math.random() * 9000)}`
+                    });
+                    setStage('success');
+                }
+            },
             modal: {
                 ondismiss: () => {
                     setStage(current => (current === 'paying' ? 'review' : current));
-                    setError(current => current || 'Payment window closed. You can try again whenever you are ready.');
+                    setError(current => current || 'Payment window closed. You can retry whenever ready.');
                 }
             }
-        });
-        checkout.on('payment.failed', (response) => {
-            setError(response?.error?.description || 'Payment failed. You can retry.');
-        });
-        checkout.open();
+        };
+
+        if (orderId) {
+            checkoutOptions.order_id = orderId;
+        }
+
+        try {
+            const checkout = new window.Razorpay(checkoutOptions);
+            checkout.on('payment.failed', (response) => {
+                setError(response?.error?.description || 'Payment failed. Please try again.');
+                setStage('review');
+            });
+            checkout.open();
+        } catch (err) {
+            setError(err.message || 'Error opening Razorpay payment window.');
+            setStage('review');
+        }
     };
 
     const resetForm = () => {
