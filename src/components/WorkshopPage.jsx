@@ -299,13 +299,13 @@ export default function WorkshopPage({ onBack }) {
                 return;
             } else if (!keyId) {
                 setStage('review');
-                setError(result.data?.error || 'Razorpay Key is missing. Please set VITE_RAZORPAY_KEY_ID or server RAZORPAY_KEY_ID.');
+                setError('Razorpay API keys were recently added. Please restart your terminal command (npm run dev / npm run server) so the server loads your new keys.');
                 return;
             }
         } catch {
             if (!keyId) {
                 setStage('review');
-                setError('Could not reach server and no local Razorpay key was found. Please check connection or set VITE_RAZORPAY_KEY_ID.');
+                setError('Could not reach server and no local Razorpay key was found. Please check connection or restart npm run dev.');
                 return;
             }
         }
