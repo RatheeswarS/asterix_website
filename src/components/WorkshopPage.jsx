@@ -265,7 +265,7 @@ export default function WorkshopPage({ onBack }) {
         setError('');
         setStage('paying');
 
-        let keyId = import.meta.env.VITE_RAZORPAY_KEY_ID;
+        let keyId = import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_TfxWqeLpzlkYe4';
         let orderId = null;
         let amount = (selectedPkg?.price || 899) * 100;
         let currency = 'INR';
