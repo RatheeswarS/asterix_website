@@ -9,12 +9,12 @@ export default function CyberFooter({ onOpenAdmin, onOpenSponsor, onOpenWorkshop
     return (
         <footer
             id="site-footer"
-            className="sticky bottom-0 z-0 min-h-0 md:h-screen md:min-h-[600px] w-full bg-slate-50 border-t-4 border-slate-900 text-slate-900 flex flex-col justify-between pt-5 sm:pt-10 pb-4 sm:pb-6 px-4 sm:px-8 select-none overflow-hidden"
+            className="relative z-10 w-full bg-slate-50 border-t-4 border-slate-900 text-slate-900 pt-8 sm:pt-12 pb-6 sm:pb-8 px-4 sm:px-8 select-none"
         >
-            <div className="max-w-7xl mx-auto w-full h-full flex flex-col justify-between gap-3 md:gap-0">
+            <div className="max-w-7xl mx-auto w-full flex flex-col gap-6 sm:gap-8">
 
                 {/* Main Content Grid */}
-                <div data-assemble="stagger" className="grid grid-cols-1 md:grid-cols-12 gap-5 lg:gap-10 pb-2 sm:pb-4">
+                <div data-assemble="stagger" className="grid grid-cols-1 md:grid-cols-12 gap-6 lg:gap-10">
 
                     {/* Brand, Socials/Admin & Contact (Col 1-5) */}
                     <div className="md:col-span-6 lg:col-span-5 flex flex-col gap-2.5 sm:gap-3.5">
