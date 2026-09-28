@@ -53,8 +53,31 @@ function normalizePhone(phone) {
     return digits.length >= 10 ? digits.slice(-10) : digits;
 }
 
+// Shown on the page until the real date is decided.
+const REGISTRATION_CLOSES = 'TBD';
+
+function formatRupees(amount) {
+    return `₹${amount.toLocaleString('en-IN')}`;
+}
+
 function formatPrice(pkg) {
-    return isPriced(pkg) ? `₹${pkg.price.toLocaleString('en-IN')}` : 'TBD';
+    return isPriced(pkg) ? formatRupees(pkg.price) : 'TBD';
+}
+
+/* Combo offer maths, worked out from the package prices so the tags never
+   drift from what is actually charged. */
+const SINGLE_PACKAGES = WORKSHOP_PACKAGES.filter(p => p.tracksIncluded.length === 1);
+const COMBO_PACKAGE = WORKSHOP_PACKAGES.find(p => p.tracksIncluded.length > 1) || null;
+const COMBO_SAVING = isPriced(COMBO_PACKAGE) && SINGLE_PACKAGES.every(isPriced)
+    ? SINGLE_PACKAGES.reduce((sum, p) => sum + p.price, 0) - COMBO_PACKAGE.price
+    : 0;
+
+// For a single-track choice: the other track and what adding it would cost.
+function upsellFor(pkg) {
+    if (!pkg || !COMBO_PACKAGE || COMBO_SAVING <= 0 || pkg.tracksIncluded.length !== 1) return null;
+    const other = SINGLE_PACKAGES.find(p => p.id !== pkg.id);
+    if (!other) return null;
+    return { other, extra: COMBO_PACKAGE.price - pkg.price };
 }
 
 function scrollToEl(el) {
@@ -256,6 +279,8 @@ export default function WorkshopPage({ onBack }) {
     const [stage, setStage] = useState('form');
     const [error, setError] = useState('');
     const [registration, setRegistration] = useState(null);
+    // "Add the other track for ₹750 more" prompt beside Review & continue.
+    const [upsellOpen, setUpsellOpen] = useState(false);
     const formRef = useRef(null);
     const detailRef = useRef(null);
 
@@ -273,7 +298,9 @@ export default function WorkshopPage({ onBack }) {
     // Not while the payment window is open or a payment is being confirmed.
     const canClose = stage !== 'paying' && stage !== 'verifying';
     const closeRegister = () => {
-        if (canClose) setRegisterOpen(false);
+        if (!canClose) return;
+        setRegisterOpen(false);
+        setUpsellOpen(false);
     };
 
     const selectTrack = (id) => {
@@ -285,6 +312,7 @@ export default function WorkshopPage({ onBack }) {
         setForm(prev => ({ ...prev, [key]: value }));
         setFieldErrors(prev => ({ ...prev, [key]: undefined }));
         setError('');
+        setUpsellOpen(false);
     };
 
     const handleConfirm = (event) => {
@@ -304,6 +332,17 @@ export default function WorkshopPage({ onBack }) {
             return;
         }
         setError('');
+        // One track picked: offer the combo once before moving on.
+        if (upsellFor(selectedPkg) && !upsellOpen) {
+            setUpsellOpen(true);
+            return;
+        }
+        setUpsellOpen(false);
+        setStage('review');
+    };
+
+    const acceptUpsell = () => {
+        updateField('package', COMBO_PACKAGE.id);
         setStage('review');
     };
 
@@ -405,6 +444,7 @@ export default function WorkshopPage({ onBack }) {
         setFieldErrors({});
         setError('');
         setRegistration(null);
+        setUpsellOpen(false);
         setStage('form');
     };
 
@@ -437,16 +477,16 @@ export default function WorkshopPage({ onBack }) {
                             ✦ Workshop 2026
                         </span>
                         <h1 className="mt-5 max-w-5xl text-4xl font-black uppercase leading-[0.9] tracking-tight sm:text-7xl">
-                            Learn from the team that builds the buggy
+                            Engineer autonomy with the team that builds it
                         </h1>
                         <p className="mt-6 max-w-3xl text-base font-bold leading-relaxed sm:text-xl">
-                            Explore the two systems that bring an autonomous BAJA buggy to life: the
-                            software behind autonomous perception and control, and the electronics
-                            and powertrain that power the buggy. Learn by building, testing, and
-                            understanding the technology behind it.
+                            Two hands-on tracks covering the core systems of an autonomous off-road
+                            vehicle: the software that perceives and decides, and the electronics and
+                            powertrain that drive it. Taught by Team Asterix engineers through guided
+                            sessions, real hardware and project work.
                         </p>
                         <p className="mt-3 max-w-3xl text-base font-bold leading-relaxed sm:text-xl">
-                            Choose your track, or master both with the combo package.
+                            Choose one track, or take both with the combo package.
                         </p>
                         <div className="mt-8 flex flex-wrap gap-3">
                             <button type="button" onClick={openRegister} className="press border-2 border-slate-900 bg-slate-900 px-5 py-3 font-mono text-xs font-black uppercase text-amber-300 shadow-[4px_4px_0px_#0284c7] hover:bg-slate-800">
@@ -456,6 +496,7 @@ export default function WorkshopPage({ onBack }) {
                                 Explore the tracks ↓
                             </button>
                         </div>
+                        <ClosingDate className="mt-5" />
                     </div>
                 </section>
 
@@ -502,6 +543,7 @@ export default function WorkshopPage({ onBack }) {
                             <p className="mt-2 max-w-xl text-sm font-bold text-slate-300">
                                 One track or both. Registration takes a minute; payment is handled securely by Razorpay.
                             </p>
+                            <ClosingDate className="mt-4" dark />
                         </div>
                         <button
                             type="button"
@@ -526,6 +568,7 @@ export default function WorkshopPage({ onBack }) {
                                         Prices are yet to be announced. Payments open as soon as they are.
                                     </p>
                                 )}
+                                <ClosingDate className="mb-5" />
 
                                 {/* Package first: it is what they came here to pick. */}
                                 <fieldset data-field-wrap>
@@ -533,6 +576,7 @@ export default function WorkshopPage({ onBack }) {
                                     <div className="grid grid-cols-1 gap-2.5">
                                         {WORKSHOP_PACKAGES.map((pkg, index) => {
                                             const selected = form.package === pkg.id;
+                                            const isCombo = pkg.id === COMBO_PACKAGE?.id;
                                             return (
                                                 <label
                                                     key={pkg.id}
@@ -551,6 +595,14 @@ export default function WorkshopPage({ onBack }) {
                                                             className="h-5 w-5 shrink-0 accent-slate-900"
                                                         />
                                                         <span className="min-w-0">
+                                                            {isCombo && (
+                                                                <span className="mb-1 flex flex-wrap gap-1.5">
+                                                                    <span className="border-2 border-slate-900 bg-slate-900 px-1.5 py-0.5 font-mono text-[10px] font-black uppercase text-amber-300">★ Recommended</span>
+                                                                    {COMBO_SAVING > 0 && (
+                                                                        <span className="border-2 border-slate-900 bg-green-400 px-1.5 py-0.5 font-mono text-[10px] font-black uppercase text-slate-900">Save {formatRupees(COMBO_SAVING)}</span>
+                                                                    )}
+                                                                </span>
+                                                            )}
                                                             <span className="block text-sm font-black uppercase">{pkg.name}</span>
                                                             {pkg.tracksIncluded.length > 1 && (
                                                                 <span className="block font-mono text-[11px] font-bold text-slate-600">
@@ -613,7 +665,15 @@ export default function WorkshopPage({ onBack }) {
                             </div>
 
                             {/* Pinned to the bottom so the button is always in thumb reach. */}
-                            <div className="border-t-4 border-slate-900 bg-slate-50 p-3 sm:p-4">
+                            <div className="relative border-t-4 border-slate-900 bg-slate-50 p-3 sm:p-4">
+                                {upsellOpen && stage === 'form' && (
+                                    <UpsellPopover
+                                        offer={upsellFor(selectedPkg)}
+                                        onAccept={acceptUpsell}
+                                        onDecline={() => { setUpsellOpen(false); setStage('review'); }}
+                                        onDismiss={() => setUpsellOpen(false)}
+                                    />
+                                )}
                                 {error && stage === 'form' && (
                                     <p className="mb-3 border-2 border-red-600 bg-red-50 p-2.5 font-mono text-xs font-black text-red-700">{error}</p>
                                 )}
@@ -658,6 +718,11 @@ function TrackDetail({ track, onRegister }) {
         <article className="mt-8 border-4 border-slate-900 bg-white p-5 shadow-[8px_8px_0px_#0f172a] sm:p-8 anim-pop" role="tabpanel">
             <h3 className="text-2xl font-black uppercase sm:text-4xl">{track.name}</h3>
             <p className="mt-3 max-w-3xl text-sm font-bold leading-relaxed text-slate-600 sm:text-base">{track.overview}</p>
+            {track.highlight && (
+                <p className="mt-4 inline-block border-2 border-slate-900 bg-green-400 px-3 py-1.5 font-mono text-xs font-black uppercase shadow-[3px_3px_0px_#0f172a]">
+                    ⏱ {track.highlight}
+                </p>
+            )}
 
             <dl className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
                 {facts.map(([label, value]) => (
@@ -704,6 +769,53 @@ function Field({ label, error, children }) {
             {children}
             {error && <span className="mt-1 block font-mono text-xs font-black text-red-600">{error}</span>}
         </label>
+    );
+}
+
+function ClosingDate({ className = '', dark = false }) {
+    return (
+        <p className={`inline-flex items-center gap-2 border-2 px-3 py-1.5 font-mono text-xs font-black uppercase ${
+            dark ? 'border-amber-300 text-amber-300' : 'border-slate-900 bg-white text-slate-900'
+        } ${className}`}>
+            <span aria-hidden="true">⏳</span>
+            Registration closes on {REGISTRATION_CLOSES}
+        </p>
+    );
+}
+
+/* Small card that rises out of the Review & continue button when one track is
+   picked. It sits inside the pop-up footer, so the form stays visible. */
+function UpsellPopover({ offer, onAccept, onDecline, onDismiss }) {
+    if (!offer) return null;
+    return (
+        <div
+            role="dialog"
+            aria-label="Add the other track"
+            className="anim-pop absolute bottom-full right-3 left-3 z-10 mb-2 border-4 border-slate-900 bg-white p-4 shadow-[6px_6px_0px_#16a34a] sm:left-auto sm:right-4 sm:w-96"
+        >
+            <button type="button" onClick={onDismiss} aria-label="Close offer" className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center font-black text-slate-500 hover:text-slate-900">
+                ✕
+            </button>
+            <span className="inline-block border-2 border-slate-900 bg-green-400 px-1.5 py-0.5 font-mono text-[10px] font-black uppercase">
+                Save {formatRupees(COMBO_SAVING)}
+            </span>
+            <p className="mt-2 pr-6 text-base font-black uppercase leading-tight">
+                Only {formatRupees(offer.extra)} more for {offer.other.name}
+            </p>
+            <p className="mt-1.5 text-sm font-bold text-slate-600">
+                Get both tracks for {formatPrice(COMBO_PACKAGE)}. This {formatRupees(COMBO_SAVING)} saving is lost if you don’t add it now.
+            </p>
+            <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <button type="button" onClick={onAccept} className="press min-h-11 border-2 border-slate-900 bg-green-400 px-3 py-2 font-mono text-[11px] font-black uppercase shadow-[3px_3px_0px_#0f172a] hover:bg-green-300">
+                    Add both →
+                </button>
+                <button type="button" onClick={onDecline} className="press min-h-11 border-2 border-slate-900 bg-white px-3 py-2 font-mono text-[11px] font-black uppercase hover:bg-slate-100">
+                    Continue with one
+                </button>
+            </div>
+            {/* Arrow pointing down at the button. */}
+            <span aria-hidden="true" className="absolute -bottom-[11px] right-10 h-4 w-4 rotate-45 border-b-4 border-r-4 border-slate-900 bg-white" />
+        </div>
     );
 }
 
@@ -833,7 +945,12 @@ function ReviewPanel({ form, pkg, error, busy, onEdit, onPay }) {
                     ))}
                     <div className="grid grid-cols-[6.5rem_1fr] gap-3 bg-amber-300 p-3 sm:grid-cols-[9rem_1fr]">
                         <dt className="font-mono text-xs font-black uppercase">Amount</dt>
-                        <dd className="font-mono text-lg font-black">{formatPrice(pkg)}</dd>
+                        <dd className="font-mono text-lg font-black">
+                            {formatPrice(pkg)}
+                            {pkg?.id === COMBO_PACKAGE?.id && COMBO_SAVING > 0 && (
+                                <span className="ml-2 border-2 border-slate-900 bg-green-400 px-1.5 py-0.5 align-middle text-[10px] uppercase">You save {formatRupees(COMBO_SAVING)}</span>
+                            )}
+                        </dd>
                     </div>
                 </dl>
                 <p className="mt-4 font-mono text-[10px] font-bold uppercase text-slate-500">

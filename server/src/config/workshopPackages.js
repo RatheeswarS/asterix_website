@@ -21,10 +21,10 @@ export const WORKSHOP_TRACKS = {
     software: {
         id: 'software',
         name: 'Software & Perception',
-        tagline: 'ROS, computer vision, ML and agentic AI, taught the way the buggy uses them.',
+        tagline: 'ROS, computer vision, machine learning and agentic AI, applied to a real autonomous vehicle.',
         overview:
-            'A four-week, hands-on workshop run by the team that writes the autonomous stack on the ' +
-            'Asterix buggy. Every topic is anchored to a real vehicle problem and backed by handbooks, ' +
+            'A four-week, hands-on programme led by the engineers who develop Team Asterix’s autonomy ' +
+            'stack. Every topic is grounded in a real engineering problem and supported by handbooks, ' +
             'guides and a mini project.',
         dates: '29 Sep – 29 Oct 2026',
         startLabel: 'Pre-session talk 29 Sep 2026 · first session Tue 6 Oct 2026',
@@ -144,11 +144,11 @@ export const WORKSHOP_TRACKS = {
     powertrain: {
         id: 'powertrain',
         name: 'Electronics & Powertrain',
-        tagline: 'Circuits, microcontrollers, motors and PCB design, from scratch.',
+        tagline: 'Circuits, microcontrollers, motors and PCB design, from first principles.',
         overview:
-            'Learn the basics of circuits, electronic parts, microcontrollers and motors, and see how ' +
-            'the electronics inside the Team Asterix autonomous buggy actually work. Includes hands-on ' +
-            'sessions with free circuit simulators and a PCB design tool.',
+            'Build a solid foundation in circuits, electronic components, microcontrollers and motors, ' +
+            'and see how they come together in the electrical system of an autonomous vehicle. Includes ' +
+            'hands-on sessions with circuit simulation and PCB design tools.',
         dates: '29 Sep – 2 Nov 2026',
         startLabel: 'Pre-session talk 29 Sep 2026 · first session Wed 7 Oct 2026',
         // startDate: ISO date (YYYY-MM-DD) of the first session in IST.
@@ -156,6 +156,8 @@ export const WORKSHOP_TRACKS = {
         days: 'Monday, Wednesday & Friday',
         timing: '5:15 PM – 6:45 PM',
         format: '9 talks + 3 hands-on sessions + 2 complimentary sessions (21 hours)',
+        // Optional value callout shown on the track card.
+        highlight: '21+ hours of learning · less than ₹50 an hour',
         audience: 'First-year students. No prior knowledge needed.',
         syllabus: '/workshop/powertrain-syllabus.pdf',
         venue: 'Electrical Machines & Power Electronics Lab (Ground Floor, PSG iTech)',
@@ -174,7 +176,7 @@ export const WORKSHOP_TRACKS = {
                 title: 'Microcontrollers',
                 points: [
                     'ESP32 basics and your first Arduino IDE program',
-                    'How the buggy starts up: safety and kill switches',
+                    'Vehicle start-up sequence: safety interlocks and kill switches',
                     'Hands-on: build the start-up sequence in Tinkercad'
                 ]
             },
@@ -219,7 +221,7 @@ export const WORKSHOP_TRACKS = {
                 label: 'Week 2',
                 days: 'Mon, Wed & Fri',
                 date: '12, 14 & 16 Oct',
-                title: 'Hands-on 1 · ESP32 Basics · How Our Buggy Starts Up',
+                title: 'Hands-on 1 · ESP32 Basics · Vehicle Start-up Sequence',
                 venue: 'Electrical Machines & Power Electronics Lab (Ground Floor, PSG iTech)',
                 reportingInstructions: 'Bring laptop with LTspice / PSpice and Arduino IDE installed. Safety shoes required inside the lab. Arrive 10 minutes prior to session timing.'
             },
