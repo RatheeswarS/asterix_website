@@ -310,6 +310,96 @@ router.get('/status/:id', requireDb, async (req, res) => {
     }
 });
 
+/* Name + register number are known to classmates, so this lookup is throttled
+   and returns the email and phone masked. Render's proxy appends the real
+   client address as the last X-Forwarded-For entry; earlier entries can be
+   set by the client, so only the last one is used. */
+const LOOKUP_WINDOW_MS = 15 * 60 * 1000;
+const LOOKUP_MAX = 10;
+const lookupHits = new Map();
+
+function clientKey(req) {
+    const forwarded = String(req.headers['x-forwarded-for'] || '').split(',').map(s => s.trim()).filter(Boolean);
+    return forwarded[forwarded.length - 1] || req.socket.remoteAddress || 'unknown';
+}
+
+function lookupLimited(req) {
+    const now = Date.now();
+    const key = clientKey(req);
+    const hits = (lookupHits.get(key) || []).filter(t => now - t < LOOKUP_WINDOW_MS);
+    hits.push(now);
+    lookupHits.set(key, hits);
+    if (lookupHits.size > 5000) {
+        for (const [k, times] of lookupHits) {
+            if (times.every(t => now - t >= LOOKUP_WINDOW_MS)) lookupHits.delete(k);
+        }
+    }
+    return hits.length > LOOKUP_MAX;
+}
+
+function escapeRegex(text) {
+    return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function maskEmail(email) {
+    const [user, domain] = String(email || '').split('@');
+    if (!domain) return '';
+    return `${user.slice(0, 2)}${'*'.repeat(Math.max(user.length - 2, 1))}@${domain}`;
+}
+
+function maskPhone(phone) {
+    const digits = String(phone || '');
+    return digits ? `${'*'.repeat(Math.max(digits.length - 4, 0))}${digits.slice(-4)}` : '';
+}
+
+/**
+ * POST /api/workshop/receipt-lookup
+ * Body: { name, rollNo }. Paid registrations matching both (case and extra
+ * spaces ignored), for students re-downloading a receipt they lost.
+ */
+router.post('/receipt-lookup', requireDb, async (req, res) => {
+    try {
+        if (lookupLimited(req)) {
+            return res.status(429).json({ error: 'Too many attempts. Please wait a few minutes and try again.' });
+        }
+        const name = String(req.body?.name ?? '').trim().replace(/\s+/g, ' ').slice(0, 100);
+        const rollNo = String(req.body?.rollNo ?? '').trim().slice(0, 40);
+        if (name.length < 2 || !rollNo) {
+            return res.status(400).json({ error: 'Enter your full name and registered number.' });
+        }
+
+        const namePattern = name.split(' ').map(escapeRegex).join('\\s+');
+        const regs = await WorkshopRegistration.find({
+            status: 'paid',
+            rollNo: new RegExp(`^\\s*${escapeRegex(rollNo)}\\s*$`, 'i'),
+            name: new RegExp(`^\\s*${namePattern}\\s*$`, 'i')
+        }).sort({ paidAt: -1 }).limit(5);
+
+        if (regs.length === 0) {
+            return res.status(404).json({
+                error: 'No paid registration found for that name and registered number. Check they match what you entered when registering.'
+            });
+        }
+
+        const receipts = [];
+        for (const reg of regs) {
+            const withReceipt = await ensureReceipt(reg);
+            receipts.push({
+                ...publicView(withReceipt),
+                rollNo: withReceipt.rollNo,
+                department: withReceipt.department,
+                year: withReceipt.year,
+                email: maskEmail(withReceipt.email),
+                phone: maskPhone(withReceipt.phone)
+            });
+        }
+        res.json({ success: true, receipts });
+    } catch (err) {
+        console.error('Workshop receipt lookup error:', err);
+        res.status(500).json({ error: 'Could not look up your receipt. Please try again.' });
+    }
+});
+
 const CSV_COLUMNS = [
     ['receiptNo', 'Receipt No'],
     ['name', 'Name'],

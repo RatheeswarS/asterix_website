@@ -510,7 +510,7 @@ export default function AdminDashboard({ onExit }) {
         { id: 'subsystems', label: 'Subsystems & Squad', icon: 'vehicle' },
         { id: 'sponsorship', label: 'Sponsorship Portal', icon: 'folder' },
         { id: 'recruitment', label: 'Subsystem Recruitment', icon: 'users' },
-        { id: 'workshop-schedule', label: 'Workshop', icon: 'calendar', adminOnly: true },
+        { id: 'workshop-schedule', label: 'Workshop', icon: 'calendar' },
         { id: 'gallery', label: 'Media Gallery', icon: 'camera' },
         { id: 'updates', label: 'Team Updates', icon: 'megaphone' },
         { id: 'subscribers', label: 'Alliance Leads', icon: 'inbox' },

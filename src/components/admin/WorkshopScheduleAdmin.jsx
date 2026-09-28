@@ -108,26 +108,6 @@ export default function WorkshopScheduleAdmin({ currentUser, isAdmin, showStatus
         showStatus?.('Syllabus reset to default PDF.');
     };
 
-    // If user is not an administrator, render access denied guard
-    if (!isAdmin) {
-        return (
-            <div className="p-5 bg-rose-50 border-2 border-slate-900 shadow-[3px_3px_0px_#0f172a] space-y-3">
-                <div className="flex items-center gap-2 text-rose-700 font-mono font-black text-xs uppercase">
-                    <span className="w-2.5 h-2.5 rounded-full bg-rose-600"></span>
-                    <span>RESTRICTED ACCESS</span>
-                </div>
-                <h3 className="text-xl font-black uppercase text-slate-900">
-                    Administrator Privileges Required
-                </h3>
-                <p className="text-xs font-mono font-bold text-slate-600 leading-relaxed">
-                    You are signed in as <strong className="text-slate-900">{currentUser?.name || 'User'}</strong> with access level <strong className="text-slate-900">{currentUser?.accessLevel || currentUser?.role || 'Member'}</strong>. Editing workshop syllabus documents, timing schedules, venue details, and reporting instructions is strictly restricted to Administrators.
-                </p>
-                <div className="pt-2 text-[11px] font-mono text-slate-500">
-                    Please contact an administrator if you require permission to manage workshop curriculum details.
-                </div>
-            </div>
-        );
-    }
 
     return (
         <div className="space-y-6">
