@@ -41,9 +41,8 @@ const FIELD_LABELS = {
 /* text-base (16px) on phones: anything smaller makes iOS Safari zoom the page
    in when a field is tapped, which then has to be pinched back out. */
 function inputClass(hasError) {
-    return `w-full min-h-12 px-3 py-3 border-2 font-mono text-base font-bold text-slate-900 placeholder:font-medium placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 sm:text-sm ${
-        hasError ? 'border-red-600 bg-red-50' : 'border-slate-950 bg-slate-50'
-    }`;
+    return `w-full min-h-12 px-3 py-3 border-2 font-mono text-base font-bold text-slate-900 placeholder:font-medium placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 sm:text-sm ${hasError ? 'border-red-600 bg-red-50' : 'border-slate-950 bg-slate-50'
+        }`;
 }
 
 /* Same rule as the server: keep the last 10 digits, so "+91 98765 43210"
@@ -533,30 +532,26 @@ export default function WorkshopPage({ onBack }) {
                                         role="tab"
                                         aria-selected={active}
                                         onClick={() => selectTrack(id)}
-                                        className={`press group cursor-pointer border-3 sm:border-4 border-slate-900 p-3.5 sm:p-6 text-left transition-all ${
-                                            active
+                                        className={`press group cursor-pointer border-3 sm:border-4 border-slate-900 p-3.5 sm:p-6 text-left transition-all ${active
                                                 ? 'bg-slate-900 text-white shadow-[6px_6px_0px_#0284c7]'
                                                 : 'bg-white text-slate-900 shadow-[4px_4px_0px_#0f172a] hover:bg-amber-100 hover:shadow-[6px_6px_0px_#0f172a]'
-                                        }`}
+                                            }`}
                                     >
                                         <div className="flex items-center justify-between gap-1">
-                                            <span className={`inline-flex items-center gap-1 font-mono text-[10px] sm:text-xs font-black uppercase tracking-wider ${
-                                                active ? 'text-amber-300' : 'text-sky-600 group-hover:text-sky-700'
-                                            }`}>
+                                            <span className={`inline-flex items-center gap-1 font-mono text-[10px] sm:text-xs font-black uppercase tracking-wider ${active ? 'text-amber-300' : 'text-sky-600 group-hover:text-sky-700'
+                                                }`}>
                                                 <span>{active ? '● Selected' : '○ View Track'}</span>
                                             </span>
-                                            <span className={`font-mono text-xs font-black ${
-                                                active ? 'text-amber-300' : 'text-slate-400 group-hover:text-slate-900'
-                                            }`}>
+                                            <span className={`font-mono text-xs font-black ${active ? 'text-amber-300' : 'text-slate-400 group-hover:text-slate-900'
+                                                }`}>
                                                 {active ? '✓' : '↘'}
                                             </span>
                                         </div>
                                         <span className="mt-1.5 sm:mt-2 block text-sm sm:text-2xl lg:text-3xl font-black uppercase leading-tight">
                                             {t.name}
                                         </span>
-                                        <span className={`mt-2 hidden text-sm font-bold sm:block ${
-                                            active ? 'text-slate-300' : 'text-slate-600'
-                                        }`}>
+                                        <span className={`mt-2 hidden text-sm font-bold sm:block ${active ? 'text-slate-300' : 'text-slate-600'
+                                            }`}>
                                             {t.tagline}
                                         </span>
                                     </button>
@@ -599,8 +594,8 @@ export default function WorkshopPage({ onBack }) {
                             </div>
                             <div className="border-2 sm:border-3 border-slate-900 bg-white p-3.5 sm:p-4 shadow-[3px_3px_0px_#0f172a] sm:shadow-[4px_4px_0px_#0f172a]">
                                 <span className="font-mono text-[10px] sm:text-xs font-black uppercase tracking-widest text-sky-600">04 / CAREER</span>
-                                <h3 className="mt-1 text-sm sm:text-base font-black uppercase leading-snug">Actual content to put on your resume</h3>
-                                <p className="mt-1 text-xs font-bold leading-relaxed text-slate-600">Stand out with verified project work on autonomous stacks and electronics.</p>
+                                <h3 className="mt-1 text-sm sm:text-base font-black uppercase leading-snug">Build and strengthen your resume</h3>
+                                <p className="mt-1 text-xs font-bold leading-relaxed text-slate-600">Stand out with verified, hands-on project experience on real autonomous stacks and powertrain electronics.</p>
                             </div>
                             <div className="border-2 sm:border-3 border-slate-900 bg-white p-3.5 sm:p-4 shadow-[3px_3px_0px_#0f172a] sm:shadow-[4px_4px_0px_#0f172a]">
                                 <span className="font-mono text-[10px] sm:text-xs font-black uppercase tracking-widest text-sky-600">05 / CURRICULUM</span>
@@ -609,8 +604,8 @@ export default function WorkshopPage({ onBack }) {
                             </div>
                             <div className="border-2 sm:border-3 border-slate-900 bg-white p-3.5 sm:p-4 shadow-[3px_3px_0px_#0f172a] sm:shadow-[4px_4px_0px_#0f172a]">
                                 <span className="font-mono text-[10px] sm:text-xs font-black uppercase tracking-widest text-sky-600">06 / BONUS</span>
-                                <h3 className="mt-1 text-sm sm:text-base font-black uppercase leading-snug">2 complimentary sessions</h3>
-                                <p className="mt-1 text-xs font-bold leading-relaxed text-slate-600">Free cross-track masterclasses: Perception &amp; Mechanical Fundamentals.</p>
+                                <h3 className="mt-1 text-sm sm:text-base font-black uppercase leading-snug">3 complimentary sessions</h3>
+                                <p className="mt-1 text-xs font-bold leading-relaxed text-slate-600">Free cross-track masterclasses: Perception, Embedded Systems &amp; Mechanical Fundamentals.</p>
                             </div>
                             <div className="border-2 sm:border-3 border-slate-900 bg-white p-3.5 sm:p-4 shadow-[3px_3px_0px_#0f172a] sm:shadow-[4px_4px_0px_#0f172a]">
                                 <span className="font-mono text-[10px] sm:text-xs font-black uppercase tracking-widest text-sky-600">07 / VEHICLE</span>
@@ -621,6 +616,83 @@ export default function WorkshopPage({ onBack }) {
                                 <span className="font-mono text-[10px] sm:text-xs font-black uppercase tracking-widest text-sky-600">08 / SKILLS</span>
                                 <h3 className="mt-1 text-sm sm:text-base font-black uppercase leading-snug">Future ready minds</h3>
                                 <p className="mt-1 text-xs font-bold leading-relaxed text-slate-600">Master ROS, Computer Vision, Agentic AI, circuits, and PCB design.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                {/* Contact Leads Section */}
+                <section className="border-b-4 border-slate-900 bg-sky-50 px-4 py-10 sm:px-8 sm:py-14">
+                    <div className="mx-auto max-w-6xl">
+                        <span className="inline-block border-2 border-slate-900 bg-slate-900 px-2.5 py-0.5 font-mono text-[10px] sm:text-xs font-black uppercase tracking-widest text-sky-400">
+                            ✦ Get In Touch
+                        </span>
+                        <h2 className="mt-2 text-2xl font-black uppercase sm:text-4xl leading-tight text-slate-900">
+                            CONTACT THE LEADS
+                        </h2>
+                        <p className="mt-1.5 text-xs sm:text-base font-bold text-slate-700">
+                            Have questions regarding track topics, prerequisites, timings, or payments? Feel free to reach out directly.
+                        </p>
+
+                        <div className="mt-6 sm:mt-8 grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-3 sm:gap-4">
+                            {/* Arya */}
+                            <div className="border-3 border-slate-900 bg-white p-4 sm:p-5 shadow-[4px_4px_0px_#0f172a] flex flex-col justify-between">
+                                <div>
+                                    <span className="border-2 border-slate-900 bg-sky-400 px-2 py-0.5 font-mono text-[10px] font-black uppercase text-slate-900 inline-block mb-2">
+                                        Software Lead
+                                    </span>
+                                    <h3 className="text-base sm:text-lg font-black uppercase text-slate-900">Arya</h3>
+                                    <p className="mt-1 font-mono text-xs font-bold text-slate-600">ROS, ML, Agentic AI &amp; Perception Track</p>
+                                </div>
+                                <div className="mt-4 pt-3 border-t-2 border-slate-200">
+                                    <a
+                                        href="tel:9994399419"
+                                        className="press flex items-center justify-between border-2 border-slate-900 bg-slate-900 px-3.5 py-2.5 font-mono text-xs font-black uppercase text-amber-300 shadow-[2px_2px_0px_#0ea5e9] hover:bg-slate-800"
+                                    >
+                                        <span>+91 99943 99419</span>
+                                        <span className="text-[10px] text-white font-mono">Call →</span>
+                                    </a>
+                                </div>
+                            </div>
+
+                            {/* Ratheeshwar S */}
+                            <div className="border-3 border-slate-900 bg-white p-4 sm:p-5 shadow-[4px_4px_0px_#0f172a] flex flex-col justify-between">
+                                <div>
+                                    <span className="border-2 border-slate-900 bg-sky-400 px-2 py-0.5 font-mono text-[10px] font-black uppercase text-slate-900 inline-block mb-2">
+                                        Software Lead
+                                    </span>
+                                    <h3 className="text-base sm:text-lg font-black uppercase text-slate-900">Ratheeshwar S</h3>
+                                    <p className="mt-1 font-mono text-xs font-bold text-slate-600">Autonomous Stack, CV &amp; System Design</p>
+                                </div>
+                                <div className="mt-4 pt-3 border-t-2 border-slate-200">
+                                    <a
+                                        href="tel:8608944644"
+                                        className="press flex items-center justify-between border-2 border-slate-900 bg-slate-900 px-3.5 py-2.5 font-mono text-xs font-black uppercase text-amber-300 shadow-[2px_2px_0px_#0ea5e9] hover:bg-slate-800"
+                                    >
+                                        <span>+91 86089 44644</span>
+                                        <span className="text-[10px] text-white font-mono">Call →</span>
+                                    </a>
+                                </div>
+                            </div>
+
+                            {/* Joel Anto Edwin */}
+                            <div className="border-3 border-slate-900 bg-white p-4 sm:p-5 shadow-[4px_4px_0px_#0f172a] flex flex-col justify-between">
+                                <div>
+                                    <span className="border-2 border-slate-900 bg-amber-300 px-2 py-0.5 font-mono text-[10px] font-black uppercase text-slate-900 inline-block mb-2">
+                                        Powertrain Lead
+                                    </span>
+                                    <h3 className="text-base sm:text-lg font-black uppercase text-slate-900">Joel Anto Edwin</h3>
+                                    <p className="mt-1 font-mono text-xs font-bold text-slate-600">Circuits, Motors, Microcontrollers &amp; PCB Design</p>
+                                </div>
+                                <div className="mt-4 pt-3 border-t-2 border-slate-200">
+                                    <a
+                                        href="tel:7207960077"
+                                        className="press flex items-center justify-between border-2 border-slate-900 bg-slate-900 px-3.5 py-2.5 font-mono text-xs font-black uppercase text-amber-300 shadow-[2px_2px_0px_#0ea5e9] hover:bg-slate-800"
+                                    >
+                                        <span>+91 72079 60077</span>
+                                        <span className="text-[10px] text-white font-mono">Call →</span>
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -672,9 +744,8 @@ export default function WorkshopPage({ onBack }) {
                                             return (
                                                 <label
                                                     key={pkg.id}
-                                                    className={`press flex min-h-14 cursor-pointer items-center justify-between gap-3 border-2 p-3.5 ${
-                                                        fieldErrors.package ? 'border-red-600' : 'border-slate-950'
-                                                    } ${selected ? 'bg-amber-300 shadow-[4px_4px_0px_#0f172a]' : 'bg-slate-50 hover:bg-amber-50'}`}
+                                                    className={`press flex min-h-14 cursor-pointer items-center justify-between gap-3 border-2 p-3.5 ${fieldErrors.package ? 'border-red-600' : 'border-slate-950'
+                                                        } ${selected ? 'bg-amber-300 shadow-[4px_4px_0px_#0f172a]' : 'bg-slate-50 hover:bg-amber-50'}`}
                                                 >
                                                     <span className="flex min-w-0 items-center gap-3">
                                                         <input
@@ -741,11 +812,9 @@ export default function WorkshopPage({ onBack }) {
                                                     onClick={() => updateField('year', y)}
                                                     aria-pressed={form.year === y}
                                                     data-field={y === '1' ? 'year' : undefined}
-                                                    className={`press min-h-12 border-2 p-3 font-mono text-sm font-black uppercase ${
-                                                        fieldErrors.year ? 'border-red-600' : 'border-slate-950'
-                                                    } ${
-                                                        form.year === y ? 'bg-sky-500 text-white' : fieldErrors.year ? 'bg-red-50 hover:bg-sky-100' : 'bg-slate-50 hover:bg-sky-100'
-                                                    }`}
+                                                    className={`press min-h-12 border-2 p-3 font-mono text-sm font-black uppercase ${fieldErrors.year ? 'border-red-600' : 'border-slate-950'
+                                                        } ${form.year === y ? 'bg-sky-500 text-white' : fieldErrors.year ? 'bg-red-50 hover:bg-sky-100' : 'bg-slate-50 hover:bg-sky-100'
+                                                        }`}
                                                 >
                                                     {y === '1' ? '1st year' : '2nd year'}
                                                 </button>
@@ -905,9 +974,8 @@ function Field({ label, error, children }) {
 
 function ClosingDate({ className = '', dark = false }) {
     return (
-        <p className={`inline-flex items-center gap-2 border-2 px-3 py-1.5 font-mono text-xs font-black uppercase ${
-            dark ? 'border-amber-300 text-amber-300' : 'border-slate-900 bg-white text-slate-900'
-        } ${className}`}>
+        <p className={`inline-flex items-center gap-2 border-2 px-3 py-1.5 font-mono text-xs font-black uppercase ${dark ? 'border-amber-300 text-amber-300' : 'border-slate-900 bg-white text-slate-900'
+            } ${className}`}>
             <span aria-hidden="true">⏳</span>
             Registration closes on {REGISTRATION_CLOSES}
         </p>
@@ -1016,9 +1084,8 @@ function RegisterDialog({ step, canClose, onClose, children }) {
                         <li
                             key={label}
                             aria-current={i === step ? 'step' : undefined}
-                            className={`flex items-center justify-center gap-1.5 px-2 py-2.5 transition-colors ${i > 0 ? 'border-l-2 border-slate-900' : ''} ${
-                                i === step ? 'bg-amber-300 text-slate-900' : i < step ? 'bg-sky-100 text-slate-700' : 'bg-white text-slate-400'
-                            }`}
+                            className={`flex items-center justify-center gap-1.5 px-2 py-2.5 transition-colors ${i > 0 ? 'border-l-2 border-slate-900' : ''} ${i === step ? 'bg-amber-300 text-slate-900' : i < step ? 'bg-sky-100 text-slate-700' : 'bg-white text-slate-400'
+                                }`}
                         >
                             <span>{i < step ? '✓' : i + 1}</span>
                             <span>{label}</span>

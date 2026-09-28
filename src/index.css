@@ -46,13 +46,23 @@
    on the track itself makes 50% of the total width land half a gap short and
    produces a visible jump every loop. */
 @keyframes marquee-track-left {
-  0% { transform: translate3d(0, 0, 0); }
-  100% { transform: translate3d(-50%, 0, 0); }
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
 }
 
 @keyframes marquee-track-right {
-  0% { transform: translate3d(-50%, 0, 0); }
-  100% { transform: translate3d(0, 0, 0); }
+  0% {
+    transform: translate3d(-50%, 0, 0);
+  }
+
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
 }
 
 .animate-marquee-left {
@@ -101,9 +111,11 @@
   .text-stroke-black {
     -webkit-text-stroke: 3px #0f172a;
   }
+
   .text-stroke-sky {
     -webkit-text-stroke: 3px #0284c7;
   }
+
   .text-stroke-white {
     -webkit-text-stroke: 3px #ffffff;
   }
@@ -115,7 +127,7 @@
   border: 3px solid #0f172a;
   box-shadow: 6px 6px 0px #0f172a;
   transition: transform var(--dur-base) var(--ease-brutal),
-              box-shadow var(--dur-base) var(--ease-brutal);
+    box-shadow var(--dur-base) var(--ease-brutal);
 }
 
 .cyber-card:hover {
@@ -128,7 +140,7 @@
   border: 3px solid #0284c7;
   box-shadow: 6px 6px 0px #0284c7;
   transition: transform var(--dur-base) var(--ease-brutal),
-              box-shadow var(--dur-base) var(--ease-brutal);
+    box-shadow var(--dur-base) var(--ease-brutal);
 }
 
 .cyber-card-sky:hover {
@@ -143,8 +155,8 @@
   box-shadow: 4px 4px 0px #0f172a;
   font-weight: 800;
   transition: transform var(--dur-fast) var(--ease-brutal),
-              box-shadow var(--dur-fast) var(--ease-brutal),
-              background-color var(--dur-fast) var(--ease-brutal);
+    box-shadow var(--dur-fast) var(--ease-brutal),
+    background-color var(--dur-fast) var(--ease-brutal);
 }
 
 .cyber-button:hover {
@@ -160,8 +172,8 @@
   box-shadow: 4px 4px 0px #0f172a;
   font-weight: 800;
   transition: transform var(--dur-fast) var(--ease-brutal),
-              box-shadow var(--dur-fast) var(--ease-brutal),
-              background-color var(--dur-fast) var(--ease-brutal);
+    box-shadow var(--dur-fast) var(--ease-brutal),
+    background-color var(--dur-fast) var(--ease-brutal);
 }
 
 .cyber-button-white:hover {
@@ -179,9 +191,9 @@
 ========================================================= */
 .press {
   transition: transform var(--dur-fast) var(--ease-brutal),
-              box-shadow var(--dur-fast) var(--ease-brutal),
-              background-color var(--dur-fast) var(--ease-brutal),
-              color var(--dur-fast) var(--ease-brutal);
+    box-shadow var(--dur-fast) var(--ease-brutal),
+    background-color var(--dur-fast) var(--ease-brutal),
+    color var(--dur-fast) var(--ease-brutal);
 }
 
 .press:active {
@@ -230,13 +242,25 @@
    utilities, neither of which existed in this project.
 ========================================================= */
 @keyframes anim-fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes anim-pop-in {
-  from { opacity: 0; transform: scale(0.96) translateY(-4px); }
-  to { opacity: 1; transform: scale(1) translateY(0); }
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
 .anim-fade {
@@ -259,6 +283,7 @@
     opacity: 0;
     transform: translate3d(-50%, 24px, 0);
   }
+
   to {
     opacity: 1;
     transform: translate3d(-50%, 0, 0);
@@ -274,6 +299,7 @@
     opacity: 0;
     transform: translate3d(0, 16px, 0);
   }
+
   to {
     opacity: 1;
     transform: translate3d(0, 0, 0);
@@ -286,8 +312,13 @@
 
 /* Starburst Badge Spin */
 @keyframes spin-slow {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .animate-spin-slow {
@@ -298,8 +329,16 @@
    it is applied to, so putting it on a visible dot makes the dot vanish.
    This emits a ring from a ::after pseudo-element and leaves the dot alone. */
 @keyframes status-ring {
-  0% { transform: scale(1); opacity: 0.7; }
-  75%, 100% { transform: scale(2.4); opacity: 0; }
+  0% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+
+  75%,
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
 }
 
 .status-dot {
@@ -362,6 +401,7 @@
    interface still confirms input.
 ========================================================= */
 @media (prefers-reduced-motion: reduce) {
+
   .animate-marquee-left,
   .animate-marquee-right,
   .animate-spin-slow,
@@ -400,8 +440,8 @@
   visibility: hidden;
   border-top: 2px solid #1e293b;
   transition: max-height var(--dur-base) var(--ease-brutal),
-              opacity var(--dur-fast) var(--ease-brutal),
-              visibility 0s linear var(--dur-base);
+    opacity var(--dur-fast) var(--ease-brutal),
+    visibility 0s linear var(--dur-base);
 }
 
 .countdown-dock-open {
@@ -409,8 +449,8 @@
   opacity: 1;
   visibility: visible;
   transition: max-height var(--dur-base) var(--ease-brutal),
-              opacity var(--dur-base) var(--ease-brutal),
-              visibility 0s;
+    opacity var(--dur-base) var(--ease-brutal),
+    visibility 0s;
 }
 
 /* The rail advances once a second, so a linear width transition of exactly
@@ -421,9 +461,17 @@
 
 /* Only the seconds tile pulses. One moving element is the point. */
 @keyframes countdown-tick {
-  0% { opacity: 0.5; }
-  15% { opacity: 1; }
-  100% { opacity: 1; }
+  0% {
+    opacity: 0.5;
+  }
+
+  15% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 1;
+  }
 }
 
 .countdown-tick {

@@ -137,7 +137,7 @@ export const WORKSHOP_TRACKS = {
                 reportingInstructions: 'Bring laptops with chargers for interactive AI agent development and mini projects. Arrive 10 minutes prior to session timing. Closed-toe shoes mandatory.'
             }
         ],
-        bonus: 'Two complimentary sessions: Powertrain & Embedded/Electrical (Sat 17 Oct) and Mechanical Fundamentals (Sat 24 Oct).'
+        bonus: 'Three complimentary sessions: Powertrain & Embedded/Electrical, Mechanical Fundamentals, and Cross-track Masterclasses.'
     },
     powertrain: {
         id: 'powertrain',
@@ -153,7 +153,7 @@ export const WORKSHOP_TRACKS = {
         startDate: '2026-09-29',
         days: 'Monday, Wednesday & Friday',
         timing: '5:15 PM – 6:45 PM',
-        format: '9 talks + 3 hands-on sessions + 2 complimentary sessions (21 hours)',
+        format: '9 talks + 3 hands-on sessions + 3 complimentary sessions (21+ hours)',
         // Optional value callout shown on the track card.
         highlight: '21+ hours of learning · less than ₹50 an hour',
         audience: 'Beginners welcome. No prior knowledge needed.',
@@ -269,7 +269,7 @@ export const WORKSHOP_TRACKS = {
                 reportingInstructions: 'Bring laptop with PCB design software (EasyEDA / KiCad) installed. Safety shoes required inside the lab. Arrive 10 minutes prior to session timing.'
             }
         ],
-        bonus: 'Two complimentary sessions: Autonomous Perception (Sat 17 Oct) and Mechanical Fundamentals (Sat 24 Oct).'
+        bonus: 'Three complimentary sessions: Autonomous Perception, Mechanical Fundamentals, and Cross-track Masterclasses.'
     }
 };
 
