@@ -5,6 +5,7 @@ import Icon from '../Icon';
 import ImageField from './ImageField';
 import RecruitmentAdmin from './RecruitmentAdmin';
 import WorkshopScheduleAdmin from './WorkshopScheduleAdmin';
+import WorkshopRegistrationsAdmin from './WorkshopRegistrationsAdmin';
 import teamLogo from '../../assets/Screenshot 2026-08-26 232320.png';
 
 export default function AdminDashboard({ onExit }) {
@@ -68,6 +69,15 @@ export default function AdminDashboard({ onExit }) {
 
     // Active subsystem selection for squad editor
     const [selectedSubsystemId, setSelectedSubsystemId] = useState(siteData.subsystems[0]?.id || 'software-perception');
+    const currentSubsystem = (siteData.subsystems && siteData.subsystems.find(s => s.id === selectedSubsystemId)) || siteData.subsystems?.[0] || {
+        id: 'software-perception',
+        name: 'Software & Perception',
+        badge: 'AI & AUTONOMY',
+        tagline: 'Perception, Path Planning & Control Systems',
+        fullDesc: '',
+        contactEmail: '',
+        teamMembers: []
+    };
 
     // Forms state
     const [newMember, setNewMember] = useState({ name: '', role: '', phone: '', initials: '', bio: '', badge: 'SPECIALIST', photo: '', photoFit: 'cover', photoPosition: '50% 50%', status: 'Active Member' });
@@ -510,7 +520,8 @@ export default function AdminDashboard({ onExit }) {
         { id: 'subsystems', label: 'Subsystems & Squad', icon: 'vehicle' },
         { id: 'sponsorship', label: 'Sponsorship Portal', icon: 'folder' },
         { id: 'recruitment', label: 'Subsystem Recruitment', icon: 'users' },
-        { id: 'workshop-schedule', label: 'Workshop', icon: 'calendar' },
+        { id: 'workshop-schedule', label: 'Workshop Schedule', icon: 'calendar' },
+        { id: 'workshop-registrations', label: 'Workshop Registrations & Paid', icon: 'users' },
         { id: 'gallery', label: 'Media Gallery', icon: 'camera' },
         { id: 'updates', label: 'Team Updates', icon: 'megaphone' },
         { id: 'subscribers', label: 'Alliance Leads', icon: 'inbox' },
@@ -1503,6 +1514,10 @@ export default function AdminDashboard({ onExit }) {
                             showStatus={showStatus}
                             onImageUpload={handleImageUpload}
                         />
+                    )}
+
+                    {activeTab === 'workshop-registrations' && (
+                        <WorkshopRegistrationsAdmin showStatus={showStatus} />
                     )}
 
                     {/* TAB 5: GALLERY & MEDIA */}
