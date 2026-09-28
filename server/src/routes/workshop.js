@@ -40,9 +40,10 @@ function requireDb(req, res, next) {
     next();
 }
 
-// Registrations can be viewed by all authenticated admin team members (SuperAdmin, Lead, Member).
+// Registrations can be viewed by all authenticated admin team members (SuperAdmin, Lead, Member, Admin).
 function requireLeadOrAdmin(req, res, next) {
-    if (!req.user || !['SuperAdmin', 'Lead', 'Member'].includes(req.user.accessLevel)) {
+    const level = req.user?.accessLevel || req.user?.role;
+    if (!req.user || !['SuperAdmin', 'Lead', 'Member', 'Admin'].includes(level)) {
         return res.status(403).json({ error: 'Forbidden: Admin privileges required.' });
     }
     next();

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useWebsiteData } from '../../context/WebsiteDataContext';
 import { WORKSHOP_TRACKS } from '../../../server/src/config/workshopPackages.js';
+import WorkshopRegistrationsAdmin from './WorkshopRegistrationsAdmin';
 
 const btn = 'press font-mono font-black text-[11px] uppercase border border-slate-900 cursor-pointer px-3 py-1.5 transition-all';
 const btnPrimary = `${btn} bg-sky-500 hover:bg-sky-400 text-white`;
@@ -20,6 +21,7 @@ export default function WorkshopScheduleAdmin({ currentUser, isAdmin, showStatus
     const workshop = siteData.workshop || { tracks: WORKSHOP_TRACKS };
     const tracks = workshop.tracks || WORKSHOP_TRACKS;
 
+    const [activeSection, setActiveSection] = useState('registrations'); // 'registrations' or 'schedule'
     const trackKeys = Object.keys(WORKSHOP_TRACKS);
     const [selectedTrackId, setSelectedTrackId] = useState(trackKeys[0] || 'software');
     const [isUploading, setIsUploading] = useState(false);
@@ -119,27 +121,57 @@ export default function WorkshopScheduleAdmin({ currentUser, isAdmin, showStatus
                 </p>
             </div>
 
-            {/* Track Switcher Tabs */}
-            <div className="flex flex-wrap gap-2">
-                {trackKeys.map((key) => {
-                    const t = WORKSHOP_TRACKS[key];
-                    const active = selectedTrackId === key;
-                    return (
-                        <button
-                            key={key}
-                            type="button"
-                            onClick={() => setSelectedTrackId(key)}
-                            className={`px-4 py-2 border border-slate-900 font-mono text-xs font-black uppercase cursor-pointer transition-all ${
-                                active
-                                    ? 'bg-slate-900 text-white'
-                                    : 'bg-white hover:bg-slate-50 text-slate-800'
-                            }`}
-                        >
-                            {t.name}
-                        </button>
-                    );
-                })}
+            {/* Section Switcher Tabs */}
+            <div className="flex flex-wrap gap-2 border-b-2 border-slate-900 pb-3">
+                <button
+                    type="button"
+                    onClick={() => setActiveSection('registrations')}
+                    className={`press px-4 py-2 border-2 border-slate-900 font-mono text-xs font-black uppercase cursor-pointer transition-all ${
+                        activeSection === 'registrations'
+                            ? 'bg-sky-500 text-white shadow-[3px_3px_0px_#0f172a]'
+                            : 'bg-white hover:bg-slate-100 text-slate-900'
+                    }`}
+                >
+                    💳 Registered Candidates & Payments
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setActiveSection('schedule')}
+                    className={`press px-4 py-2 border-2 border-slate-900 font-mono text-xs font-black uppercase cursor-pointer transition-all ${
+                        activeSection === 'schedule'
+                            ? 'bg-sky-500 text-white shadow-[3px_3px_0px_#0f172a]'
+                            : 'bg-white hover:bg-slate-100 text-slate-900'
+                    }`}
+                >
+                    📅 Curriculum & Batch Timings
+                </button>
             </div>
+
+            {activeSection === 'registrations' ? (
+                <WorkshopRegistrationsAdmin showStatus={showStatus} />
+            ) : (
+                <>
+                    {/* Track Switcher Tabs */}
+                    <div className="flex flex-wrap gap-2">
+                        {trackKeys.map((key) => {
+                            const t = WORKSHOP_TRACKS[key];
+                            const active = selectedTrackId === key;
+                            return (
+                                <button
+                                    key={key}
+                                    type="button"
+                                    onClick={() => setSelectedTrackId(key)}
+                                    className={`px-4 py-2 border border-slate-900 font-mono text-xs font-black uppercase cursor-pointer transition-all ${
+                                        active
+                                            ? 'bg-slate-900 text-white'
+                                            : 'bg-white hover:bg-slate-50 text-slate-800'
+                                    }`}
+                                >
+                                    {t.name}
+                                </button>
+                            );
+                        })}
+                    </div>
 
             {/* SECTION 1: SYLLABUS DOCUMENT MANAGEMENT */}
             <div className="p-5 bg-white border-2 border-slate-900 shadow-[3px_3px_0px_#0f172a] space-y-4">
@@ -459,6 +491,8 @@ export default function WorkshopScheduleAdmin({ currentUser, isAdmin, showStatus
                     </div>
                 </div>
             </div>
+            </>
+            )}
         </div>
     );
 }
