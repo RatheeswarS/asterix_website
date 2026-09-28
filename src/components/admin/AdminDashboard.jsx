@@ -509,7 +509,7 @@ export default function AdminDashboard({ onExit }) {
         { id: 'story', label: 'Our Story', icon: 'book' },
         { id: 'subsystems', label: 'Subsystems & Squad', icon: 'vehicle' },
         { id: 'sponsorship', label: 'Sponsorship Portal', icon: 'folder' },
-        { id: 'recruitment', label: 'Freshers & Recruitment', icon: 'users' },
+        { id: 'recruitment', label: 'Subsystem Recruitment', icon: 'users' },
         { id: 'workshop-schedule', label: 'Workshop', icon: 'calendar' },
         { id: 'gallery', label: 'Media Gallery', icon: 'camera' },
         { id: 'updates', label: 'Team Updates', icon: 'megaphone' },
@@ -730,7 +730,7 @@ export default function AdminDashboard({ onExit }) {
                                         onClick={() => setActiveTab('recruitment')}
                                         className="press press-flat p-3 border-2 border-slate-900 bg-slate-50 hover:bg-sky-50 text-left font-mono font-bold text-xs flex items-center justify-between cursor-pointer"
                                     >
-                                        <span>Manage Freshers Announcement & Tracks</span>
+                                        <span>Manage Recruitment Tracks & Problem Statements</span>
                                         <span>→</span>
                                     </button>
                                     <button

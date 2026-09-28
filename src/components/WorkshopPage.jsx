@@ -1,4 +1,5 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { apiUrl } from '../lib/api';
 import { useWebsiteData } from '../context/WebsiteDataContext';
 /* Shared with the backend so the page and the server can never disagree on
@@ -101,16 +102,161 @@ async function postJson(path, body) {
 
 const wait = (ms) => new Promise(r => setTimeout(r, ms));
 
+const STEPS = ['Details', 'Confirm', 'Payment'];
+
+// Which slide of the registration pop-up a stage belongs to.
+function stepFor(stage) {
+    if (stage === 'form') return 0;
+    if (stage === 'review') return 1;
+    return 2;
+}
+
+function formatPaidAt(value) {
+    if (!value) return '';
+    return new Date(value).toLocaleString('en-IN', {
+        timeZone: 'Asia/Kolkata',
+        dateStyle: 'medium',
+        timeStyle: 'short'
+    });
+}
+
+/* One list feeds both the on-screen receipt and the downloaded image, whether
+   the record comes from a payment just made or from a later receipt lookup. */
+function receiptRows(record) {
+    return [
+        ['Receipt no.', record.receiptNo || 'Being generated'],
+        ['Name', record.name],
+        ['Registered no.', record.rollNo],
+        ['Department', record.department],
+        ['Year', record.year === '1' ? '1st year' : record.year === '2' ? '2nd year' : ''],
+        ['Email', record.email],
+        ['Phone', record.phone],
+        ['Track', record.packageName],
+        ['Amount paid', `₹${Number(record.amount).toLocaleString('en-IN')}`],
+        ['Paid on', formatPaidAt(record.paidAt)],
+        ['Reference', record.registrationId]
+    ].filter(([, value]) => value);
+}
+
+function wrapText(ctx, text, maxWidth) {
+    const lines = [];
+    let line = '';
+    for (const word of String(text).split(' ')) {
+        const next = line ? `${line} ${word}` : word;
+        if (line && ctx.measureText(next).width > maxWidth) {
+            lines.push(line);
+            line = word;
+        } else {
+            line = next;
+        }
+    }
+    if (line) lines.push(line);
+    return lines;
+}
+
+/* Drawn on a canvas and saved as a PNG: no PDF library needed, and on a
+   phone an image lands straight in the gallery / downloads. */
+function downloadReceipt(rows, fileId) {
+    const W = 640, PAD = 36, LABEL_W = 170, LINE_H = 24, ROW_PAD = 18;
+    const HEADER_H = 128, FOOTER_H = 84;
+    const MONO = 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
+    const SANS = 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
+    const VALUE_FONT = `700 17px ${SANS}`;
+    const valueW = W - PAD * 2 - LABEL_W;
+
+    const canvas = document.createElement('canvas');
+    let ctx = canvas.getContext('2d');
+    ctx.font = VALUE_FONT;
+    const laid = rows.map(([label, value]) => ({ label, lines: wrapText(ctx, value, valueW) }));
+    const H = HEADER_H + laid.reduce((sum, row) => sum + row.lines.length * LINE_H + ROW_PAD, 0) + FOOTER_H + 16;
+
+    const scale = 2;
+    canvas.width = W * scale;
+    canvas.height = H * scale;
+    ctx = canvas.getContext('2d'); // resizing resets the context state
+    ctx.scale(scale, scale);
+    ctx.textBaseline = 'top';
+
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.fillStyle = '#fcd34d';
+    ctx.fillRect(0, 0, W, HEADER_H - 16);
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(0, HEADER_H - 20, W, 4);
+    ctx.font = `900 13px ${MONO}`;
+    ctx.fillStyle = '#0369a1';
+    ctx.fillText('TEAM ASTERIX · WORKSHOP 2026', PAD, 30);
+    ctx.font = `900 30px ${SANS}`;
+    ctx.fillStyle = '#0f172a';
+    ctx.fillText('PAYMENT RECEIPT', PAD, 52);
+
+    ctx.font = `900 14px ${MONO}`;
+    const tag = '✓ PAID';
+    const tagW = ctx.measureText(tag).width + 24;
+    ctx.fillStyle = '#4ade80';
+    ctx.fillRect(W - PAD - tagW, 50, tagW, 34);
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(W - PAD - tagW, 50, tagW, 34);
+    ctx.fillStyle = '#0f172a';
+    ctx.fillText(tag, W - PAD - tagW + 12, 60);
+
+    let y = HEADER_H;
+    laid.forEach((row, index) => {
+        const rowH = row.lines.length * LINE_H + ROW_PAD;
+        if (row.label === 'Amount paid') {
+            ctx.fillStyle = '#fcd34d';
+            ctx.fillRect(PAD - 12, y - 2, W - PAD * 2 + 24, rowH);
+        }
+        ctx.font = `900 12px ${MONO}`;
+        ctx.fillStyle = '#64748b';
+        ctx.fillText(row.label.toUpperCase(), PAD, y + 11);
+        ctx.font = VALUE_FONT;
+        ctx.fillStyle = '#0f172a';
+        row.lines.forEach((line, i) => ctx.fillText(line, PAD + LABEL_W, y + 8 + i * LINE_H));
+        y += rowH;
+        if (index < laid.length - 1) {
+            ctx.fillStyle = '#e2e8f0';
+            ctx.fillRect(PAD, y - 2, W - PAD * 2, 2);
+        }
+    });
+
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(0, y + 8, W, 4);
+    ctx.font = `700 12px ${MONO}`;
+    ctx.fillStyle = '#475569';
+    ctx.fillText('Payment processed by Razorpay.', PAD, y + 30);
+    ctx.fillText('Keep this receipt; session details will be shared before the workshop.', PAD, y + 50);
+
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 8;
+    ctx.strokeRect(0, 0, W, H);
+
+    canvas.toBlob((blob) => {
+        if (!blob) return;
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `Asterix-Workshop-Receipt-${fileId}.png`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 10000);
+    }, 'image/png');
+}
+
 export default function WorkshopPage({ onBack }) {
     const [activeTrack, setActiveTrack] = useState('software');
     const [registerOpen, setRegisterOpen] = useState(false);
+    const [lookupOpen, setLookupOpen] = useState(false);
     const [form, setForm] = useState(EMPTY_FORM);
     const [fieldErrors, setFieldErrors] = useState({});
     // form -> review -> paying -> verifying -> success | unconfirmed
     const [stage, setStage] = useState('form');
     const [error, setError] = useState('');
     const [registration, setRegistration] = useState(null);
-    const registerRef = useRef(null);
+    const formRef = useRef(null);
     const detailRef = useRef(null);
 
     const { siteData } = useWebsiteData();
@@ -122,9 +268,12 @@ export default function WorkshopPage({ onBack }) {
     const selectedPkg = WORKSHOP_PACKAGES.find(p => p.id === form.package) || null;
     const anyPriced = WORKSHOP_PACKAGES.some(isPriced);
 
-    const openRegister = () => {
-        setRegisterOpen(true);
-        setTimeout(() => scrollToEl(registerRef.current), 60);
+    const openRegister = () => setRegisterOpen(true);
+
+    // Not while the payment window is open or a payment is being confirmed.
+    const canClose = stage !== 'paying' && stage !== 'verifying';
+    const closeRegister = () => {
+        if (canClose) setRegisterOpen(false);
     };
 
     const selectTrack = (id) => {
@@ -147,17 +296,15 @@ export default function WorkshopPage({ onBack }) {
             setError(`Please fix: ${keys.map(key => FIELD_LABELS[key] || key).join(', ')}.`);
             // On a phone the first problem is usually off screen: take them to it.
             // validate() adds keys in form order, so keys[0] is the topmost field.
-            const target = registerRef.current?.querySelector(`[data-field="${keys[0]}"]`);
+            const target = formRef.current?.querySelector(`[data-field="${keys[0]}"]`);
             if (target) {
-                scrollToEl(target.closest('[data-field-wrap]') || target);
+                (target.closest('[data-field-wrap]') || target).scrollIntoView({ behavior: 'smooth', block: 'center' });
                 target.focus({ preventScroll: true });
             }
             return;
         }
         setError('');
         setStage('review');
-        // The review card is much shorter than the form; bring its top into view.
-        setTimeout(() => scrollToEl(registerRef.current), 60);
     };
 
     /* The signature check in /verify is what confirms a payment. If that call
@@ -269,9 +416,16 @@ export default function WorkshopPage({ onBack }) {
                         <span className="font-mono text-xs font-black uppercase tracking-widest text-sky-600">Team Asterix</span>
                         <strong className="block text-sm font-black uppercase">Workshops 2026</strong>
                     </div>
-                    <button type="button" onClick={onBack} className="press border-2 border-slate-900 bg-amber-300 px-4 py-2 font-mono text-xs font-black uppercase shadow-[3px_3px_0px_#0f172a] hover:bg-amber-400">
-                        ← Main Website
-                    </button>
+                    <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+                        <button type="button" onClick={onBack} className="press border-2 border-slate-900 bg-amber-300 px-3 py-2 font-mono text-xs font-black uppercase shadow-[3px_3px_0px_#0f172a] hover:bg-amber-400 sm:px-4">
+                            ← Main<span className="hidden sm:inline"> Website</span>
+                        </button>
+                        {/* Shortened on phones so both buttons fit beside the title. */}
+                        <button type="button" onClick={() => setLookupOpen(true)} aria-haspopup="dialog" aria-label="Download receipt" className="press border-2 border-slate-900 bg-green-400 px-3 py-2 font-mono text-xs font-black uppercase shadow-[3px_3px_0px_#0f172a] hover:bg-green-300 sm:px-4">
+                            <span className="sm:hidden">Receipt ↓</span>
+                            <span className="hidden sm:inline">Download receipt ↓</span>
+                        </button>
+                    </div>
                 </div>
             </header>
 
@@ -352,7 +506,7 @@ export default function WorkshopPage({ onBack }) {
                         <button
                             type="button"
                             onClick={openRegister}
-                            aria-expanded={registerOpen}
+                            aria-haspopup="dialog"
                             className="press press-sky border-4 border-white bg-amber-300 px-8 py-4 text-lg font-black uppercase tracking-wide text-slate-900 shadow-[6px_6px_0px_#0ea5e9] hover:bg-amber-400"
                         >
                             Register ✦
@@ -360,131 +514,132 @@ export default function WorkshopPage({ onBack }) {
                     </div>
                 </section>
 
-                {/* Registration form */}
+                {lookupOpen && <ReceiptLookupDialog onClose={() => setLookupOpen(false)} />}
+
+                {/* Registration pop-up: Details -> Confirm -> Payment, sliding sideways. */}
                 {registerOpen && (
-                    <section ref={registerRef} className="border-b-4 border-slate-900 bg-slate-100 px-4 py-12 sm:px-8 sm:py-16 anim-pop">
-                        <div className="mx-auto max-w-4xl">
-                            <span className="font-mono text-xs font-black uppercase tracking-widest text-sky-600">03 / Registration</span>
-                            <h2 className="mt-2 text-3xl font-black uppercase sm:text-5xl">
-                                {stage === 'success' ? 'Registered successfully' : 'Register for the workshop'}
-                            </h2>
+                    <RegisterDialog step={stepFor(stage)} canClose={canClose} onClose={closeRegister}>
+                        <form ref={formRef} onSubmit={handleConfirm} noValidate className="flex h-full flex-col">
+                            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6">
+                                {!anyPriced && (
+                                    <p className="mb-5 border-2 border-slate-900 bg-amber-100 p-3 font-mono text-xs font-black uppercase">
+                                        Prices are yet to be announced. Payments open as soon as they are.
+                                    </p>
+                                )}
 
-                            {stage === 'success' ? (
-                                <SuccessPanel registration={registration} onRegisterAnother={resetForm} />
-                            ) : stage === 'unconfirmed' ? (
-                                <UnconfirmedPanel registrationId={registration?.registrationId} />
-                            ) : stage === 'verifying' ? (
-                                <StatusCard title="Confirming your payment…" body="Hold on, this only takes a few seconds. Please do not close this page." />
-                            ) : stage === 'form' ? (
-                                <form onSubmit={handleConfirm} noValidate className="mt-6 border-4 border-slate-900 bg-white p-4 shadow-[6px_6px_0px_#0f172a] sm:mt-8 sm:p-8 sm:shadow-[8px_8px_0px_#0f172a]">
-                                    {!anyPriced && (
-                                        <p className="mb-6 border-2 border-slate-900 bg-amber-100 p-3 font-mono text-xs font-black uppercase">
-                                            Prices are yet to be announced. Payments open as soon as they are.
-                                        </p>
-                                    )}
-
-                                    {/* Package first: it is what they came here to pick. */}
-                                    <fieldset data-field-wrap>
-                                        <legend className="mb-2 font-mono text-xs font-black uppercase tracking-widest text-slate-700">1. Choose your track</legend>
-                                        <div className="grid grid-cols-1 gap-2.5 sm:gap-3">
-                                            {WORKSHOP_PACKAGES.map((pkg, index) => {
-                                                const selected = form.package === pkg.id;
-                                                return (
-                                                    <label
-                                                        key={pkg.id}
-                                                        className={`press flex min-h-14 cursor-pointer items-center justify-between gap-3 border-2 p-3.5 sm:p-4 ${
-                                                            fieldErrors.package ? 'border-red-600' : 'border-slate-950'
-                                                        } ${selected ? 'bg-amber-300 shadow-[4px_4px_0px_#0f172a]' : 'bg-slate-50 hover:bg-amber-50'}`}
-                                                    >
-                                                        <span className="flex min-w-0 items-center gap-3">
-                                                            <input
-                                                                type="radio"
-                                                                name="package"
-                                                                value={pkg.id}
-                                                                checked={selected}
-                                                                onChange={() => updateField('package', pkg.id)}
-                                                                data-field={index === 0 ? 'package' : undefined}
-                                                                className="h-5 w-5 shrink-0 accent-slate-900"
-                                                            />
-                                                            <span className="min-w-0">
-                                                                <span className="block text-sm font-black uppercase">{pkg.name}</span>
-                                                                {pkg.tracksIncluded.length > 1 && (
-                                                                    <span className="block font-mono text-[11px] font-bold text-slate-600">
-                                                                        {pkg.tracksIncluded.map(id => WORKSHOP_TRACKS[id].name).join(' + ')}
-                                                                    </span>
-                                                                )}
-                                                            </span>
+                                {/* Package first: it is what they came here to pick. */}
+                                <fieldset data-field-wrap>
+                                    <legend className="mb-2 font-mono text-xs font-black uppercase tracking-widest text-slate-700">1. Choose your track</legend>
+                                    <div className="grid grid-cols-1 gap-2.5">
+                                        {WORKSHOP_PACKAGES.map((pkg, index) => {
+                                            const selected = form.package === pkg.id;
+                                            return (
+                                                <label
+                                                    key={pkg.id}
+                                                    className={`press flex min-h-14 cursor-pointer items-center justify-between gap-3 border-2 p-3.5 ${
+                                                        fieldErrors.package ? 'border-red-600' : 'border-slate-950'
+                                                    } ${selected ? 'bg-amber-300 shadow-[4px_4px_0px_#0f172a]' : 'bg-slate-50 hover:bg-amber-50'}`}
+                                                >
+                                                    <span className="flex min-w-0 items-center gap-3">
+                                                        <input
+                                                            type="radio"
+                                                            name="package"
+                                                            value={pkg.id}
+                                                            checked={selected}
+                                                            onChange={() => updateField('package', pkg.id)}
+                                                            data-field={index === 0 ? 'package' : undefined}
+                                                            className="h-5 w-5 shrink-0 accent-slate-900"
+                                                        />
+                                                        <span className="min-w-0">
+                                                            <span className="block text-sm font-black uppercase">{pkg.name}</span>
+                                                            {pkg.tracksIncluded.length > 1 && (
+                                                                <span className="block font-mono text-[11px] font-bold text-slate-600">
+                                                                    {pkg.tracksIncluded.map(id => WORKSHOP_TRACKS[id].name).join(' + ')}
+                                                                </span>
+                                                            )}
                                                         </span>
-                                                        <span className="shrink-0 font-mono text-base font-black sm:text-lg">{formatPrice(pkg)}</span>
-                                                    </label>
-                                                );
-                                            })}
-                                        </div>
-                                        {fieldErrors.package && <p className="mt-2 font-mono text-xs font-black text-red-600">{fieldErrors.package}</p>}
-                                    </fieldset>
-
-                                    <p className="mb-2 mt-7 font-mono text-xs font-black uppercase tracking-widest text-slate-700">2. Your details</p>
-                                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5">
-                                        <Field label="Full name" error={fieldErrors.name}>
-                                            <input data-field="name" className={inputClass(fieldErrors.name)} value={form.name} onChange={e => updateField('name', e.target.value)} autoComplete="name" autoCapitalize="words" enterKeyHint="next" maxLength={100} placeholder="As on your ID card" />
-                                        </Field>
-                                        <Field label="Registered number" error={fieldErrors.rollNo}>
-                                            <input data-field="rollNo" className={inputClass(fieldErrors.rollNo)} value={form.rollNo} onChange={e => updateField('rollNo', e.target.value)} autoComplete="off" autoCapitalize="characters" autoCorrect="off" spellCheck={false} enterKeyHint="next" maxLength={40} placeholder="College register number" />
-                                        </Field>
-                                        <Field label="Department" error={fieldErrors.department}>
-                                            <select data-field="department" className={inputClass(fieldErrors.department)} value={form.department} onChange={e => updateField('department', e.target.value)}>
-                                                <option value="" disabled>Select department</option>
-                                                {WORKSHOP_DEPARTMENTS.map(dept => (
-                                                    <option key={dept} value={dept}>{dept}</option>
-                                                ))}
-                                            </select>
-                                        </Field>
-                                        <Field label="Year" error={fieldErrors.year}>
-                                            <div className="grid grid-cols-2 gap-2">
-                                                {['1', '2'].map(y => (
-                                                    <button
-                                                        key={y}
-                                                        type="button"
-                                                        onClick={() => updateField('year', y)}
-                                                        aria-pressed={form.year === y}
-                                                        data-field={y === '1' ? 'year' : undefined}
-                                                        className={`press min-h-12 border-2 p-3 font-mono text-sm font-black uppercase ${
-                                                            fieldErrors.year ? 'border-red-600' : 'border-slate-950'
-                                                        } ${
-                                                            form.year === y ? 'bg-sky-500 text-white' : fieldErrors.year ? 'bg-red-50 hover:bg-sky-100' : 'bg-slate-50 hover:bg-sky-100'
-                                                        }`}
-                                                    >
-                                                        {y === '1' ? '1st year' : '2nd year'}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </Field>
-                                        <Field label="Email ID" error={fieldErrors.email}>
-                                            <input data-field="email" type="email" inputMode="email" className={inputClass(fieldErrors.email)} value={form.email} onChange={e => updateField('email', e.target.value)} autoComplete="email" autoCapitalize="none" autoCorrect="off" spellCheck={false} enterKeyHint="next" maxLength={254} placeholder="you@example.com" />
-                                        </Field>
-                                        <Field label="Phone" error={fieldErrors.phone}>
-                                            <input data-field="phone" type="tel" inputMode="tel" className={inputClass(fieldErrors.phone)} value={form.phone} onChange={e => updateField('phone', e.target.value)} autoComplete="tel" enterKeyHint="done" maxLength={20} placeholder="10-digit mobile number" />
-                                        </Field>
+                                                    </span>
+                                                    <span className="shrink-0 font-mono text-base font-black sm:text-lg">{formatPrice(pkg)}</span>
+                                                </label>
+                                            );
+                                        })}
                                     </div>
+                                    {fieldErrors.package && <p className="mt-2 font-mono text-xs font-black text-red-600">{fieldErrors.package}</p>}
+                                </fieldset>
 
-                                    {error && <p className="mt-6 border-2 border-red-600 bg-red-50 p-3 font-mono text-xs font-black text-red-700">{error}</p>}
+                                <p className="mb-2 mt-6 font-mono text-xs font-black uppercase tracking-widest text-slate-700">2. Your details</p>
+                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                    <Field label="Full name" error={fieldErrors.name}>
+                                        <input data-field="name" className={inputClass(fieldErrors.name)} value={form.name} onChange={e => updateField('name', e.target.value)} autoComplete="name" autoCapitalize="words" enterKeyHint="next" maxLength={100} placeholder="As on your ID card" />
+                                    </Field>
+                                    <Field label="Registered number" error={fieldErrors.rollNo}>
+                                        <input data-field="rollNo" className={inputClass(fieldErrors.rollNo)} value={form.rollNo} onChange={e => updateField('rollNo', e.target.value)} autoComplete="off" autoCapitalize="characters" autoCorrect="off" spellCheck={false} enterKeyHint="next" maxLength={40} placeholder="College register number" />
+                                    </Field>
+                                    <Field label="Department" error={fieldErrors.department}>
+                                        <select data-field="department" className={inputClass(fieldErrors.department)} value={form.department} onChange={e => updateField('department', e.target.value)}>
+                                            <option value="" disabled>Select department</option>
+                                            {WORKSHOP_DEPARTMENTS.map(dept => (
+                                                <option key={dept} value={dept}>{dept}</option>
+                                            ))}
+                                        </select>
+                                    </Field>
+                                    <Field label="Year" error={fieldErrors.year}>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {['1', '2'].map(y => (
+                                                <button
+                                                    key={y}
+                                                    type="button"
+                                                    onClick={() => updateField('year', y)}
+                                                    aria-pressed={form.year === y}
+                                                    data-field={y === '1' ? 'year' : undefined}
+                                                    className={`press min-h-12 border-2 p-3 font-mono text-sm font-black uppercase ${
+                                                        fieldErrors.year ? 'border-red-600' : 'border-slate-950'
+                                                    } ${
+                                                        form.year === y ? 'bg-sky-500 text-white' : fieldErrors.year ? 'bg-red-50 hover:bg-sky-100' : 'bg-slate-50 hover:bg-sky-100'
+                                                    }`}
+                                                >
+                                                    {y === '1' ? '1st year' : '2nd year'}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </Field>
+                                    <Field label="Email ID" error={fieldErrors.email}>
+                                        <input data-field="email" type="email" inputMode="email" className={inputClass(fieldErrors.email)} value={form.email} onChange={e => updateField('email', e.target.value)} autoComplete="email" autoCapitalize="none" autoCorrect="off" spellCheck={false} enterKeyHint="next" maxLength={254} placeholder="you@example.com" />
+                                    </Field>
+                                    <Field label="Phone" error={fieldErrors.phone}>
+                                        <input data-field="phone" type="tel" inputMode="tel" className={inputClass(fieldErrors.phone)} value={form.phone} onChange={e => updateField('phone', e.target.value)} autoComplete="tel" enterKeyHint="done" maxLength={20} placeholder="10-digit mobile number" />
+                                    </Field>
+                                </div>
+                            </div>
 
-                                    <button type="submit" className="press mt-6 w-full border-2 border-slate-900 bg-slate-900 px-5 py-4 font-mono text-sm font-black uppercase text-amber-300 shadow-[4px_4px_0px_#0284c7] hover:bg-slate-800 sm:w-auto">
-                                        Review &amp; continue →
-                                    </button>
-                                </form>
-                            ) : (
-                                <ReviewPanel
-                                    form={form}
-                                    pkg={selectedPkg}
-                                    error={error}
-                                    busy={stage === 'paying'}
-                                    onEdit={() => { setError(''); setStage('form'); }}
-                                    onPay={handlePay}
-                                />
-                            )}
-                        </div>
-                    </section>
+                            {/* Pinned to the bottom so the button is always in thumb reach. */}
+                            <div className="border-t-4 border-slate-900 bg-slate-50 p-3 sm:p-4">
+                                {error && stage === 'form' && (
+                                    <p className="mb-3 border-2 border-red-600 bg-red-50 p-2.5 font-mono text-xs font-black text-red-700">{error}</p>
+                                )}
+                                <button type="submit" className="press min-h-12 w-full border-2 border-slate-900 bg-slate-900 px-5 py-3.5 font-mono text-sm font-black uppercase text-amber-300 shadow-[4px_4px_0px_#0284c7] hover:bg-slate-800">
+                                    Review &amp; continue →
+                                </button>
+                            </div>
+                        </form>
+
+                        <ReviewPanel
+                            form={form}
+                            pkg={selectedPkg}
+                            error={stage === 'review' || stage === 'paying' ? error : ''}
+                            busy={stage === 'paying'}
+                            onEdit={() => { setError(''); setStage('form'); }}
+                            onPay={handlePay}
+                        />
+
+                        <PaymentPanel
+                            stage={stage}
+                            registration={registration}
+                            form={form}
+                            onRegisterAnother={resetForm}
+                            onClose={closeRegister}
+                        />
+                    </RegisterDialog>
                 )}
             </main>
         </div>
@@ -552,6 +707,108 @@ function Field({ label, error, children }) {
     );
 }
 
+/* Full-screen sheet on phones, centred card from sm up. The three children are
+   laid side by side and the row slides left one slide per step; each slide
+   scrolls on its own, so the buttons pinned at the bottom never move. */
+// Page behind a pop-up stays still; Escape closes it when allowed.
+function useModal(canClose, onClose) {
+    useEffect(() => {
+        const prevOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        window.lenis?.stop();
+        return () => {
+            document.body.style.overflow = prevOverflow;
+            window.lenis?.start();
+        };
+    }, []);
+
+    useEffect(() => {
+        const onKey = (e) => { if (e.key === 'Escape' && canClose) onClose(); };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, [canClose, onClose]);
+}
+
+function RegisterDialog({ step, canClose, onClose, children }) {
+    const slides = Array.isArray(children) ? children : [children];
+    const slideRefs = useRef([]);
+    useModal(canClose, onClose);
+
+    // Keyboard / screen-reader focus follows the slide that is showing.
+    useEffect(() => {
+        slideRefs.current[step]?.focus({ preventScroll: true });
+    }, [step]);
+
+    return createPortal(
+        <div
+            className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/80 backdrop-blur-sm anim-fade sm:p-6"
+            onClick={() => { if (canClose) onClose(); }}
+            data-lenis-prevent
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="workshop-register-title"
+        >
+            <div
+                className="anim-pop-center flex h-[100dvh] w-full flex-col bg-white sm:h-[min(88vh,780px)] sm:max-w-2xl sm:border-4 sm:border-slate-900 sm:shadow-[12px_12px_0px_#0284c7]"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <div className="flex items-center justify-between gap-3 bg-slate-900 px-4 py-3 text-white">
+                    <div className="min-w-0">
+                        <span className="block font-mono text-[10px] font-black uppercase tracking-widest text-amber-300">Workshop 2026</span>
+                        <h2 id="workshop-register-title" className="truncate text-base font-black uppercase sm:text-lg">Register for the workshop</h2>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        disabled={!canClose}
+                        aria-label="Close registration"
+                        className="press press-flat flex h-9 w-9 shrink-0 items-center justify-center border-2 border-white bg-rose-500 font-sans text-base font-bold text-white hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                        <span aria-hidden="true">✕</span>
+                    </button>
+                </div>
+
+                <ol className="grid grid-cols-3 border-b-4 border-slate-900 font-mono text-[11px] font-black uppercase">
+                    {STEPS.map((label, i) => (
+                        <li
+                            key={label}
+                            aria-current={i === step ? 'step' : undefined}
+                            className={`flex items-center justify-center gap-1.5 px-2 py-2.5 transition-colors ${i > 0 ? 'border-l-2 border-slate-900' : ''} ${
+                                i === step ? 'bg-amber-300 text-slate-900' : i < step ? 'bg-sky-100 text-slate-700' : 'bg-white text-slate-400'
+                            }`}
+                        >
+                            <span>{i < step ? '✓' : i + 1}</span>
+                            <span>{label}</span>
+                        </li>
+                    ))}
+                </ol>
+
+                <div className="relative min-h-0 flex-1 overflow-hidden">
+                    <div
+                        className="flex h-full transition-transform duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] motion-reduce:transition-none"
+                        style={{ width: `${slides.length * 100}%`, transform: `translateX(-${(step * 100) / slides.length}%)` }}
+                    >
+                        {slides.map((slide, i) => (
+                            <div
+                                key={i}
+                                ref={el => { slideRefs.current[i] = el; }}
+                                tabIndex={-1}
+                                inert={i !== step}
+                                aria-hidden={i !== step}
+                                className="h-full min-w-0 outline-none"
+                                style={{ width: `${100 / slides.length}%` }}
+                            >
+                                {slide}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        </div>,
+        document.body
+    );
+}
+
 function ReviewPanel({ form, pkg, error, busy, onEdit, onPay }) {
     const rows = [
         ['Name', form.name],
@@ -564,85 +821,247 @@ function ReviewPanel({ form, pkg, error, busy, onEdit, onPay }) {
     ];
 
     return (
-        <div className="mt-8 border-4 border-slate-900 bg-white p-5 shadow-[8px_8px_0px_#0f172a] sm:p-8">
-            <p className="font-mono text-xs font-black uppercase tracking-widest text-sky-600">Check your details before paying</p>
-            <dl className="mt-4 divide-y-2 divide-slate-200 border-2 border-slate-900">
-                {rows.map(([label, value]) => (
-                    <div key={label} className="grid grid-cols-[6.5rem_1fr] gap-3 p-3 sm:grid-cols-[9rem_1fr]">
-                        <dt className="font-mono text-xs font-black uppercase text-slate-500">{label}</dt>
-                        <dd className="min-w-0 break-words text-sm font-black">{value}</dd>
+        <div className="flex h-full flex-col">
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6">
+                <p className="font-mono text-xs font-black uppercase tracking-widest text-sky-600">Check your details before paying</p>
+                <dl className="mt-3 divide-y-2 divide-slate-200 border-2 border-slate-900">
+                    {rows.map(([label, value]) => (
+                        <div key={label} className="grid grid-cols-[6.5rem_1fr] gap-3 p-3 sm:grid-cols-[9rem_1fr]">
+                            <dt className="font-mono text-xs font-black uppercase text-slate-500">{label}</dt>
+                            <dd className="min-w-0 break-words text-sm font-black">{value}</dd>
+                        </div>
+                    ))}
+                    <div className="grid grid-cols-[6.5rem_1fr] gap-3 bg-amber-300 p-3 sm:grid-cols-[9rem_1fr]">
+                        <dt className="font-mono text-xs font-black uppercase">Amount</dt>
+                        <dd className="font-mono text-lg font-black">{formatPrice(pkg)}</dd>
                     </div>
-                ))}
-                <div className="grid grid-cols-[6.5rem_1fr] gap-3 bg-amber-300 p-3 sm:grid-cols-[9rem_1fr]">
-                    <dt className="font-mono text-xs font-black uppercase">Amount</dt>
-                    <dd className="font-mono text-lg font-black">{formatPrice(pkg)}</dd>
-                </div>
-            </dl>
-
-            {error && <p className="mt-6 border-2 border-red-600 bg-red-50 p-3 font-mono text-xs font-black text-red-700">{error}</p>}
-
-            {/* Pay on top on phones (thumb reach); side by side from sm up. */}
-            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:flex-wrap">
-                <button type="button" onClick={onEdit} disabled={busy} className="press min-h-12 border-2 border-slate-900 bg-white px-5 py-3 font-mono text-xs font-black uppercase shadow-[4px_4px_0px_#0f172a] hover:bg-sky-100 disabled:opacity-50">
-                    ← Edit details
-                </button>
-                <button type="button" onClick={onPay} disabled={busy || !PAYMENTS_ENABLED} className="press min-h-12 border-2 border-slate-900 bg-sky-500 px-6 py-3 font-mono text-sm font-black uppercase text-white shadow-[4px_4px_0px_#0f172a] hover:bg-sky-400 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-sky-500">
-                    {busy ? 'Opening payment…' : `Pay ${formatPrice(pkg)} →`}
-                </button>
-            </div>
-            <p className="mt-4 font-mono text-[10px] font-bold uppercase text-slate-500">
-                Payments are processed by Razorpay. Team Asterix never sees your card or UPI details.
-            </p>
-        </div>
-    );
-}
-
-function SuccessPanel({ registration, onRegisterAnother }) {
-    return (
-        <div className="mt-8 border-4 border-slate-900 bg-white shadow-[8px_8px_0px_#16a34a]">
-            <div className="border-b-4 border-slate-900 bg-green-400 p-5 sm:p-6">
-                <span className="font-mono text-xs font-black uppercase tracking-widest">✓ Payment confirmed</span>
-                <p className="mt-1 text-2xl font-black uppercase sm:text-3xl">You’re in, {registration.name?.split(' ')[0]}!</p>
-            </div>
-            <dl className="divide-y-2 divide-slate-200 p-2">
-                {[
-                    ['Receipt no.', registration.receiptNo || 'Being generated'],
-                    ['Package', registration.packageName],
-                    ['Amount paid', `₹${Number(registration.amount).toLocaleString('en-IN')}`],
-                    ['Email', registration.email]
-                ].map(([label, value]) => (
-                    <div key={label} className="grid grid-cols-[8rem_1fr] gap-3 p-3">
-                        <dt className="font-mono text-xs font-black uppercase text-slate-500">{label}</dt>
-                        <dd className="break-words font-mono text-sm font-black">{value}</dd>
-                    </div>
-                ))}
-            </dl>
-            <div className="border-t-2 border-slate-200 p-5">
-                <p className="text-sm font-bold text-slate-600">
-                    Keep your receipt number handy. Session details will be shared with you before the workshop begins.
+                </dl>
+                <p className="mt-4 font-mono text-[10px] font-bold uppercase text-slate-500">
+                    Payments are processed by Razorpay. Team Asterix never sees your card or UPI details.
                 </p>
-                <button type="button" onClick={onRegisterAnother} className="press mt-4 border-2 border-slate-900 bg-white px-4 py-2 font-mono text-xs font-black uppercase shadow-[3px_3px_0px_#0f172a] hover:bg-sky-100">
-                    Register someone else
-                </button>
+            </div>
+
+            <div className="border-t-4 border-slate-900 bg-slate-50 p-3 sm:p-4">
+                {error && <p className="mb-3 border-2 border-red-600 bg-red-50 p-2.5 font-mono text-xs font-black text-red-700">{error}</p>}
+                <div className="grid grid-cols-[auto_1fr] gap-3">
+                    <button type="button" onClick={onEdit} disabled={busy} className="press min-h-12 border-2 border-slate-900 bg-white px-4 py-3 font-mono text-xs font-black uppercase shadow-[4px_4px_0px_#0f172a] hover:bg-sky-100 disabled:opacity-50">
+                        ← Edit
+                    </button>
+                    <button type="button" onClick={onPay} disabled={busy || !PAYMENTS_ENABLED} className="press min-h-12 border-2 border-slate-900 bg-sky-500 px-5 py-3 font-mono text-sm font-black uppercase text-white shadow-[4px_4px_0px_#0f172a] hover:bg-sky-400 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-sky-500">
+                        {busy ? 'Opening payment…' : `Pay ${formatPrice(pkg)} →`}
+                    </button>
+                </div>
             </div>
         </div>
     );
 }
 
-function UnconfirmedPanel({ registrationId }) {
+/* Slide 3. Razorpay Checkout opens as its own secure window on top of this
+   slide (it cannot be embedded), so while it is open this slide says so;
+   once the payment is confirmed it becomes the receipt. */
+function PaymentPanel({ stage, registration, form, onRegisterAnother, onClose }) {
+    if (stage === 'success' && registration) {
+        return <ReceiptPanel registration={registration} form={form} onRegisterAnother={onRegisterAnother} onClose={onClose} />;
+    }
+    if (stage === 'unconfirmed') {
+        return (
+            <StatusCard
+                title="Payment is still being confirmed"
+                body={`If money was deducted, your registration will be confirmed automatically within a few minutes. Do not pay again. If it still is not confirmed, contact the team with this reference: ${registration?.registrationId}.`}
+            />
+        );
+    }
+    if (stage === 'verifying') {
+        return <StatusCard busy title="Confirming your payment…" body="Hold on, this only takes a few seconds. Please do not close this page." />;
+    }
     return (
         <StatusCard
-            title="Payment is still being confirmed"
-            body={`If money was deducted, your registration will be confirmed automatically within a few minutes. Do not pay again. If it still is not confirmed, contact the team with this reference: ${registrationId}.`}
+            busy={stage === 'paying'}
+            title="Secure payment"
+            body="Complete your payment in the Razorpay window. Your receipt appears here as soon as it is confirmed."
         />
     );
 }
 
-function StatusCard({ title, body }) {
+function ReceiptPanel({ registration, form, onRegisterAnother, onClose }) {
+    /* The server's public view has no roll number, department or phone, so
+       those come from the form just submitted (it is not cleared on success). */
+    const rows = receiptRows({
+        ...registration,
+        name: registration.name || form.name,
+        email: registration.email || form.email,
+        rollNo: form.rollNo,
+        department: form.department,
+        year: form.year,
+        phone: normalizePhone(form.phone)
+    });
+    const fileId = registration.receiptNo || registration.registrationId;
+
     return (
-        <div className="mt-8 border-4 border-slate-900 bg-white p-6 shadow-[8px_8px_0px_#0f172a]">
-            <p className="text-xl font-black uppercase">{title}</p>
-            <p className="mt-2 text-sm font-bold text-slate-600">{body}</p>
+        <div className="flex h-full flex-col">
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6">
+                <div className="border-4 border-slate-900 bg-white shadow-[6px_6px_0px_#16a34a]">
+                    <div className="border-b-4 border-slate-900 bg-green-400 p-4 sm:p-5">
+                        <span className="font-mono text-xs font-black uppercase tracking-widest">✓ Payment confirmed</span>
+                        <p className="mt-1 text-2xl font-black uppercase">You’re in, {registration.name?.split(' ')[0]}!</p>
+                    </div>
+                    <dl className="divide-y-2 divide-slate-200">
+                        {rows.map(([label, value]) => (
+                            <div key={label} className={`grid grid-cols-[6.5rem_1fr] gap-3 p-3 sm:grid-cols-[9rem_1fr] ${label === 'Amount paid' ? 'bg-amber-300' : ''}`}>
+                                <dt className="font-mono text-xs font-black uppercase text-slate-500">{label}</dt>
+                                <dd className="min-w-0 break-words font-mono text-sm font-black">{value}</dd>
+                            </div>
+                        ))}
+                    </dl>
+                </div>
+                <p className="mt-4 text-sm font-bold text-slate-600">
+                    Keep your receipt handy. Session details will be shared with you before the workshop begins.
+                </p>
+            </div>
+
+            <div className="border-t-4 border-slate-900 bg-slate-50 p-3 sm:p-4">
+                <button
+                    type="button"
+                    onClick={() => downloadReceipt(rows, fileId)}
+                    className="press min-h-12 w-full border-2 border-slate-900 bg-slate-900 px-5 py-3.5 font-mono text-sm font-black uppercase text-amber-300 shadow-[4px_4px_0px_#16a34a] hover:bg-slate-800"
+                >
+                    Download receipt ↓
+                </button>
+                <div className="mt-3 grid grid-cols-2 gap-3">
+                    <button type="button" onClick={onRegisterAnother} className="press min-h-11 border-2 border-slate-900 bg-white px-3 py-2 font-mono text-[11px] font-black uppercase shadow-[3px_3px_0px_#0f172a] hover:bg-sky-100">
+                        Register another
+                    </button>
+                    <button type="button" onClick={onClose} className="press min-h-11 border-2 border-slate-900 bg-amber-300 px-3 py-2 font-mono text-[11px] font-black uppercase shadow-[3px_3px_0px_#0f172a] hover:bg-amber-400">
+                        Done
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+/* "Download receipt" for students who registered earlier: name + registered
+   number in, their receipt(s) out. The server masks the email and phone. */
+function ReceiptLookupDialog({ onClose }) {
+    const [lookup, setLookup] = useState({ name: '', rollNo: '' });
+    const [busy, setBusy] = useState(false);
+    const [error, setError] = useState('');
+    const [receipts, setReceipts] = useState(null);
+    useModal(true, onClose);
+
+    const update = (key, value) => {
+        setLookup(prev => ({ ...prev, [key]: value }));
+        setError('');
+    };
+
+    const handleSubmit = async (event) => {
+        event.preventDefault();
+        if (lookup.name.trim().length < 2 || !lookup.rollNo.trim()) {
+            setError('Enter your full name and registered number.');
+            return;
+        }
+        setBusy(true);
+        setError('');
+        try {
+            const { ok, data } = await postJson('/api/workshop/receipt-lookup', lookup);
+            if (ok && data.receipts?.length) setReceipts(data.receipts);
+            else setError(data.error || 'No receipt found. Please try again.');
+        } catch {
+            setError('Could not reach the server. Check your connection and try again.');
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    return createPortal(
+        <div
+            className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm anim-fade sm:p-6"
+            onClick={onClose}
+            data-lenis-prevent
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="workshop-receipt-title"
+        >
+            <div
+                className="anim-pop-center flex max-h-[90dvh] w-full max-w-lg flex-col border-4 border-slate-900 bg-white shadow-[10px_10px_0px_#16a34a]"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <div className="flex items-center justify-between gap-3 bg-slate-900 px-4 py-3 text-white">
+                    <div className="min-w-0">
+                        <span className="block font-mono text-[10px] font-black uppercase tracking-widest text-green-400">Already registered?</span>
+                        <h2 id="workshop-receipt-title" className="truncate text-base font-black uppercase sm:text-lg">Download your receipt</h2>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        aria-label="Close"
+                        className="press press-flat flex h-9 w-9 shrink-0 items-center justify-center border-2 border-white bg-rose-500 font-sans text-base font-bold text-white hover:bg-rose-600"
+                    >
+                        <span aria-hidden="true">✕</span>
+                    </button>
+                </div>
+
+                <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6">
+                    {receipts ? (
+                        <div className="space-y-5">
+                            {receipts.map(record => {
+                                const rows = receiptRows(record);
+                                return (
+                                    <div key={record.registrationId}>
+                                        <dl className="divide-y-2 divide-slate-200 border-2 border-slate-900">
+                                            {rows.map(([label, value]) => (
+                                                <div key={label} className={`grid grid-cols-[6.5rem_1fr] gap-3 p-2.5 sm:grid-cols-[8rem_1fr] ${label === 'Amount paid' ? 'bg-amber-300' : ''}`}>
+                                                    <dt className="font-mono text-[11px] font-black uppercase text-slate-500">{label}</dt>
+                                                    <dd className="min-w-0 break-words font-mono text-sm font-black">{value}</dd>
+                                                </div>
+                                            ))}
+                                        </dl>
+                                        <button
+                                            type="button"
+                                            onClick={() => downloadReceipt(rows, record.receiptNo || record.registrationId)}
+                                            className="press mt-3 min-h-12 w-full border-2 border-slate-900 bg-slate-900 px-5 py-3.5 font-mono text-sm font-black uppercase text-amber-300 shadow-[4px_4px_0px_#16a34a] hover:bg-slate-800"
+                                        >
+                                            Download receipt ↓
+                                        </button>
+                                    </div>
+                                );
+                            })}
+                            <button type="button" onClick={() => setReceipts(null)} className="font-mono text-xs font-black uppercase text-sky-700 underline">
+                                ← Look up a different registration
+                            </button>
+                        </div>
+                    ) : (
+                        <form onSubmit={handleSubmit} noValidate className="space-y-4">
+                            <p className="text-sm font-bold text-slate-600">
+                                Enter the name and registered number you used when you registered.
+                            </p>
+                            <Field label="Full name">
+                                <input className={inputClass(false)} value={lookup.name} onChange={e => update('name', e.target.value)} autoComplete="name" autoCapitalize="words" enterKeyHint="next" maxLength={100} placeholder="As entered while registering" />
+                            </Field>
+                            <Field label="Registered number">
+                                <input className={inputClass(false)} value={lookup.rollNo} onChange={e => update('rollNo', e.target.value)} autoComplete="off" autoCapitalize="characters" autoCorrect="off" spellCheck={false} enterKeyHint="search" maxLength={40} placeholder="College register number" />
+                            </Field>
+                            {error && <p className="border-2 border-red-600 bg-red-50 p-2.5 font-mono text-xs font-black text-red-700" role="alert">{error}</p>}
+                            <button type="submit" disabled={busy} className="press min-h-12 w-full border-2 border-slate-900 bg-green-400 px-5 py-3.5 font-mono text-sm font-black uppercase shadow-[4px_4px_0px_#0f172a] hover:bg-green-300 disabled:cursor-wait disabled:opacity-60">
+                                {busy ? 'Looking up…' : 'Find my receipt →'}
+                            </button>
+                        </form>
+                    )}
+                </div>
+            </div>
+        </div>,
+        document.body
+    );
+}
+
+function StatusCard({ title, body, busy = false }) {
+    return (
+        <div className="flex h-full items-center justify-center p-4 sm:p-6">
+            <div className="w-full border-4 border-slate-900 bg-white p-6 shadow-[8px_8px_0px_#0f172a]" role="status">
+                {busy && <span className="mb-4 block h-8 w-8 animate-spin border-4 border-slate-900 border-t-amber-300" aria-hidden="true" />}
+                <p className="text-xl font-black uppercase">{title}</p>
+                <p className="mt-2 text-sm font-bold text-slate-600">{body}</p>
+            </div>
         </div>
     );
 }

@@ -14,13 +14,12 @@ import CyberNewsletterCTA from "./components/CyberNewsletterCTA";
 import CyberFooter from "./components/CyberFooter";
 import SubsystemDetail from "./components/SubsystemDetail";
 import FloatingBackground from "./components/FloatingBackground";
-import FreshersRecruitmentPopup from "./components/FreshersRecruitmentPopup";
+import WorkshopPopup from "./components/WorkshopPopup";
 import { WebsiteDataProvider } from "./context/WebsiteDataContext";
 
 const BajaModelPage = lazy(() => import("./components/BajaModelPage"));
 const AdminDashboard = lazy(() => import("./components/admin/AdminDashboard"));
 const SponsorPage = lazy(() => import("./components/SponsorPage"));
-const FreshersRecruitmentPage = lazy(() => import("./components/FreshersRecruitmentPage"));
 const WorkshopPage = lazy(() => import("./components/WorkshopPage"));
 
 function MainApp() {
@@ -28,7 +27,6 @@ function MainApp() {
     const [isModelPage, setIsModelPage] = useState(false);
     const [isAdminOpen, setIsAdminOpen] = useState(() => window.location.hash.startsWith('#admin'));
     const [isSponsorPage, setIsSponsorPage] = useState(() => window.location.hash === '#sponsor');
-    const [isFreshersRecruitmentPage, setIsFreshersRecruitmentPage] = useState(() => window.location.hash === '#freshers-recruitment');
     const [isWorkshopPage, setIsWorkshopPage] = useState(() => window.location.hash === '#workshop');
     const [lenisInstance, setLenisInstance] = useState(null);
 
@@ -42,22 +40,21 @@ function MainApp() {
     useEffect(() => {
         const handleHashChange = () => {
             const hash = window.location.hash;
-            // Clear retired recruitment and submission hashes to prevent broken landing
-            if (['#join', '#recruitment'].includes(hash) || hash.startsWith('#submit') || hash.startsWith('#recruitment-submit')) {
+            // Clear retired recruitment, freshers and submission hashes to prevent broken landing
+            if (['#join', '#recruitment', '#freshers-recruitment', '#freshers'].includes(hash) || hash.startsWith('#submit') || hash.startsWith('#recruitment-submit')) {
                 window.history.replaceState(null, '', window.location.pathname);
                 scrollToTop();
                 return;
             }
             setIsAdminOpen(hash.startsWith('#admin'));
             setIsSponsorPage(hash === '#sponsor');
-            setIsFreshersRecruitmentPage(hash === '#freshers-recruitment');
             setIsWorkshopPage(hash === '#workshop');
             if (hash === '#model') setIsModelPage(true);
             scrollToTop();
         };
 
         const initialHash = window.location.hash;
-        if (['#join', '#recruitment'].includes(initialHash) || initialHash.startsWith('#submit') || initialHash.startsWith('#recruitment-submit')) {
+        if (['#join', '#recruitment', '#freshers-recruitment', '#freshers'].includes(initialHash) || initialHash.startsWith('#submit') || initialHash.startsWith('#recruitment-submit')) {
             window.history.replaceState(null, '', window.location.pathname);
         }
 
@@ -67,11 +64,10 @@ function MainApp() {
 
     useEffect(() => {
         scrollToTop();
-    }, [isSponsorPage, isFreshersRecruitmentPage, isWorkshopPage, selectedSubsystem, isModelPage, isAdminOpen]);
+    }, [isSponsorPage, isWorkshopPage, selectedSubsystem, isModelPage, isAdminOpen]);
 
     useEffect(() => {
         // Readers who ask for reduced motion get the browser's native scroll.
-        // Momentum smoothing is exactly the kind of motion that setting is for.
         if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
             return;
         }
@@ -125,7 +121,6 @@ function MainApp() {
         setIsModelPage(false);
         setIsAdminOpen(false);
         setIsSponsorPage(false);
-        setIsFreshersRecruitmentPage(false);
         setIsWorkshopPage(false);
     };
 
@@ -148,13 +143,6 @@ function MainApp() {
         scrollToTop();
     };
 
-    const handleOpenFreshersRecruitment = () => {
-        closeAll();
-        setIsFreshersRecruitmentPage(true);
-        window.location.hash = '#freshers-recruitment';
-        scrollToTop();
-    };
-
     const handleOpenWorkshop = () => {
         closeAll();
         setIsWorkshopPage(true);
@@ -172,7 +160,7 @@ function MainApp() {
     const handleBackToHome = () => {
         closeAll();
         const hash = window.location.hash;
-        if (hash.startsWith('#admin') || ['#sponsor', '#freshers-recruitment', '#workshop', '#model'].includes(hash)) {
+        if (hash.startsWith('#admin') || ['#sponsor', '#workshop', '#model'].includes(hash)) {
             window.history.replaceState(null, '', window.location.pathname);
         }
         scrollToTop();
@@ -194,14 +182,6 @@ function MainApp() {
         );
     }
 
-    if (isFreshersRecruitmentPage) {
-        return (
-            <Suspense fallback={pageFallback}>
-                <FreshersRecruitmentPage onBack={handleBackToHome} />
-            </Suspense>
-        );
-    }
-
     if (isWorkshopPage) {
         return (
             <Suspense fallback={pageFallback}>
@@ -211,12 +191,11 @@ function MainApp() {
     }
 
     const isDetailPage = Boolean(
-        selectedSubsystem || isSponsorPage || isFreshersRecruitmentPage || isModelPage
+        selectedSubsystem || isSponsorPage || isModelPage
     );
 
     const currentPage =
         isSponsorPage ? 'sponsor' :
-        isFreshersRecruitmentPage ? 'freshers' :
         isModelPage ? 'model' :
         selectedSubsystem ? 'subsystem' : 'home';
 
@@ -230,12 +209,13 @@ function MainApp() {
     }
 
     return (
-        <div className="relative min-h-screen bg-white text-slate-900 selection:bg-sky-500 selection:text-white overflow-x-hidden font-sans">
+        <div className="relative min-h-screen bg-white text-slate-900 selection:bg-sky-500 selection:text-white overflow-x-clip font-sans">
             
             {/* Photorealistic 3D Floating Baja Buggy Canvas & Swimming Goldfish */}
             <FloatingBackground />
 
-            <FreshersRecruitmentPopup onOpenRecruitment={handleOpenFreshersRecruitment} />
+            {/* Workshop Popup Announcement on Landing Page */}
+            <WorkshopPopup onOpenWorkshop={handleOpenWorkshop} />
 
             {/* Main Content Layer */}
             <div className="relative z-10">
@@ -246,7 +226,6 @@ function MainApp() {
                     currentPage={currentPage}
                     onBackToHome={handleBackToHome}
                     onOpenSponsor={handleOpenSponsor}
-                    onOpenFreshersRecruitment={handleOpenFreshersRecruitment}
                     onOpenWorkshop={handleOpenWorkshop}
                 />
 
@@ -260,7 +239,7 @@ function MainApp() {
                     </Suspense>
                 ) : selectedSubsystem ? (
                     /* Dedicated Subsystem Detail Page (Shows all team members, CAD methodology, specs) */
-                    <main>
+                    <main className="relative z-10 bg-white shadow-[0_30px_60px_-15px_rgba(15,23,42,0.4)] border-b-4 border-slate-900">
                         <SubsystemDetail 
                             subsystemId={selectedSubsystem}
                             onBack={handleBackToHome}
@@ -268,11 +247,9 @@ function MainApp() {
                         />
                     </main>
                 ) : (
-                    /* Main Landing Page */
-                    <main>
+                    /* Main Landing Page Curtain */
+                    <main className="relative z-10 bg-white shadow-[0_30px_60px_-15px_rgba(15,23,42,0.4)] border-b-4 border-slate-900">
                         {/* 115-Frame Pre-Rendered Cinema Intro Scroll Sequence */}
-                        {/* Interactive Scrubbing Frame Canvas Video sequence with rotating 
-                            team mark. Frames live in public/intro. */}
                         <IntroScrollSequence />
 
                         {/* Hero Section with Filled & Stroke Typography, Badges and 3D Baja Inspector Option */}
@@ -295,6 +272,9 @@ function MainApp() {
 
                         {/* "JOIN THE ALLIANCE" - Brutalist Sponsor / Newsletter Form */}
                         <CyberNewsletterCTA onOpenSponsor={handleOpenSponsor} />
+
+                        {/* Sentinel element to detect when main page finishes scrolling and footer is reached */}
+                        <div id="footer-sentinel" className="h-2 w-full pointer-events-none opacity-0" aria-hidden="true" />
                     </main>
                 )}
 
@@ -302,7 +282,7 @@ function MainApp() {
                 <CyberFooter 
                     onOpenAdmin={handleOpenAdmin}
                     onOpenSponsor={handleOpenSponsor}
-                    onOpenFreshersRecruitment={handleOpenFreshersRecruitment}
+                    onOpenWorkshop={handleOpenWorkshop}
                 />
             </div>
 

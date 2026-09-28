@@ -699,9 +699,9 @@ export default function IntroScrollSequence() {
                 {/* Left-Side Friendly Colourful Team Story Card */}
                 <div
                     ref={hudRef}
-                    className="absolute inset-y-0 left-0 flex items-center justify-start p-6 sm:p-10 md:p-14 lg:p-16 z-20 pointer-events-none max-w-[340px] sm:max-w-[400px] md:max-w-[440px] w-full select-none"
+                    className="absolute inset-x-0 top-[45%] -translate-y-1/2 sm:translate-y-0 sm:inset-y-0 sm:left-0 sm:right-auto flex items-center justify-center sm:justify-start px-4 sm:p-10 md:p-14 lg:p-16 z-20 pointer-events-none w-full max-w-[320px] sm:max-w-[400px] md:max-w-[440px] mx-auto sm:mx-0 select-none"
                 >
-                    <div className="w-full bg-white/95 text-slate-900 border-3 border-slate-900 shadow-[8px_8px_0px_#0f172a] rounded-2xl p-6 sm:p-7 md:p-8 backdrop-blur-md relative overflow-hidden">
+                    <div className="w-full bg-white/95 text-slate-900 border-2 sm:border-3 border-slate-900 shadow-[5px_5px_0px_#0f172a] sm:shadow-[8px_8px_0px_#0f172a] rounded-xl sm:rounded-2xl p-4.5 sm:p-7 md:p-8 backdrop-blur-md relative overflow-hidden">
                         {/* Dynamic Stages Stack using CSS Grid overlapping (prevents overlap with footer) */}
                         <div className="grid grid-cols-1 grid-rows-1 relative">
                             {/* Stage 0 */}
@@ -769,7 +769,7 @@ export default function IntroScrollSequence() {
                         </div>
 
                         {/* Step Indicator Progress Dots */}
-                        <div className="mt-8 pt-4 border-t-2 border-slate-900/10 flex items-center justify-between">
+                        <div className="mt-4 sm:mt-7 pt-3 sm:pt-4 border-t border-slate-900/10 flex items-center justify-between">
                             <span className="text-[10px] sm:text-xs font-mono font-bold text-slate-500 uppercase tracking-wider">
                                 SCROLL TO ADVANCE
                             </span>

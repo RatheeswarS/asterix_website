@@ -36,7 +36,7 @@ export default function CyberNewsletterCTA({ onOpenSponsor }) {
     };
 
     return (
-        <section id="subscribe" className="py-24 px-4 sm:px-8 bg-sky-500 text-slate-900 border-t-4 border-slate-900 relative overflow-hidden z-10 select-none">
+        <section id="subscribe" className="py-14 sm:py-24 px-4 sm:px-8 bg-sky-500 text-slate-900 border-t-4 border-slate-900 relative overflow-hidden z-10 select-none">
 
             {/* Background Parallax Watermark (Option A: Slow layer) */}
             <div
@@ -59,32 +59,32 @@ export default function CyberNewsletterCTA({ onOpenSponsor }) {
             <div className="max-w-5xl mx-auto relative z-10">
                 <div data-assemble="card" data-parallax="fast" data-parallax-speed="0.06" className="bg-white border-4 border-slate-900 shadow-[10px_10px_0px_#0f172a] p-8 sm:p-14 md:p-16 relative will-change-transform">
 
-                    <div data-assemble="header" className="text-center mb-10">
-                        <div className="flex items-center justify-center gap-3">
-                            <h2 className="text-5xl sm:text-6xl md:text-7xl font-black text-slate-900 uppercase leading-none">
+                    <div data-assemble="header" className="text-center mb-8 sm:mb-10">
+                        <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
+                            <h2 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-slate-900 uppercase leading-none tracking-tight">
                                 JOIN THE
                             </h2>
                             <h2 
                                 data-parallax="fast" 
                                 data-parallax-speed="0.18"
-                                className="text-5xl sm:text-6xl md:text-7xl font-black text-stroke-sky text-transparent uppercase leading-none will-change-transform"
+                                className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-stroke-sky text-transparent uppercase leading-none tracking-tight will-change-transform"
                             >
                                 ALLIANCE
                             </h2>
                         </div>
-                        <p className="mt-4 text-base sm:text-lg text-slate-600 font-bold max-w-xl mx-auto">
+                        <p className="mt-3 sm:mt-4 text-sm sm:text-lg text-slate-600 font-bold max-w-xl mx-auto">
                             Support Team Asterix on the national stage. Partner with us or receive live telemetry feeds, race logs, and paddock access.
                         </p>
 
                         {/* Dedicated Action Button to Open Full Sponsorship Portal */}
-                        <div className="mt-6">
+                        <div className="mt-5 sm:mt-6">
                             <button
                                 type="button"
                                 onClick={() => {
                                     if (onOpenSponsor) onOpenSponsor();
                                     else window.location.hash = '#sponsor';
                                 }}
-                                className="press cyber-button px-8 py-4 text-sm font-black uppercase tracking-wider cursor-pointer shadow-[4px_4px_0px_#0f172a] bg-amber-300 hover:bg-amber-400 text-slate-900 inline-flex items-center gap-2"
+                                className="press cyber-button px-5 sm:px-8 py-3 sm:py-4 text-xs sm:text-sm font-black uppercase tracking-wider cursor-pointer shadow-[3px_3px_0px_#0f172a] sm:shadow-[4px_4px_0px_#0f172a] bg-amber-300 hover:bg-amber-400 text-slate-900 inline-flex items-center justify-center gap-2 max-w-full text-center"
                             >
                                 <span>SPONSOR TEAM (VIEW FILES & DECK)</span>
                                 <span>→</span>

@@ -27,7 +27,7 @@ export default function OurStoryCurvedWave({ onOpenSponsor }) {
     }, [storyParagraphs.length]);
 
     return (
-        <section id="story" className="py-28 px-4 sm:px-8 bg-slate-900 text-white border-t-4 border-slate-900 relative overflow-hidden z-10 select-none">
+        <section id="story" className="py-16 sm:py-28 px-4 sm:px-8 bg-slate-900 text-white border-t-4 border-slate-900 relative overflow-hidden z-10 select-none">
 
             {/* Background Parallax Watermark (Option A: Slow layer) */}
             <div
