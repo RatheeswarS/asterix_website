@@ -21,12 +21,10 @@ export const WORKSHOP_TRACKS = {
     software: {
         id: 'software',
         name: 'Software & Perception',
-        tagline: 'ROS, computer vision, machine learning and agentic AI, applied to a real autonomous vehicle.',
+        tagline: 'Learn the software behind an autonomous vehicle.',
         overview:
-            'A four-week, hands-on programme led by the engineers who develop Team Asterix’s autonomy ' +
-            'stack. Every topic is grounded in a real engineering problem and supported by handbooks, ' +
-            'guides and a mini project.',
-        dates: '29 Sep – 29 Oct 2026',
+            'A four-week hands-on workshop covering System Design, Computer Vision, ML, ROS and Agentic AI, with mini-projects and guided resources.',
+        dates: '29 Sep – 7 Nov 2026',
         startLabel: 'Pre-session talk 29 Sep 2026 · first session Tue 6 Oct 2026',
         // startDate: ISO date (YYYY-MM-DD) of the first session in IST — used by the
         // WorkshopPage to auto-detect which schedule row is currently ongoing.
@@ -34,7 +32,7 @@ export const WORKSHOP_TRACKS = {
         days: 'Tuesday & Thursday',
         timing: '5:10 PM – 6:50 PM',
         format: '8 core sessions over 4 weeks + 2 bonus sessions',
-        audience: 'Beginners welcome. An online pre-session covers setup and prerequisites.',
+        audience: 'Beginners welcome. No prior knowledge needed.',
         syllabus: '/workshop/software-perception-syllabus.pdf',
         venue: 'Autonomous Systems & Robotics Lab (Room 302, PSG iTech)',
         reportingInstructions: 'Bring laptops with chargers. Ubuntu 22.04 LTS or dual boot recommended. Arrive 10 minutes prior to session timing. Closed-toe shoes mandatory.',
@@ -158,7 +156,7 @@ export const WORKSHOP_TRACKS = {
         format: '9 talks + 3 hands-on sessions + 2 complimentary sessions (21 hours)',
         // Optional value callout shown on the track card.
         highlight: '21+ hours of learning · less than ₹50 an hour',
-        audience: 'First-year students. No prior knowledge needed.',
+        audience: 'Beginners welcome. No prior knowledge needed.',
         syllabus: '/workshop/powertrain-syllabus.pdf',
         venue: 'Electrical Machines & Power Electronics Lab (Ground Floor, PSG iTech)',
         reportingInstructions: 'Basic stationery and laptop with LTspice installed required. Safety shoes required inside the lab.',

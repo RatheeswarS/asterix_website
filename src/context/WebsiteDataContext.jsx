@@ -403,7 +403,8 @@ const STALE_WORKSHOP_DATES = [
     'From 1 Oct 2026 · 4 weeks',
     '1 Oct – 6 Nov 2026',
     '1 Oct - 6 Nov 2026',
-    '29 Sep – 6 Nov 2026'
+    '29 Sep – 6 Nov 2026',
+    '29 Sep – 29 Oct 2026'
 ];
 const STALE_WORKSHOP_START_LABELS = [
     'First session 1 Oct 2026',

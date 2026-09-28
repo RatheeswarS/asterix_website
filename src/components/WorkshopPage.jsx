@@ -15,8 +15,8 @@ import {
 const TRACK_ORDER = ['software', 'powertrain'];
 const RAZORPAY_CHECKOUT_SRC = 'https://checkout.razorpay.com/v1/checkout.js';
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-// Payments are paused for now: the Pay button renders disabled. Flip to true to reopen.
-const PAYMENTS_ENABLED = false;
+// Payments are open. Flip to false to pause.
+const PAYMENTS_ENABLED = true;
 
 const EMPTY_FORM = {
     name: '',
@@ -53,8 +53,8 @@ function normalizePhone(phone) {
     return digits.length >= 10 ? digits.slice(-10) : digits;
 }
 
-// Shown on the page until the real date is decided.
-const REGISTRATION_CLOSES = 'TBD';
+// Shown on the page as the deadline.
+const REGISTRATION_CLOSES = '3 October 2026';
 
 function formatRupees(amount) {
     return `₹${amount.toLocaleString('en-IN')}`;
@@ -293,7 +293,13 @@ export default function WorkshopPage({ onBack }) {
     const selectedPkg = WORKSHOP_PACKAGES.find(p => p.id === form.package) || null;
     const anyPriced = WORKSHOP_PACKAGES.some(isPriced);
 
-    const openRegister = () => setRegisterOpen(true);
+    const openRegister = (packageId) => {
+        if (typeof packageId === 'string' && packageId) {
+            setForm(prev => ({ ...prev, package: packageId }));
+            setFieldErrors(prev => ({ ...prev, package: undefined }));
+        }
+        setRegisterOpen(true);
+    };
 
     // Not while the payment window is open or a payment is being confirmed.
     const canClose = stage !== 'paying' && stage !== 'verifying';
@@ -460,10 +466,19 @@ export default function WorkshopPage({ onBack }) {
                         <button type="button" onClick={onBack} className="press border-2 border-slate-900 bg-amber-300 px-3 py-2 font-mono text-xs font-black uppercase shadow-[3px_3px_0px_#0f172a] hover:bg-amber-400 sm:px-4">
                             ← Main<span className="hidden sm:inline"> Website</span>
                         </button>
-                        {/* Shortened on phones so both buttons fit beside the title. */}
-                        <button type="button" onClick={() => setLookupOpen(true)} aria-haspopup="dialog" aria-label="Download receipt" className="press border-2 border-slate-900 bg-green-400 px-3 py-2 font-mono text-xs font-black uppercase shadow-[3px_3px_0px_#0f172a] hover:bg-green-300 sm:px-4">
+                        {/* Downloadable receipt button with clear icon */}
+                        <button
+                            type="button"
+                            onClick={() => setLookupOpen(true)}
+                            aria-haspopup="dialog"
+                            aria-label="Download receipt"
+                            className="press inline-flex items-center gap-1.5 border-2 border-slate-900 bg-emerald-400 px-2.5 py-2 font-mono text-xs font-black uppercase text-slate-900 shadow-[3px_3px_0px_#0f172a] hover:bg-emerald-300 sm:px-4"
+                        >
+                            <svg className="h-3.5 w-3.5 shrink-0 stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                            </svg>
                             <span className="sm:hidden">Receipt ↓</span>
-                            <span className="hidden sm:inline">Download receipt ↓</span>
+                            <span className="hidden sm:inline">Download Receipt ↓</span>
                         </button>
                     </div>
                 </div>
@@ -480,16 +495,17 @@ export default function WorkshopPage({ onBack }) {
                             Engineer autonomy with the team that builds it
                         </h1>
                         <p className="mt-6 max-w-3xl text-base font-bold leading-relaxed sm:text-xl">
-                            Two hands-on tracks covering the core systems of an autonomous off-road
-                            vehicle: the software that perceives and decides, and the electronics and
-                            powertrain that drive it. Taught by Team Asterix engineers through guided
-                            sessions, real hardware and project work.
+                            Two hands-on tracks. One autonomous vehicle.<br className="hidden sm:inline" />
+                            Learn the software that makes it think, or the electronics and powertrain that make it move.
                         </p>
-                        <p className="mt-3 max-w-3xl text-base font-bold leading-relaxed sm:text-xl">
+                        <p className="mt-3 max-w-3xl text-sm font-bold leading-relaxed text-slate-800 sm:text-base">
+                            Sessions led by Team Asterix engineers and industry experts with real hardware, handbooks and project work.
+                        </p>
+                        <p className="mt-2 max-w-3xl text-sm font-bold leading-relaxed text-slate-800 sm:text-base">
                             Choose one track, or take both with the combo package.
                         </p>
                         <div className="mt-8 flex flex-wrap gap-3">
-                            <button type="button" onClick={openRegister} className="press border-2 border-slate-900 bg-slate-900 px-5 py-3 font-mono text-xs font-black uppercase text-amber-300 shadow-[4px_4px_0px_#0284c7] hover:bg-slate-800">
+                            <button type="button" onClick={() => openRegister()} className="press border-2 border-slate-900 bg-slate-900 px-5 py-3 font-mono text-xs font-black uppercase text-amber-300 shadow-[4px_4px_0px_#0284c7] hover:bg-slate-800">
                                 Register now →
                             </button>
                             <button type="button" onClick={() => scrollToEl(detailRef.current)} className="press border-2 border-slate-900 bg-white px-5 py-3 font-mono text-xs font-black uppercase shadow-[4px_4px_0px_#0f172a] hover:bg-sky-100">
@@ -506,7 +522,7 @@ export default function WorkshopPage({ onBack }) {
                         <span className="font-mono text-xs font-black uppercase tracking-widest text-sky-700">01 / Choose a track</span>
                         <h2 className="mt-2 text-3xl font-black uppercase sm:text-5xl">The tracks</h2>
 
-                        <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-2" role="tablist" aria-label="Workshop tracks">
+                        <div className="mt-8 grid grid-cols-2 gap-3 sm:gap-4" role="tablist" aria-label="Workshop tracks">
                             {TRACK_ORDER.map((id) => {
                                 const t = WORKSHOP_TRACKS[id];
                                 const active = id === activeTrack;
@@ -517,20 +533,96 @@ export default function WorkshopPage({ onBack }) {
                                         role="tab"
                                         aria-selected={active}
                                         onClick={() => selectTrack(id)}
-                                        className={`press border-4 border-slate-900 p-5 text-left shadow-[6px_6px_0px_#0f172a] transition-colors sm:p-6 ${active ? 'bg-slate-900 text-white' : 'bg-white text-slate-900 hover:bg-amber-100'
-                                            }`}
+                                        className={`press group cursor-pointer border-3 sm:border-4 border-slate-900 p-3.5 sm:p-6 text-left transition-all ${
+                                            active
+                                                ? 'bg-slate-900 text-white shadow-[6px_6px_0px_#0284c7]'
+                                                : 'bg-white text-slate-900 shadow-[4px_4px_0px_#0f172a] hover:bg-amber-100 hover:shadow-[6px_6px_0px_#0f172a]'
+                                        }`}
                                     >
-                                        <span className={`font-mono text-xs font-black uppercase tracking-widest ${active ? 'text-amber-300' : 'text-sky-600'}`}>
-                                            {active ? '● Selected' : 'Track'}
+                                        <div className="flex items-center justify-between gap-1">
+                                            <span className={`inline-flex items-center gap-1 font-mono text-[10px] sm:text-xs font-black uppercase tracking-wider ${
+                                                active ? 'text-amber-300' : 'text-sky-600 group-hover:text-sky-700'
+                                            }`}>
+                                                <span>{active ? '● Selected' : '○ View Track'}</span>
+                                            </span>
+                                            <span className={`font-mono text-xs font-black ${
+                                                active ? 'text-amber-300' : 'text-slate-400 group-hover:text-slate-900'
+                                            }`}>
+                                                {active ? '✓' : '↘'}
+                                            </span>
+                                        </div>
+                                        <span className="mt-1.5 sm:mt-2 block text-sm sm:text-2xl lg:text-3xl font-black uppercase leading-tight">
+                                            {t.name}
                                         </span>
-                                        <span className="mt-2 block text-2xl font-black uppercase sm:text-3xl">{t.name}</span>
-                                        <span className={`mt-2 block text-sm font-bold ${active ? 'text-slate-300' : 'text-slate-600'}`}>{t.tagline}</span>
+                                        <span className={`mt-2 hidden text-sm font-bold sm:block ${
+                                            active ? 'text-slate-300' : 'text-slate-600'
+                                        }`}>
+                                            {t.tagline}
+                                        </span>
                                     </button>
                                 );
                             })}
                         </div>
 
                         <TrackDetail key={track.id} track={track} onRegister={openRegister} />
+                    </div>
+                </section>
+
+                {/* Included Section */}
+                <section className="border-b-4 border-slate-900 bg-amber-300 px-4 py-10 sm:px-8 sm:py-16">
+                    <div className="mx-auto max-w-6xl">
+                        <span className="inline-block border-2 border-slate-900 bg-slate-900 px-2.5 py-0.5 font-mono text-[10px] sm:text-xs font-black uppercase tracking-widest text-amber-300">
+                            ✦ All-Inclusive Experience
+                        </span>
+                        <h2 className="mt-2 text-2xl font-black uppercase sm:text-5xl leading-tight">
+                            YOUR ₹1,000 INCLUDES
+                        </h2>
+                        <p className="mt-1.5 text-xs sm:text-base font-bold text-slate-800">
+                            Everything you need to build real-world engineering mastery with Team Asterix and industry experts.
+                        </p>
+
+                        <div className="mt-6 sm:mt-8 grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4 sm:gap-3.5">
+                            <div className="border-2 sm:border-3 border-slate-900 bg-white p-3.5 sm:p-4 shadow-[3px_3px_0px_#0f172a] sm:shadow-[4px_4px_0px_#0f172a]">
+                                <span className="font-mono text-[10px] sm:text-xs font-black uppercase tracking-widest text-sky-600">01 / RESOURCES</span>
+                                <h3 className="mt-1 text-sm sm:text-base font-black uppercase leading-snug">Handbooks &amp; guides</h3>
+                                <p className="mt-1 text-xs font-bold leading-relaxed text-slate-600">Physical &amp; digital comprehensive manuals, schematics and code references.</p>
+                            </div>
+                            <div className="border-2 sm:border-3 border-slate-900 bg-white p-3.5 sm:p-4 shadow-[3px_3px_0px_#0f172a] sm:shadow-[4px_4px_0px_#0f172a]">
+                                <span className="font-mono text-[10px] sm:text-xs font-black uppercase tracking-widest text-sky-600">02 / PRACTICE</span>
+                                <h3 className="mt-1 text-sm sm:text-base font-black uppercase leading-snug">Hands-on learning</h3>
+                                <p className="mt-1 text-xs font-bold leading-relaxed text-slate-600">Direct hardware labs, vehicle testing and interactive debugging sessions.</p>
+                            </div>
+                            <div className="border-2 sm:border-3 border-slate-900 bg-white p-3.5 sm:p-4 shadow-[3px_3px_0px_#0f172a] sm:shadow-[4px_4px_0px_#0f172a]">
+                                <span className="font-mono text-[10px] sm:text-xs font-black uppercase tracking-widest text-sky-600">03 / BUILD</span>
+                                <h3 className="mt-1 text-sm sm:text-base font-black uppercase leading-snug">Mini-projects</h3>
+                                <p className="mt-1 text-xs font-bold leading-relaxed text-slate-600">End-to-end milestone projects designed to build practical engineering confidence.</p>
+                            </div>
+                            <div className="border-2 sm:border-3 border-slate-900 bg-white p-3.5 sm:p-4 shadow-[3px_3px_0px_#0f172a] sm:shadow-[4px_4px_0px_#0f172a]">
+                                <span className="font-mono text-[10px] sm:text-xs font-black uppercase tracking-widest text-sky-600">04 / CAREER</span>
+                                <h3 className="mt-1 text-sm sm:text-base font-black uppercase leading-snug">Actual content to put on your resume</h3>
+                                <p className="mt-1 text-xs font-bold leading-relaxed text-slate-600">Stand out with verified project work on autonomous stacks and electronics.</p>
+                            </div>
+                            <div className="border-2 sm:border-3 border-slate-900 bg-white p-3.5 sm:p-4 shadow-[3px_3px_0px_#0f172a] sm:shadow-[4px_4px_0px_#0f172a]">
+                                <span className="font-mono text-[10px] sm:text-xs font-black uppercase tracking-widest text-sky-600">05 / CURRICULUM</span>
+                                <h3 className="mt-1 text-sm sm:text-base font-black uppercase leading-snug">Industry approved syllabus</h3>
+                                <p className="mt-1 text-xs font-bold leading-relaxed text-slate-600">Sessions handled by Team Asterix engineers and industry experts.</p>
+                            </div>
+                            <div className="border-2 sm:border-3 border-slate-900 bg-white p-3.5 sm:p-4 shadow-[3px_3px_0px_#0f172a] sm:shadow-[4px_4px_0px_#0f172a]">
+                                <span className="font-mono text-[10px] sm:text-xs font-black uppercase tracking-widest text-sky-600">06 / BONUS</span>
+                                <h3 className="mt-1 text-sm sm:text-base font-black uppercase leading-snug">2 complimentary sessions</h3>
+                                <p className="mt-1 text-xs font-bold leading-relaxed text-slate-600">Free cross-track masterclasses: Perception &amp; Mechanical Fundamentals.</p>
+                            </div>
+                            <div className="border-2 sm:border-3 border-slate-900 bg-white p-3.5 sm:p-4 shadow-[3px_3px_0px_#0f172a] sm:shadow-[4px_4px_0px_#0f172a]">
+                                <span className="font-mono text-[10px] sm:text-xs font-black uppercase tracking-widest text-sky-600">07 / VEHICLE</span>
+                                <h3 className="mt-1 text-sm sm:text-base font-black uppercase leading-snug">Real autonomous-vehicle context</h3>
+                                <p className="mt-1 text-xs font-bold leading-relaxed text-slate-600">Taught directly on the systems powering our national BAJA autonomous buggy.</p>
+                            </div>
+                            <div className="border-2 sm:border-3 border-slate-900 bg-white p-3.5 sm:p-4 shadow-[3px_3px_0px_#0f172a] sm:shadow-[4px_4px_0px_#0f172a]">
+                                <span className="font-mono text-[10px] sm:text-xs font-black uppercase tracking-widest text-sky-600">08 / SKILLS</span>
+                                <h3 className="mt-1 text-sm sm:text-base font-black uppercase leading-snug">Future ready minds</h3>
+                                <p className="mt-1 text-xs font-bold leading-relaxed text-slate-600">Master ROS, Computer Vision, Agentic AI, circuits, and PCB design.</p>
+                            </div>
+                        </div>
                     </div>
                 </section>
 
@@ -611,7 +703,12 @@ export default function WorkshopPage({ onBack }) {
                                                             )}
                                                         </span>
                                                     </span>
-                                                    <span className="shrink-0 font-mono text-base font-black sm:text-lg">{formatPrice(pkg)}</span>
+                                                    <span className="shrink-0 text-right font-mono">
+                                                        {isCombo && (
+                                                            <span className="block text-xs font-bold text-slate-500 line-through">₹2,000</span>
+                                                        )}
+                                                        <span className="text-base font-black sm:text-lg">{formatPrice(pkg)}</span>
+                                                    </span>
                                                 </label>
                                             );
                                         })}
@@ -707,6 +804,8 @@ export default function WorkshopPage({ onBack }) {
 }
 
 function TrackDetail({ track, onRegister }) {
+    const isSoftware = track.id === 'software';
+    const otherTrackName = isSoftware ? 'Powertrain' : 'Software';
     const facts = [
         ['Dates', track.dates],
         ['Schedule', track.days],
@@ -717,7 +816,10 @@ function TrackDetail({ track, onRegister }) {
     return (
         <article className="mt-8 border-4 border-slate-900 bg-white p-5 shadow-[8px_8px_0px_#0f172a] sm:p-8 anim-pop" role="tabpanel">
             <h3 className="text-2xl font-black uppercase sm:text-4xl">{track.name}</h3>
-            <p className="mt-3 max-w-3xl text-sm font-bold leading-relaxed text-slate-600 sm:text-base">{track.overview}</p>
+            {track.tagline && (
+                <p className="mt-2 text-base font-bold text-sky-700 sm:text-lg">{track.tagline}</p>
+            )}
+            <p className="mt-2 max-w-3xl text-sm font-bold leading-relaxed text-slate-600 sm:text-base">{track.overview}</p>
             {track.highlight && (
                 <p className="mt-4 inline-block border-2 border-slate-900 bg-green-400 px-3 py-1.5 font-mono text-xs font-black uppercase shadow-[3px_3px_0px_#0f172a]">
                     ⏱ {track.highlight}
@@ -732,14 +834,43 @@ function TrackDetail({ track, onRegister }) {
                     </div>
                 ))}
             </dl>
-            <p className="mt-3 font-mono text-xs font-bold text-slate-600">{track.startLabel} · {track.format}</p>
-            <p className="mt-1 font-mono text-xs font-bold text-slate-600">{track.audience}</p>
+            <p className="mt-3 font-mono text-xs font-bold text-slate-600">{track.audience}</p>
 
             <h4 className="mt-6 font-mono text-xs font-black uppercase tracking-widest text-sky-600">What you will learn</h4>
             <p className="mt-2 text-sm font-bold leading-relaxed text-slate-700">
                 {track.topics.map(topic => topic.title).join(' · ')}.
             </p>
             <p className="mt-1 text-xs font-bold text-slate-500">Full topic list and weekly plan in the syllabus PDF.</p>
+
+            {/* Handbook & guided resources note */}
+            <div className="mt-5 inline-flex items-center gap-2 border-2 border-slate-900 bg-sky-50 px-3.5 py-2 font-mono text-xs font-black uppercase text-slate-900 shadow-[2px_2px_0px_#0f172a]">
+                <span className="text-sky-600">✦</span>
+                <span>Handbook + guided resources included.</span>
+            </div>
+
+            {/* Cross-track combo offer card */}
+            <div className="mt-6 border-3 border-dashed border-slate-900 bg-amber-50 p-4 sm:p-5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                        <span className="font-mono text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-amber-900">
+                            ★ Dual-Track Bundle Discount
+                        </span>
+                        <p className="mt-0.5 text-base sm:text-lg font-black uppercase text-slate-900">
+                            Want both tracks? Add {otherTrackName} for just ₹750 more →
+                        </p>
+                        <p className="mt-1 text-xs font-bold text-slate-600">
+                            Get Software + Powertrain for ₹1,750 (Save ₹250). Includes both full tracks and all bonus sessions.
+                        </p>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={() => onRegister('combo')}
+                        className="press shrink-0 border-2 border-slate-900 bg-amber-300 px-4 py-2.5 font-mono text-xs font-black uppercase shadow-[3px_3px_0px_#0f172a] hover:bg-amber-400"
+                    >
+                        Get Combo (₹1,750) ✦
+                    </button>
+                </div>
+            </div>
 
             <div className="mt-8 flex flex-wrap gap-3">
                 <a
@@ -751,7 +882,7 @@ function TrackDetail({ track, onRegister }) {
                 >
                     Download syllabus & plan (PDF) ↓
                 </a>
-                <button type="button" onClick={onRegister} className="press border-2 border-slate-900 bg-amber-300 px-5 py-3 font-mono text-xs font-black uppercase shadow-[4px_4px_0px_#0f172a] hover:bg-amber-400">
+                <button type="button" onClick={() => onRegister(track.id)} className="press border-2 border-slate-900 bg-amber-300 px-5 py-3 font-mono text-xs font-black uppercase shadow-[4px_4px_0px_#0f172a] hover:bg-amber-400">
                     Register ✦
                 </button>
             </div>
@@ -861,7 +992,7 @@ function RegisterDialog({ step, canClose, onClose, children }) {
             aria-labelledby="workshop-register-title"
         >
             <div
-                className="anim-pop-center flex h-[100dvh] w-full flex-col bg-white sm:h-[min(88vh,780px)] sm:max-w-2xl sm:border-4 sm:border-slate-900 sm:shadow-[12px_12px_0px_#0284c7]"
+                className="anim-pop-center flex h-[100dvh] w-full flex-col bg-white sm:h-[min(88vh,780px)] sm:max-w-2xl sm:border-4 sm:border-slate-900"
                 onClick={(e) => e.stopPropagation()}
             >
                 <div className="flex items-center justify-between gap-3 bg-slate-900 px-4 py-3 text-white">

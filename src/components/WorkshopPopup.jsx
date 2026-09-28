@@ -69,9 +69,12 @@ export default function WorkshopPopup({ onOpenWorkshop }) {
                     ✕
                 </button>
 
-                <div className="mb-1.5 flex items-center gap-1.5">
+                <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
                     <span className="inline-block rounded-md border border-slate-900 bg-slate-900 px-2 py-0.5 font-mono text-[9.5px] font-black uppercase tracking-wider text-amber-300 shadow-[1px_1px_0px_#0f172a]">
                         ✦ WORKSHOPS 2026
+                    </span>
+                    <span className="inline-block rounded-md border border-rose-700 bg-rose-50 px-1.5 py-0.5 font-mono text-[9px] font-black uppercase text-rose-700">
+                        Closes 3 Oct
                     </span>
                 </div>
 

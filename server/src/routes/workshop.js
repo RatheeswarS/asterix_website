@@ -40,10 +40,10 @@ function requireDb(req, res, next) {
     next();
 }
 
-// Registrations hold personal data, so plain Members are kept out.
+// Registrations can be viewed by all authenticated admin team members (SuperAdmin, Lead, Member).
 function requireLeadOrAdmin(req, res, next) {
-    if (!req.user || !['SuperAdmin', 'Lead'].includes(req.user.accessLevel)) {
-        return res.status(403).json({ error: 'Forbidden: Lead or SuperAdmin privileges required.' });
+    if (!req.user || !['SuperAdmin', 'Lead', 'Member'].includes(req.user.accessLevel)) {
+        return res.status(403).json({ error: 'Forbidden: Admin privileges required.' });
     }
     next();
 }
@@ -432,7 +432,7 @@ function csvCell(value) {
 
 /**
  * GET /api/workshop/registrations?package=&track=&status=&format=csv
- * Protected: Leads and SuperAdmins.
+ * Protected: SuperAdmins, Leads, and Members.
  */
 router.get('/registrations', authenticateToken, requireLeadOrAdmin, requireDb, async (req, res) => {
     try {
