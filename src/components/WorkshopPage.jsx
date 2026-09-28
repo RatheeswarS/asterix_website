@@ -55,12 +55,13 @@ function normalizePhone(phone) {
 // Shown on the page as the deadline.
 const REGISTRATION_CLOSES = '3 October 2026';
 
-function formatRupees(amount) {
-    return `₹${amount.toLocaleString('en-IN')}`;
+function formatAmount(amount) {
+    if (typeof amount !== 'number') return 'TBD';
+    return amount.toLocaleString('en-IN');
 }
 
 function formatPrice(pkg) {
-    return isPriced(pkg) ? formatRupees(pkg.price) : 'TBD';
+    return isPriced(pkg) ? formatAmount(pkg.price) : 'TBD';
 }
 
 /* Combo offer maths, worked out from the package prices so the tags never
@@ -154,7 +155,7 @@ function receiptRows(record) {
         ['Email', record.email],
         ['Phone', record.phone],
         ['Track', record.packageName],
-        ['Amount paid', `₹${Number(record.amount).toLocaleString('en-IN')}`],
+        ['Amount paid', `${Number(record.amount).toLocaleString('en-IN')}`],
         ['Paid on', formatPaidAt(record.paidAt)],
         ['Reference', record.registrationId]
     ].filter(([, value]) => value);
@@ -570,7 +571,7 @@ export default function WorkshopPage({ onBack }) {
                             ✦ All-Inclusive Experience
                         </span>
                         <h2 className="mt-2 text-2xl font-black uppercase sm:text-5xl leading-tight">
-                            YOUR ₹1,000 INCLUDES
+                            YOUR 1,000 INCLUDES
                         </h2>
                         <p className="mt-1.5 text-xs sm:text-base font-bold text-slate-800">
                             Everything you need to build real-world engineering mastery with Team Asterix and industry experts.
@@ -762,7 +763,7 @@ export default function WorkshopPage({ onBack }) {
                                                                 <span className="mb-1 flex flex-wrap gap-1.5">
                                                                     <span className="border-2 border-slate-900 bg-slate-900 px-1.5 py-0.5 font-mono text-[10px] font-black uppercase text-amber-300">★ Recommended</span>
                                                                     {COMBO_SAVING > 0 && (
-                                                                        <span className="border-2 border-slate-900 bg-green-400 px-1.5 py-0.5 font-mono text-[10px] font-black uppercase text-slate-900">Save {formatRupees(COMBO_SAVING)}</span>
+                                                                        <span className="border-2 border-slate-900 bg-green-400 px-1.5 py-0.5 font-mono text-[10px] font-black uppercase text-slate-900">Save {formatAmount(COMBO_SAVING)}</span>
                                                                     )}
                                                                 </span>
                                                             )}
@@ -776,7 +777,7 @@ export default function WorkshopPage({ onBack }) {
                                                     </span>
                                                     <span className="shrink-0 text-right font-mono">
                                                         {isCombo && (
-                                                            <span className="block text-xs font-bold text-slate-500 line-through">₹2,000</span>
+                                                            <span className="block text-xs font-bold text-slate-500 line-through">2,000</span>
                                                         )}
                                                         <span className="text-base font-black sm:text-lg">{formatPrice(pkg)}</span>
                                                     </span>
@@ -925,10 +926,10 @@ function TrackDetail({ track, onRegister }) {
                             ★ Dual-Track Bundle Discount
                         </span>
                         <p className="mt-0.5 text-base sm:text-lg font-black uppercase text-slate-900">
-                            Want both tracks? Add {otherTrackName} for just ₹750 more →
+                            Want both tracks? Add {otherTrackName} for just 750 more →
                         </p>
                         <p className="mt-1 text-xs font-bold text-slate-600">
-                            Get Software + Powertrain for ₹1,750 (Save ₹250). Includes both full tracks and all bonus sessions.
+                            Get Software + Powertrain for 1,750 (Save 250). Includes both full tracks and all bonus sessions.
                         </p>
                     </div>
                     <button
@@ -936,7 +937,7 @@ function TrackDetail({ track, onRegister }) {
                         onClick={() => onRegister('combo')}
                         className="press shrink-0 border-2 border-slate-900 bg-amber-300 px-4 py-2.5 font-mono text-xs font-black uppercase shadow-[3px_3px_0px_#0f172a] hover:bg-amber-400"
                     >
-                        Get Combo (₹1,750) ✦
+                        Get Combo (1,750) ✦
                     </button>
                 </div>
             </div>
@@ -996,13 +997,13 @@ function UpsellPopover({ offer, onAccept, onDecline, onDismiss }) {
                 ✕
             </button>
             <span className="inline-block border-2 border-slate-900 bg-green-400 px-1.5 py-0.5 font-mono text-[10px] font-black uppercase">
-                Save {formatRupees(COMBO_SAVING)}
+                Save {formatAmount(COMBO_SAVING)}
             </span>
             <p className="mt-2 pr-6 text-base font-black uppercase leading-tight">
-                Only {formatRupees(offer.extra)} more for {offer.other.name}
+                Only {formatAmount(offer.extra)} more for {offer.other.name}
             </p>
             <p className="mt-1.5 text-sm font-bold text-slate-600">
-                Get both tracks for {formatPrice(COMBO_PACKAGE)}. This {formatRupees(COMBO_SAVING)} saving is lost if you don’t add it now.
+                Get both tracks for {formatPrice(COMBO_PACKAGE)}. This {formatAmount(COMBO_SAVING)} saving is lost if you don’t add it now.
             </p>
             <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
                 <button type="button" onClick={onAccept} className="press min-h-11 border-2 border-slate-900 bg-green-400 px-3 py-2 font-mono text-[11px] font-black uppercase shadow-[3px_3px_0px_#0f172a] hover:bg-green-300">
@@ -1146,7 +1147,7 @@ function ReviewPanel({ form, pkg, error, busy, onEdit, onPay }) {
                         <dd className="font-mono text-lg font-black">
                             {formatPrice(pkg)}
                             {pkg?.id === COMBO_PACKAGE?.id && COMBO_SAVING > 0 && (
-                                <span className="ml-2 border-2 border-slate-900 bg-green-400 px-1.5 py-0.5 align-middle text-[10px] uppercase">You save {formatRupees(COMBO_SAVING)}</span>
+                                <span className="ml-2 border-2 border-slate-900 bg-green-400 px-1.5 py-0.5 align-middle text-[10px] uppercase">You save {formatAmount(COMBO_SAVING)}</span>
                             )}
                         </dd>
                     </div>

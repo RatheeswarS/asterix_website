@@ -155,7 +155,7 @@ export const WORKSHOP_TRACKS = {
         timing: '5:15 PM – 6:45 PM',
         format: '9 talks + 3 hands-on sessions + 3 complimentary sessions (21+ hours)',
         // Optional value callout shown on the track card.
-        highlight: '21+ hours of learning · less than ₹50 an hour',
+        highlight: '21+ hours of learning · less than 50 an hour',
         audience: 'Beginners welcome. No prior knowledge needed.',
         syllabus: '/workshop/powertrain-syllabus.pdf',
         venue: 'Electrical Machines & Power Electronics Lab (Ground Floor, PSG iTech)',
