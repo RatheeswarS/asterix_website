@@ -56,17 +56,30 @@ function formatReceiptNo(seq) {
 /**
  * Moves a registration to `paid` exactly once, whichever of the checkout
  * callback and the webhook gets there first, and then gives it a receipt
- * number. The status claim is a conditional update, so only one caller wins
- * and only one sequence number is drawn.
+ * number. If isUpgrade is true, upgrades the package to combo and updates the total amount.
  */
-async function markPaid(registrationId, paymentId) {
+async function markPaid(registrationId, paymentId, isUpgrade = false) {
+    let reg = await WorkshopRegistration.findById(registrationId);
+    if (!reg) return null;
+
+    if (isUpgrade || (reg.status === 'paid' && reg.package !== 'combo')) {
+        reg.package = 'combo';
+        reg.tracksEnrolled = ['software', 'powertrain'];
+        reg.amount = 1750;
+        reg.razorpayPaymentId = paymentId;
+        reg.status = 'paid';
+        reg.paidAt = new Date();
+        await reg.save();
+        return ensureReceipt(reg);
+    }
+
     const claimed = await WorkshopRegistration.findOneAndUpdate(
         { _id: registrationId, status: { $ne: 'paid' } },
         { $set: { status: 'paid', razorpayPaymentId: paymentId, paidAt: new Date() } },
         { returnDocument: 'after' }
     );
-    const reg = claimed || await WorkshopRegistration.findById(registrationId);
-    return ensureReceipt(reg);
+    const updated = claimed || await WorkshopRegistration.findById(registrationId);
+    return ensureReceipt(updated);
 }
 
 async function ensureReceipt(reg) {
@@ -112,7 +125,11 @@ function validateRegistration(body) {
 
     const errors = {};
     if (data.name.length < 2) errors.name = 'Enter your full name.';
-    if (!EMAIL_RE.test(data.email)) errors.email = 'Enter a valid email address.';
+    if (!EMAIL_RE.test(data.email)) {
+        errors.email = 'Enter a valid email address.';
+    } else if (!data.email.endsWith('@psgitech.ac.in')) {
+        errors.email = 'Please use your college email address (@psgitech.ac.in).';
+    }
     if (data.phone.length !== 10) errors.phone = 'Enter a valid 10-digit phone number.';
     if (!VALID_YEARS.includes(data.year)) errors.year = 'Select 1st or 2nd year.';
     if (!WORKSHOP_DEPARTMENTS.includes(data.department)) errors.department = 'Select your department.';
@@ -156,15 +173,22 @@ router.post('/register', requireDb, async (req, res) => {
             return res.status(400).json({ error: 'Please correct the highlighted fields.', fields: errors });
         }
 
-        // Refuse a second payment for a track this person already holds.
+        // Refuse a second payment for a track this person already holds, and offer upgrade if single-track.
         const alreadyPaid = await WorkshopRegistration.findOne({
             status: 'paid',
             tracksEnrolled: { $in: pkg.tracksIncluded },
             $or: [{ email: data.email }, { phone: data.phone }]
         });
         if (alreadyPaid) {
+            const canUpgrade = alreadyPaid.package !== 'combo';
             return res.status(409).json({
-                error: `You are already registered for ${getWorkshopPackage(alreadyPaid.package)?.name || alreadyPaid.package} (receipt ${alreadyPaid.receiptNo || 'pending'}).`
+                error: `You are already registered for ${getWorkshopPackage(alreadyPaid.package)?.name || alreadyPaid.package} (receipt ${alreadyPaid.receiptNo || 'pending'}).`,
+                alreadyPaid: true,
+                canUpgrade,
+                existingRegistrationId: alreadyPaid._id.toString(),
+                existingPackage: alreadyPaid.package,
+                existingName: alreadyPaid.name,
+                upgradePrice: 750
             });
         }
 
@@ -214,6 +238,72 @@ router.post('/register', requireDb, async (req, res) => {
 });
 
 /**
+ * POST /api/workshop/upgrade
+ * Initiates Razorpay checkout to upgrade an existing single-track registration to Combo for 750.
+ */
+router.post('/upgrade', requireDb, async (req, res) => {
+    try {
+        if (!isRazorpayConfigured()) {
+            return res.status(503).json({ error: 'Online payments are not configured yet. Please try again later.' });
+        }
+
+        const { registrationId, email, phone, rollNo } = req.body || {};
+        let reg = null;
+
+        if (registrationId) {
+            reg = await WorkshopRegistration.findById(registrationId);
+        } else if (rollNo || email || phone) {
+            const query = { status: 'paid' };
+            const orConditions = [];
+            if (rollNo) orConditions.push({ rollNo: String(rollNo).trim() });
+            if (email) orConditions.push({ email: String(email).toLowerCase().trim() });
+            if (phone) orConditions.push({ phone: normalizePhone(phone) });
+            if (orConditions.length > 0) query.$or = orConditions;
+            reg = await WorkshopRegistration.findOne(query).sort({ createdAt: -1 });
+        }
+
+        if (!reg || reg.status !== 'paid') {
+            return res.status(404).json({ error: 'No paid single-track registration found to upgrade.' });
+        }
+
+        if (reg.package === 'combo' || (Array.isArray(reg.tracksEnrolled) && reg.tracksEnrolled.length >= 2)) {
+            return res.status(400).json({ error: 'This registration is already enrolled in the full Combo package.' });
+        }
+
+        const upgradePrice = 750;
+        const order = await createRazorpayOrder({
+            amountPaise: Math.round(upgradePrice * 100),
+            currency: WORKSHOP_CURRENCY,
+            receipt: `upg_${reg._id.toString()}`,
+            notes: {
+                registrationId: reg._id.toString(),
+                type: 'upgrade',
+                targetPackage: 'combo'
+            }
+        });
+
+        reg.razorpayOrderId = order.id;
+        await reg.save();
+
+        res.json({
+            success: true,
+            registrationId: reg._id.toString(),
+            order: {
+                id: order.id,
+                amount: order.amount,
+                currency: order.currency
+            },
+            keyId: getRazorpayKeyId(),
+            package: { id: 'combo', name: 'Dual-Track Combo (Upgrade)', price: upgradePrice },
+            prefill: { name: reg.name, email: reg.email, contact: reg.phone }
+        });
+    } catch (err) {
+        console.error('Workshop upgrade order creation failed:', err);
+        res.status(500).json({ error: 'Failed to initiate workshop upgrade.' });
+    }
+});
+
+/**
  * POST /api/workshop/verify
  * Called by the front end with the fields the Razorpay checkout returns.
  * Marks the registration paid only if the signature checks out.
@@ -235,8 +325,9 @@ router.post('/verify', requireDb, async (req, res) => {
             return res.status(404).json({ error: 'Registration not found for this order.' });
         }
 
-        const paid = await markPaid(reg._id, String(paymentId));
-        res.json({ success: true, registration: publicView(paid) });
+        const isUpgrade = reg.status === 'paid' && reg.package !== 'combo';
+        const paid = await markPaid(reg._id, String(paymentId), isUpgrade);
+        res.json({ success: true, registration: publicView(paid), upgraded: isUpgrade });
     } catch (err) {
         console.error('Workshop payment verification error:', err);
         res.status(500).json({ error: 'Failed to verify payment.' });
@@ -274,11 +365,13 @@ router.post('/webhook', async (req, res) => {
         if (!reg) return res.json({ received: true });
 
         if (event.event === 'payment.captured') {
-            if (payment.amount !== Math.round(reg.amount * 100) || payment.currency !== reg.currency) {
-                console.error(`Workshop webhook amount mismatch on ${payment.order_id}: got ${payment.amount} ${payment.currency}, expected ${reg.amount * 100} ${reg.currency}`);
+            const isUpgrade = reg.status === 'paid' && reg.package !== 'combo';
+            const expectedPaise = isUpgrade ? 75000 : Math.round(reg.amount * 100);
+            if (payment.amount !== expectedPaise || payment.currency !== reg.currency) {
+                console.error(`Workshop webhook amount mismatch on ${payment.order_id}: got ${payment.amount} ${payment.currency}, expected ${expectedPaise} ${reg.currency}`);
                 return res.json({ received: true });
             }
-            await markPaid(reg._id, payment.id);
+            await markPaid(reg._id, payment.id, isUpgrade);
         } else if (event.event === 'payment.failed') {
             await WorkshopRegistration.updateOne(
                 { _id: reg._id, status: 'pending' },
@@ -363,22 +456,41 @@ router.post('/receipt-lookup', requireDb, async (req, res) => {
         if (lookupLimited(req)) {
             return res.status(429).json({ error: 'Too many attempts. Please wait a few minutes and try again.' });
         }
-        const name = String(req.body?.name ?? '').trim().replace(/\s+/g, ' ').slice(0, 100);
         const rollNo = String(req.body?.rollNo ?? '').trim().slice(0, 40);
-        if (name.length < 2 || !rollNo) {
-            return res.status(400).json({ error: 'Enter your full name and registered number.' });
+        const phone = String(req.body?.phone ?? req.body?.mobile ?? '').trim();
+        const query = String(req.body?.query ?? '').trim();
+
+        const terms = [rollNo, phone, query].filter(Boolean);
+        if (terms.length === 0) {
+            return res.status(400).json({ error: 'Enter your College Registration Number or Phone Number.' });
         }
 
-        const namePattern = name.split(' ').map(escapeRegex).join('\\s+');
+        const orConditions = [];
+        for (const term of terms) {
+            // Match rollNo directly (case-insensitive exact or trimmed)
+            orConditions.push({ rollNo: new RegExp(`^\\s*${escapeRegex(term)}\\s*$`, 'i') });
+
+            // Match phone (clean digits)
+            const digits = normalizePhone(term);
+            if (digits.length >= 10) {
+                orConditions.push({ phone: digits.slice(-10) });
+            }
+            orConditions.push({ phone: term });
+
+            // Also check partial roll number if 4 or more chars
+            if (term.length >= 4) {
+                orConditions.push({ rollNo: new RegExp(escapeRegex(term), 'i') });
+            }
+        }
+
         const regs = await WorkshopRegistration.find({
             status: 'paid',
-            rollNo: new RegExp(`^\\s*${escapeRegex(rollNo)}\\s*$`, 'i'),
-            name: new RegExp(`^\\s*${namePattern}\\s*$`, 'i')
+            $or: orConditions
         }).sort({ paidAt: -1 }).limit(5);
 
         if (regs.length === 0) {
             return res.status(404).json({
-                error: 'No paid registration found for that name and registered number. Check they match what you entered when registering.'
+                error: 'No paid registration found for that number. Please verify what you entered.'
             });
         }
 

@@ -433,7 +433,7 @@ export default function AdminDashboard({ onExit }) {
     // If not authenticated, render Login Screen
     if (!currentUser) {
         return (
-            <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4 selection:bg-sky-500 selection:text-white select-none">
+            <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4 selection:bg-sky-500 selection:text-white">
                 <div className="w-full max-w-md bg-white border-4 border-slate-900 shadow-[8px_8px_0px_#0f172a] p-8">
                     <div className="text-center mb-6">
                         <span className="text-[11px] font-mono font-black text-sky-600 tracking-wider uppercase block mb-1">
@@ -530,7 +530,7 @@ export default function AdminDashboard({ onExit }) {
     ];
 
     return (
-        <div className="min-h-screen bg-slate-100 text-slate-900 flex flex-col selection:bg-sky-500 selection:text-white select-none">
+        <div className="min-h-screen bg-slate-100 text-slate-900 flex flex-col selection:bg-sky-500 selection:text-white select-text">
 
             {/* Top Navigation Bar */}
             <header className="sticky top-0 z-40 bg-white border-b-4 border-slate-900 px-4 sm:px-8 py-3 flex flex-wrap items-center justify-between gap-4">

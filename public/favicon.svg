@@ -1,4 +1,20 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
-  <rect width="512" height="512" rx="96" fill="#0f172a"/>
-  <image href="/favicon.png" x="25" y="25" width="462" height="462"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="100%" height="100%">
+  <defs>
+    <!-- Crisp White Badge Background with Subtle Dark Edge -->
+    <filter id="badgeShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="1" stdDeviation="1" flood-color="#000000" flood-opacity="0.15"/>
+    </filter>
+  </defs>
+
+  <!-- High-contrast White Badge Container with Crisp Black Border -->
+  <rect x="2.5" y="2.5" width="59" height="59" rx="14" fill="#ffffff" stroke="#0f172a" stroke-width="3" filter="url(#badgeShadow)"/>
+
+  <!-- Aerodynamic Racing Roofline Curve in Black -->
+  <path d="M 10 18.5 C 22 9.5, 42 9.5, 54 18.5 C 43 12.5, 21 12.5, 10 18.5 Z" fill="#0f172a"/>
+
+  <!-- Iconic Asterix 'Λ' Apex Chevron in Black -->
+  <path d="M 32 14.5 L 50.5 50.5 L 41 50.5 L 32 32 L 23 50.5 L 13.5 50.5 Z" fill="#0f172a"/>
+
+  <!-- Signature Asterix Electric Blue Bar from 'E' -->
+  <rect x="18.5" y="37.5" width="27" height="4.5" rx="2.25" fill="#0284c7"/>
 </svg>

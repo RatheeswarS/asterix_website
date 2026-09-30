@@ -33,7 +33,7 @@ const FIELD_LABELS = {
     rollNo: 'Registered number',
     department: 'Department',
     year: 'Year',
-    email: 'Email ID',
+    email: 'College Email ID',
     phone: 'Phone',
     package: 'Track'
 };
@@ -108,7 +108,11 @@ function validate(form) {
     if (!form.rollNo.trim()) errors.rollNo = 'Enter your registered number.';
     if (!WORKSHOP_DEPARTMENTS.includes(form.department)) errors.department = 'Select your department.';
     if (!['1', '2'].includes(form.year)) errors.year = 'Select 1st or 2nd year.';
-    if (!EMAIL_RE.test(form.email.trim())) errors.email = 'Enter a valid email address.';
+    if (!EMAIL_RE.test(form.email.trim())) {
+        errors.email = 'Enter a valid email address.';
+    } else if (!form.email.trim().toLowerCase().endsWith('@psgitech.ac.in')) {
+        errors.email = 'Please use your college email (@psgitech.ac.in).';
+    }
     if (normalizePhone(form.phone).length !== 10) errors.phone = 'Enter a valid 10-digit phone number.';
     return errors;
 }
@@ -180,93 +184,112 @@ function wrapText(ctx, text, maxWidth) {
 /* Drawn on a canvas and saved as a PNG: no PDF library needed, and on a
    phone an image lands straight in the gallery / downloads. */
 function downloadReceipt(rows, fileId) {
-    const W = 640, PAD = 36, LABEL_W = 170, LINE_H = 24, ROW_PAD = 18;
-    const HEADER_H = 128, FOOTER_H = 84;
-    const MONO = 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
-    const SANS = 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
-    const VALUE_FONT = `700 17px ${SANS}`;
-    const valueW = W - PAD * 2 - LABEL_W;
+    try {
+        const W = 640, PAD = 36, LABEL_W = 170, LINE_H = 24, ROW_PAD = 18;
+        const HEADER_H = 128, FOOTER_H = 84;
+        const MONO = 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
+        const SANS = 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
+        const VALUE_FONT = `700 17px ${SANS}`;
+        const valueW = W - PAD * 2 - LABEL_W;
 
-    const canvas = document.createElement('canvas');
-    let ctx = canvas.getContext('2d');
-    ctx.font = VALUE_FONT;
-    const laid = rows.map(([label, value]) => ({ label, lines: wrapText(ctx, value, valueW) }));
-    const H = HEADER_H + laid.reduce((sum, row) => sum + row.lines.length * LINE_H + ROW_PAD, 0) + FOOTER_H + 16;
-
-    const scale = 2;
-    canvas.width = W * scale;
-    canvas.height = H * scale;
-    ctx = canvas.getContext('2d'); // resizing resets the context state
-    ctx.scale(scale, scale);
-    ctx.textBaseline = 'top';
-
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, W, H);
-
-    ctx.fillStyle = '#fcd34d';
-    ctx.fillRect(0, 0, W, HEADER_H - 16);
-    ctx.fillStyle = '#0f172a';
-    ctx.fillRect(0, HEADER_H - 20, W, 4);
-    ctx.font = `900 13px ${MONO}`;
-    ctx.fillStyle = '#0369a1';
-    ctx.fillText('TEAM ASTERIX · WORKSHOP 2026', PAD, 30);
-    ctx.font = `900 30px ${SANS}`;
-    ctx.fillStyle = '#0f172a';
-    ctx.fillText('PAYMENT RECEIPT', PAD, 52);
-
-    ctx.font = `900 14px ${MONO}`;
-    const tag = '✓ PAID';
-    const tagW = ctx.measureText(tag).width + 24;
-    ctx.fillStyle = '#4ade80';
-    ctx.fillRect(W - PAD - tagW, 50, tagW, 34);
-    ctx.strokeStyle = '#0f172a';
-    ctx.lineWidth = 3;
-    ctx.strokeRect(W - PAD - tagW, 50, tagW, 34);
-    ctx.fillStyle = '#0f172a';
-    ctx.fillText(tag, W - PAD - tagW + 12, 60);
-
-    let y = HEADER_H;
-    laid.forEach((row, index) => {
-        const rowH = row.lines.length * LINE_H + ROW_PAD;
-        if (row.label === 'Amount paid') {
-            ctx.fillStyle = '#fcd34d';
-            ctx.fillRect(PAD - 12, y - 2, W - PAD * 2 + 24, rowH);
-        }
-        ctx.font = `900 12px ${MONO}`;
-        ctx.fillStyle = '#64748b';
-        ctx.fillText(row.label.toUpperCase(), PAD, y + 11);
+        const canvas = document.createElement('canvas');
+        let ctx = canvas.getContext('2d');
         ctx.font = VALUE_FONT;
+        const laid = rows.map(([label, value]) => ({ label, lines: wrapText(ctx, String(value ?? ''), valueW) }));
+        const H = HEADER_H + laid.reduce((sum, row) => sum + row.lines.length * LINE_H + ROW_PAD, 0) + FOOTER_H + 16;
+
+        const scale = 2;
+        canvas.width = W * scale;
+        canvas.height = H * scale;
+        ctx = canvas.getContext('2d'); // resizing resets the context state
+        ctx.scale(scale, scale);
+        ctx.textBaseline = 'top';
+
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, W, H);
+
+        ctx.fillStyle = '#fcd34d';
+        ctx.fillRect(0, 0, W, HEADER_H - 16);
         ctx.fillStyle = '#0f172a';
-        row.lines.forEach((line, i) => ctx.fillText(line, PAD + LABEL_W, y + 8 + i * LINE_H));
-        y += rowH;
-        if (index < laid.length - 1) {
-            ctx.fillStyle = '#e2e8f0';
-            ctx.fillRect(PAD, y - 2, W - PAD * 2, 2);
-        }
-    });
+        ctx.fillRect(0, HEADER_H - 20, W, 4);
+        ctx.font = `900 13px ${MONO}`;
+        ctx.fillStyle = '#0369a1';
+        ctx.fillText('TEAM ASTERIX · WORKSHOP 2026', PAD, 30);
+        ctx.font = `900 30px ${SANS}`;
+        ctx.fillStyle = '#0f172a';
+        ctx.fillText('PAYMENT RECEIPT', PAD, 52);
 
-    ctx.fillStyle = '#0f172a';
-    ctx.fillRect(0, y + 8, W, 4);
-    ctx.font = `700 12px ${MONO}`;
-    ctx.fillStyle = '#475569';
-    ctx.fillText('Payment processed by Razorpay.', PAD, y + 30);
-    ctx.fillText('Keep this receipt; session details will be shared before the workshop.', PAD, y + 50);
+        ctx.font = `900 14px ${MONO}`;
+        const tag = '✓ PAID';
+        const tagW = ctx.measureText(tag).width + 24;
+        ctx.fillStyle = '#4ade80';
+        ctx.fillRect(W - PAD - tagW, 50, tagW, 34);
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(W - PAD - tagW, 50, tagW, 34);
+        ctx.fillStyle = '#0f172a';
+        ctx.fillText(tag, W - PAD - tagW + 12, 60);
 
-    ctx.strokeStyle = '#0f172a';
-    ctx.lineWidth = 8;
-    ctx.strokeRect(0, 0, W, H);
+        let y = HEADER_H;
+        laid.forEach((row, index) => {
+            const rowH = row.lines.length * LINE_H + ROW_PAD;
+            if (row.label === 'Amount paid') {
+                ctx.fillStyle = '#fcd34d';
+                ctx.fillRect(PAD - 12, y - 2, W - PAD * 2 + 24, rowH);
+            }
+            ctx.font = `900 12px ${MONO}`;
+            ctx.fillStyle = '#64748b';
+            ctx.fillText(row.label.toUpperCase(), PAD, y + 11);
+            ctx.font = VALUE_FONT;
+            ctx.fillStyle = '#0f172a';
+            row.lines.forEach((line, i) => ctx.fillText(line, PAD + LABEL_W, y + 8 + i * LINE_H));
+            y += rowH;
+            if (index < laid.length - 1) {
+                ctx.fillStyle = '#e2e8f0';
+                ctx.fillRect(PAD, y - 2, W - PAD * 2, 2);
+            }
+        });
 
-    canvas.toBlob((blob) => {
-        if (!blob) return;
-        const url = URL.createObjectURL(blob);
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(0, y + 8, W, 4);
+        ctx.font = `700 12px ${MONO}`;
+        ctx.fillStyle = '#475569';
+        ctx.fillText('Payment processed by Razorpay.', PAD, y + 30);
+        ctx.fillText('Keep this receipt; session details will be shared before the workshop.', PAD, y + 50);
+
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 8;
+        ctx.strokeRect(0, 0, W, H);
+
+        const safeId = String(fileId || 'Receipt').replace(/[^a-zA-Z0-9_-]/g, '-');
+        const filename = `Asterix-Workshop-Receipt-${safeId}.png`;
+
+        const dataUrl = canvas.toDataURL('image/png');
         const link = document.createElement('a');
-        link.href = url;
-        link.download = `Asterix-Workshop-Receipt-${fileId}.png`;
+        link.href = dataUrl;
+        link.download = filename;
         document.body.appendChild(link);
         link.click();
-        link.remove();
-        setTimeout(() => URL.revokeObjectURL(url), 10000);
-    }, 'image/png');
+        setTimeout(() => link.remove(), 1500);
+
+        if (typeof canvas.toBlob === 'function' && navigator.canShare) {
+            canvas.toBlob((blob) => {
+                if (blob) {
+                    try {
+                        const file = new File([blob], filename, { type: 'image/png' });
+                        if (navigator.canShare({ files: [file] })) {
+                            navigator.share({ files: [file], title: `Asterix Workshop Receipt - ${safeId}` }).catch(() => {});
+                        }
+                    } catch {
+                        // ignore share error
+                    }
+                }
+            }, 'image/png');
+        }
+    } catch (err) {
+        console.error('Download receipt failed:', err);
+        alert('Could not download receipt image automatically. Please take a screenshot of your receipt on screen.');
+    }
 }
 
 export default function WorkshopPage({ onBack }) {
@@ -279,6 +302,8 @@ export default function WorkshopPage({ onBack }) {
     const [stage, setStage] = useState('form');
     const [error, setError] = useState('');
     const [registration, setRegistration] = useState(null);
+    const [upgradePrompt, setUpgradePrompt] = useState(null);
+    const [upgradeBusy, setUpgradeBusy] = useState(false);
     // "Add the other track for ₹750 more" prompt beside Review & continue.
     const [upsellOpen, setUpsellOpen] = useState(false);
     const formRef = useRef(null);
@@ -298,6 +323,7 @@ export default function WorkshopPage({ onBack }) {
             setForm(prev => ({ ...prev, package: packageId }));
             setFieldErrors(prev => ({ ...prev, package: undefined }));
         }
+        setUpgradePrompt(null);
         setRegisterOpen(true);
     };
 
@@ -318,6 +344,7 @@ export default function WorkshopPage({ onBack }) {
         setForm(prev => ({ ...prev, [key]: value }));
         setFieldErrors(prev => ({ ...prev, [key]: undefined }));
         setError('');
+        setUpgradePrompt(null);
         setUpsellOpen(false);
     };
 
@@ -404,15 +431,27 @@ export default function WorkshopPage({ onBack }) {
 
         const { ok, data } = result;
         if (!ok) {
-            if (data.fields) {
+            if (data.alreadyPaid && data.canUpgrade) {
+                setUpgradePrompt({
+                    registrationId: data.existingRegistrationId,
+                    existingPackage: data.existingPackage,
+                    existingName: data.existingName,
+                    upgradePrice: data.upgradePrice || 750
+                });
+                setStage('review');
+            } else if (data.fields) {
                 setFieldErrors(data.fields);
                 setStage('form');
+                setUpgradePrompt(null);
             } else {
                 setStage('review');
+                setUpgradePrompt(null);
             }
             setError(data.error || 'Registration failed. Please try again.');
             return;
         }
+
+        setUpgradePrompt(null);
 
         const loaded = await loadRazorpayCheckout();
         if (!loaded || !window.Razorpay) {
@@ -445,11 +484,71 @@ export default function WorkshopPage({ onBack }) {
         checkout.open();
     };
 
+    const handleUpgrade = async (registrationId, prefill) => {
+        setError('');
+        setUpgradeBusy(true);
+        setStage('paying');
+
+        try {
+            const { ok, data } = await postJson('/api/workshop/upgrade', {
+                registrationId,
+                ...(prefill ? { email: prefill.email, phone: normalizePhone(prefill.phone || prefill.contact), name: prefill.name } : {})
+            });
+            if (!ok) {
+                setError(data.error || 'Upgrade failed. Please try again.');
+                setStage('review');
+                setUpgradeBusy(false);
+                return;
+            }
+
+            const loaded = await loadRazorpayCheckout();
+            if (!loaded || !window.Razorpay) {
+                setError('Could not load payment gateway. Please disable ad-blockers and try again.');
+                setStage('review');
+                setUpgradeBusy(false);
+                return;
+            }
+
+            const checkout = new window.Razorpay({
+                key: data.keyId,
+                order_id: data.order.id,
+                amount: data.order.amount,
+                currency: data.order.currency,
+                name: 'Team Asterix',
+                description: 'Dual-Track Combo Upgrade',
+                prefill: data.prefill,
+                notes: { registrationId: data.registrationId, type: 'upgrade' },
+                theme: { color: '#0ea5e9' },
+                handler: (response) => {
+                    setUpgradeBusy(false);
+                    confirmPaid(data.registrationId, response);
+                },
+                modal: {
+                    ondismiss: () => {
+                        setUpgradeBusy(false);
+                        setStage(current => (current === 'paying' ? 'review' : current));
+                        setError(current => current || 'Upgrade payment window closed. You can upgrade anytime.');
+                    }
+                }
+            });
+            checkout.on('payment.failed', (response) => {
+                setUpgradeBusy(false);
+                setError(response?.error?.description || 'Upgrade payment failed.');
+            });
+            checkout.open();
+        } catch {
+            setUpgradeBusy(false);
+            setError('Could not reach the server for upgrade. Check your connection.');
+            setStage('review');
+        }
+    };
+
     const resetForm = () => {
         setForm(EMPTY_FORM);
         setFieldErrors({});
         setError('');
         setRegistration(null);
+        setUpgradePrompt(null);
         setUpsellOpen(false);
         setStage('form');
     };
@@ -561,6 +660,30 @@ export default function WorkshopPage({ onBack }) {
                         </div>
 
                         <TrackDetail key={track.id} track={track} onRegister={openRegister} />
+
+                        {/* Flexible Upgrade Anytime Banner on Home Page */}
+                        <div className="mt-8 border-4 border-slate-900 bg-amber-300 p-5 shadow-[6px_6px_0px_#0f172a] sm:p-6">
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                <div className="space-y-1">
+                                    <span className="inline-block border-2 border-slate-900 bg-slate-900 px-2.5 py-0.5 font-mono text-[10px] sm:text-xs font-black uppercase text-amber-300">
+                                        ★ Flexible Upgrade Policy
+                                    </span>
+                                    <h3 className="text-lg sm:text-2xl font-black uppercase leading-tight text-slate-900">
+                                        You can upgrade anytime later for 750
+                                    </h3>
+                                    <p className="text-xs sm:text-sm font-bold text-slate-800 max-w-2xl">
+                                        Started with a single track? Once you realise both sessions are an absolute banger and want complete domain knowledge across the autonomous software stack and vehicle powertrain, you can upgrade to the Dual-Track Combo anytime later for just 750 directly from your receipt page.
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => openRegister('combo')}
+                                    className="press shrink-0 border-2 border-slate-900 bg-slate-900 px-5 py-3 font-mono text-xs font-black uppercase text-amber-300 shadow-[3px_3px_0px_#0284c7] hover:bg-slate-800"
+                                >
+                                    Get Dual-Track (1,750) ✦
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </section>
 
@@ -822,8 +945,8 @@ export default function WorkshopPage({ onBack }) {
                                             ))}
                                         </div>
                                     </Field>
-                                    <Field label="Email ID" error={fieldErrors.email}>
-                                        <input data-field="email" type="email" inputMode="email" className={inputClass(fieldErrors.email)} value={form.email} onChange={e => updateField('email', e.target.value)} autoComplete="email" autoCapitalize="none" autoCorrect="off" spellCheck={false} enterKeyHint="next" maxLength={254} placeholder="you@example.com" />
+                                    <Field label="College Email ID" error={fieldErrors.email}>
+                                        <input data-field="email" type="email" inputMode="email" className={inputClass(fieldErrors.email)} value={form.email} onChange={e => updateField('email', e.target.value)} autoComplete="email" autoCapitalize="none" autoCorrect="off" spellCheck={false} enterKeyHint="next" maxLength={254} placeholder="yourname@psgitech.ac.in" />
                                     </Field>
                                     <Field label="Phone" error={fieldErrors.phone}>
                                         <input data-field="phone" type="tel" inputMode="tel" className={inputClass(fieldErrors.phone)} value={form.phone} onChange={e => updateField('phone', e.target.value)} autoComplete="tel" enterKeyHint="done" maxLength={20} placeholder="10-digit mobile number" />
@@ -855,7 +978,10 @@ export default function WorkshopPage({ onBack }) {
                             pkg={selectedPkg}
                             error={stage === 'review' || stage === 'paying' ? error : ''}
                             busy={stage === 'paying'}
-                            onEdit={() => { setError(''); setStage('form'); }}
+                            upgradePrompt={upgradePrompt}
+                            upgradeBusy={upgradeBusy}
+                            onUpgrade={handleUpgrade}
+                            onEdit={() => { setError(''); setUpgradePrompt(null); setStage('form'); }}
                             onPay={handlePay}
                         />
 
@@ -863,6 +989,8 @@ export default function WorkshopPage({ onBack }) {
                             stage={stage}
                             registration={registration}
                             form={form}
+                            onUpgrade={handleUpgrade}
+                            upgradeBusy={upgradeBusy}
                             onRegisterAnother={resetForm}
                             onClose={closeRegister}
                         />
@@ -1120,7 +1248,7 @@ function RegisterDialog({ step, canClose, onClose, children }) {
     );
 }
 
-function ReviewPanel({ form, pkg, error, busy, onEdit, onPay }) {
+function ReviewPanel({ form, pkg, error, busy, upgradePrompt, upgradeBusy, onUpgrade, onEdit, onPay }) {
     const rows = [
         ['Name', form.name],
         ['Registered number', form.rollNo],
@@ -1134,6 +1262,30 @@ function ReviewPanel({ form, pkg, error, busy, onEdit, onPay }) {
     return (
         <div className="flex h-full flex-col">
             <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6">
+                {upgradePrompt ? (
+                    <div className="mb-4 border-3 border-amber-900 bg-amber-100 p-4 shadow-[4px_4px_0px_#0f172a]">
+                        <div className="flex items-center gap-2">
+                            <span className="border-2 border-slate-900 bg-slate-900 px-2 py-0.5 font-mono text-[10px] font-black uppercase text-amber-300">
+                                ★ Already Enrolled
+                            </span>
+                        </div>
+                        <h3 className="mt-2 text-base font-black uppercase text-slate-900">
+                            You are already registered for {upgradePrompt.existingPackage?.toUpperCase() || 'one track'}!
+                        </h3>
+                        <p className="mt-1 text-xs font-bold leading-relaxed text-slate-700">
+                            Want to attend both tracks for complete domain knowledge? You can upgrade your seat to the Dual-Track Combo now for only {upgradePrompt.upgradePrice || 750}.
+                        </p>
+                        <button
+                            type="button"
+                            disabled={upgradeBusy || busy}
+                            onClick={() => onUpgrade?.(upgradePrompt.registrationId, { name: form.name, email: form.email, contact: form.phone })}
+                            className="press mt-3 min-h-12 w-full border-2 border-slate-900 bg-amber-400 hover:bg-amber-300 px-4 py-3 font-mono text-xs font-black uppercase text-slate-950 shadow-[3px_3px_0px_#0f172a] disabled:opacity-60"
+                        >
+                            {upgradeBusy ? 'Opening Upgrade Payment…' : `Pay ${upgradePrompt.upgradePrice || 750} & Upgrade to Combo ✦`}
+                        </button>
+                    </div>
+                ) : null}
+
                 <p className="font-mono text-xs font-black uppercase tracking-widest text-sky-600">Check your details before paying</p>
                 <dl className="mt-3 divide-y-2 divide-slate-200 border-2 border-slate-900">
                     {rows.map(([label, value]) => (
@@ -1160,10 +1312,10 @@ function ReviewPanel({ form, pkg, error, busy, onEdit, onPay }) {
             <div className="border-t-4 border-slate-900 bg-slate-50 p-3 sm:p-4">
                 {error && <p className="mb-3 border-2 border-red-600 bg-red-50 p-2.5 font-mono text-xs font-black text-red-700">{error}</p>}
                 <div className="grid grid-cols-[auto_1fr] gap-3">
-                    <button type="button" onClick={onEdit} disabled={busy} className="press min-h-12 border-2 border-slate-900 bg-white px-4 py-3 font-mono text-xs font-black uppercase shadow-[4px_4px_0px_#0f172a] hover:bg-sky-100 disabled:opacity-50">
+                    <button type="button" onClick={onEdit} disabled={busy || upgradeBusy} className="press min-h-12 border-2 border-slate-900 bg-white px-4 py-3 font-mono text-xs font-black uppercase shadow-[4px_4px_0px_#0f172a] hover:bg-sky-100 disabled:opacity-50">
                         ← Edit
                     </button>
-                    <button type="button" onClick={onPay} disabled={busy || !PAYMENTS_ENABLED} className="press min-h-12 border-2 border-slate-900 bg-sky-500 px-5 py-3 font-mono text-sm font-black uppercase text-white shadow-[4px_4px_0px_#0f172a] hover:bg-sky-400 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-sky-500">
+                    <button type="button" onClick={onPay} disabled={busy || upgradeBusy || !PAYMENTS_ENABLED} className="press min-h-12 border-2 border-slate-900 bg-sky-500 px-5 py-3 font-mono text-sm font-black uppercase text-white shadow-[4px_4px_0px_#0f172a] hover:bg-sky-400 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-sky-500">
                         {busy ? 'Opening payment…' : `Pay ${formatPrice(pkg)} →`}
                     </button>
                 </div>
@@ -1175,9 +1327,9 @@ function ReviewPanel({ form, pkg, error, busy, onEdit, onPay }) {
 /* Slide 3. Razorpay Checkout opens as its own secure window on top of this
    slide (it cannot be embedded), so while it is open this slide says so;
    once the payment is confirmed it becomes the receipt. */
-function PaymentPanel({ stage, registration, form, onRegisterAnother, onClose }) {
+function PaymentPanel({ stage, registration, form, onUpgrade, upgradeBusy, onRegisterAnother, onClose }) {
     if (stage === 'success' && registration) {
-        return <ReceiptPanel registration={registration} form={form} onRegisterAnother={onRegisterAnother} onClose={onClose} />;
+        return <ReceiptPanel registration={registration} form={form} onUpgrade={onUpgrade} upgradeBusy={upgradeBusy} onRegisterAnother={onRegisterAnother} onClose={onClose} />;
     }
     if (stage === 'unconfirmed') {
         return (
@@ -1257,9 +1409,10 @@ function WhatsAppGroupInvite({ pkgId, tracksEnrolled = [] }) {
     );
 }
 
-function ReceiptPanel({ registration, form, onRegisterAnother, onClose }) {
+function ReceiptPanel({ registration, form, onUpgrade, upgradeBusy, onRegisterAnother, onClose }) {
     /* The server's public view has no roll number, department or phone, so
        those come from the form just submitted (it is not cleared on success). */
+    const isCombo = registration.package === 'combo' || (Array.isArray(registration.tracksEnrolled) && registration.tracksEnrolled.includes('software') && registration.tracksEnrolled.includes('powertrain'));
     const rows = receiptRows({
         ...registration,
         name: registration.name || form.name,
@@ -1291,6 +1444,37 @@ function ReceiptPanel({ registration, form, onRegisterAnother, onClose }) {
 
                 <WhatsAppGroupInvite pkgId={registration.package || form.package} tracksEnrolled={registration.tracksEnrolled} />
 
+                {/* Single-track upgrade promotion card */}
+                {!isCombo && (
+                    <div className="mt-4 border-3 border-amber-900 bg-amber-100 p-4 shadow-[4px_4px_0px_#0f172a]">
+                        <div className="flex items-center gap-2">
+                            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-500 font-mono text-xs font-black text-slate-900">
+                                ★
+                            </span>
+                            <span className="font-mono text-xs font-black uppercase tracking-wider text-amber-950">
+                                Complete Domain Knowledge
+                            </span>
+                        </div>
+                        <p className="mt-2 text-sm font-black uppercase text-slate-900">
+                            Upgrade by paying 750 and get the second workshop track
+                        </p>
+                        <p className="mt-1 text-xs font-bold leading-relaxed text-slate-700">
+                            Gain complete domain knowledge across autonomous software (ROS, CV, AI) and powertrain engineering (circuits, microcontrollers, PCB design). You can upgrade right now or come back anytime later to upgrade.
+                        </p>
+                        <button
+                            type="button"
+                            disabled={upgradeBusy}
+                            onClick={() => onUpgrade?.(registration.registrationId || registration._id, form)}
+                            className="press mt-3 min-h-11 w-full border-2 border-slate-900 bg-amber-400 hover:bg-amber-300 px-4 py-2.5 font-mono text-xs font-black uppercase text-slate-950 shadow-[3px_3px_0px_#0f172a] disabled:opacity-60"
+                        >
+                            {upgradeBusy ? 'Opening Upgrade Payment…' : 'Upgrade to Combo (750) ✦'}
+                        </button>
+                        <p className="mt-2 font-mono text-[10px] font-bold text-slate-600 text-center">
+                            💡 You can return anytime to upgrade by looking up your receipt on this site.
+                        </p>
+                    </div>
+                )}
+
                 <p className="mt-4 text-sm font-bold text-slate-600">
                     Keep your receipt handy. Session details will be shared with you before the workshop begins.
                 </p>
@@ -1317,11 +1501,12 @@ function ReceiptPanel({ registration, form, onRegisterAnother, onClose }) {
     );
 }
 
-/* "Download receipt" for students who registered earlier: name + registered
-   number in, their receipt(s) out. The server masks the email and phone. */
+/* "Download receipt" for students who registered earlier: college register
+   number OR phone number in, their receipt(s) out. */
 function ReceiptLookupDialog({ onClose }) {
-    const [lookup, setLookup] = useState({ name: '', rollNo: '' });
+    const [lookup, setLookup] = useState({ rollNo: '', phone: '' });
     const [busy, setBusy] = useState(false);
+    const [upgradeBusyId, setUpgradeBusyId] = useState(null);
     const [error, setError] = useState('');
     const [receipts, setReceipts] = useState(null);
     useModal(true, onClose);
@@ -1333,20 +1518,86 @@ function ReceiptLookupDialog({ onClose }) {
 
     const handleSubmit = async (event) => {
         event.preventDefault();
-        if (lookup.name.trim().length < 2 || !lookup.rollNo.trim()) {
-            setError('Enter your full name and registered number.');
+        const rollTrimmed = lookup.rollNo.trim();
+        const phoneTrimmed = lookup.phone.trim();
+
+        if (!rollTrimmed && !phoneTrimmed) {
+            setError('Please enter your College Registration Number or Phone Number.');
             return;
         }
+
         setBusy(true);
         setError('');
         try {
-            const { ok, data } = await postJson('/api/workshop/receipt-lookup', lookup);
+            const { ok, data } = await postJson('/api/workshop/receipt-lookup', {
+                rollNo: rollTrimmed,
+                phone: phoneTrimmed,
+                query: rollTrimmed || phoneTrimmed
+            });
             if (ok && data.receipts?.length) setReceipts(data.receipts);
-            else setError(data.error || 'No receipt found. Please try again.');
+            else setError(data.error || 'No paid registration found. Please check your details and try again.');
         } catch {
             setError('Could not reach the server. Check your connection and try again.');
         } finally {
             setBusy(false);
+        }
+    };
+
+    const handleLookupUpgrade = async (record) => {
+        setUpgradeBusyId(record.registrationId);
+        try {
+            const { ok, data } = await postJson('/api/workshop/upgrade', {
+                registrationId: record.registrationId
+            });
+            if (!ok) {
+                alert(data.error || 'Failed to start upgrade. Please try again.');
+                setUpgradeBusyId(null);
+                return;
+            }
+            const loaded = await loadRazorpayCheckout();
+            if (!loaded || !window.Razorpay) {
+                alert('Could not load payment window. Please disable ad-blocker.');
+                setUpgradeBusyId(null);
+                return;
+            }
+            const checkout = new window.Razorpay({
+                key: data.keyId,
+                order_id: data.order.id,
+                amount: data.order.amount,
+                currency: data.order.currency,
+                name: 'Team Asterix',
+                description: 'Dual-Track Combo Upgrade',
+                prefill: data.prefill,
+                notes: { registrationId: data.registrationId, type: 'upgrade' },
+                theme: { color: '#0ea5e9' },
+                handler: async (response) => {
+                    const verifyRes = await postJson('/api/workshop/verify', response);
+                    if (verifyRes.ok && verifyRes.data.registration) {
+                        setReceipts(prev => prev.map(r => r.registrationId === record.registrationId ? {
+                            ...r,
+                            ...verifyRes.data.registration,
+                            package: 'combo',
+                            packageName: 'Dual-Track Combo',
+                            tracksEnrolled: ['software', 'powertrain'],
+                            amount: 1750
+                        } : r));
+                    }
+                    setUpgradeBusyId(null);
+                },
+                modal: {
+                    ondismiss: () => {
+                        setUpgradeBusyId(null);
+                    }
+                }
+            });
+            checkout.on('payment.failed', (err) => {
+                alert(err?.error?.description || 'Upgrade payment failed.');
+                setUpgradeBusyId(null);
+            });
+            checkout.open();
+        } catch {
+            alert('Could not reach the server for upgrade.');
+            setUpgradeBusyId(null);
         }
     };
 
@@ -1382,6 +1633,7 @@ function ReceiptLookupDialog({ onClose }) {
                     {receipts ? (
                         <div className="space-y-5">
                             {receipts.map(record => {
+                                const isCombo = record.package === 'combo' || (Array.isArray(record.tracksEnrolled) && record.tracksEnrolled.includes('software') && record.tracksEnrolled.includes('powertrain'));
                                 const rows = receiptRows(record);
                                 return (
                                     <div key={record.registrationId}>
@@ -1394,6 +1646,32 @@ function ReceiptLookupDialog({ onClose }) {
                                             ))}
                                         </dl>
                                         <WhatsAppGroupInvite pkgId={record.package} tracksEnrolled={record.tracksEnrolled} />
+
+                                        {/* Upgrade Option directly in Receipt Lookup */}
+                                        {!isCombo && (
+                                            <div className="mt-3 border-2 border-slate-900 bg-amber-100 p-3.5 shadow-[3px_3px_0px_#0f172a]">
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <span className="font-mono text-[11px] font-black uppercase text-amber-950">
+                                                        ★ Complete Domain Knowledge
+                                                    </span>
+                                                    <span className="border border-slate-900 bg-amber-300 px-1.5 py-0.5 font-mono text-[10px] font-black">
+                                                        750 only
+                                                    </span>
+                                                </div>
+                                                <p className="mt-1 text-xs font-bold leading-relaxed text-slate-700">
+                                                    Upgrade by paying 750 to add the other workshop track and gain complete domain knowledge. You can upgrade anytime!
+                                                </p>
+                                                <button
+                                                    type="button"
+                                                    disabled={upgradeBusyId === record.registrationId}
+                                                    onClick={() => handleLookupUpgrade(record)}
+                                                    className="press mt-2.5 min-h-11 w-full border-2 border-slate-900 bg-amber-400 hover:bg-amber-300 px-4 py-2 font-mono text-xs font-black uppercase text-slate-950 shadow-[2px_2px_0px_#0f172a] disabled:opacity-60"
+                                                >
+                                                    {upgradeBusyId === record.registrationId ? 'Opening Upgrade…' : 'Upgrade to Combo (750) ✦'}
+                                                </button>
+                                            </div>
+                                        )}
+
                                         <button
                                             type="button"
                                             onClick={() => downloadReceipt(rows, record.receiptNo || record.registrationId)}
@@ -1410,18 +1688,56 @@ function ReceiptLookupDialog({ onClose }) {
                         </div>
                     ) : (
                         <form onSubmit={handleSubmit} noValidate className="space-y-4">
-                            <p className="text-sm font-bold text-slate-600">
-                                Enter the name and registered number you used when you registered.
+                            <p className="text-sm font-bold text-slate-700">
+                                Enter your <span className="font-black text-slate-900">College Registration Number</span> or <span className="font-black text-slate-900">Registered Phone Number</span> to find and download your receipt.
                             </p>
-                            <Field label="Full name">
-                                <input className={inputClass(false)} value={lookup.name} onChange={e => update('name', e.target.value)} autoComplete="name" autoCapitalize="words" enterKeyHint="next" maxLength={100} placeholder="As entered while registering" />
+
+                            <Field label="Option 1: College Registration Number">
+                                <input
+                                    className={inputClass(false)}
+                                    value={lookup.rollNo}
+                                    onChange={e => update('rollNo', e.target.value)}
+                                    autoComplete="off"
+                                    autoCapitalize="characters"
+                                    autoCorrect="off"
+                                    spellCheck={false}
+                                    enterKeyHint="next"
+                                    maxLength={40}
+                                    placeholder="e.g. 24BCE1234 / Roll No"
+                                />
                             </Field>
-                            <Field label="Registered number">
-                                <input className={inputClass(false)} value={lookup.rollNo} onChange={e => update('rollNo', e.target.value)} autoComplete="off" autoCapitalize="characters" autoCorrect="off" spellCheck={false} enterKeyHint="search" maxLength={40} placeholder="College register number" />
+
+                            <div className="relative my-2 flex items-center justify-center">
+                                <div className="absolute inset-0 flex items-center">
+                                    <div className="w-full border-t-2 border-dashed border-slate-300" />
+                                </div>
+                                <span className="relative bg-white px-3 font-mono text-xs font-black uppercase text-slate-500">
+                                    — OR —
+                                </span>
+                            </div>
+
+                            <Field label="Option 2: Registered Phone Number">
+                                <input
+                                    className={inputClass(false)}
+                                    type="tel"
+                                    inputMode="tel"
+                                    value={lookup.phone}
+                                    onChange={e => update('phone', e.target.value)}
+                                    autoComplete="tel"
+                                    enterKeyHint="search"
+                                    maxLength={20}
+                                    placeholder="10-digit mobile number"
+                                />
                             </Field>
+
                             {error && <p className="border-2 border-red-600 bg-red-50 p-2.5 font-mono text-xs font-black text-red-700" role="alert">{error}</p>}
-                            <button type="submit" disabled={busy} className="press min-h-12 w-full border-2 border-slate-900 bg-green-400 px-5 py-3.5 font-mono text-sm font-black uppercase shadow-[4px_4px_0px_#0f172a] hover:bg-green-300 disabled:cursor-wait disabled:opacity-60">
-                                {busy ? 'Looking up…' : 'Find my receipt →'}
+
+                            <button
+                                type="submit"
+                                disabled={busy}
+                                className="press min-h-12 w-full border-2 border-slate-900 bg-green-400 px-5 py-3.5 font-mono text-sm font-black uppercase shadow-[4px_4px_0px_#0f172a] hover:bg-green-300 disabled:cursor-wait disabled:opacity-60"
+                            >
+                                {busy ? 'Looking up receipt…' : 'Find my receipt →'}
                             </button>
                         </form>
                     )}
