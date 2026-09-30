@@ -534,8 +534,8 @@ export default function WorkshopPage({ onBack }) {
                                         aria-selected={active}
                                         onClick={() => selectTrack(id)}
                                         className={`press group cursor-pointer border-3 sm:border-4 border-slate-900 p-3.5 sm:p-6 text-left transition-all ${active
-                                                ? 'bg-slate-900 text-white shadow-[6px_6px_0px_#0284c7]'
-                                                : 'bg-white text-slate-900 shadow-[4px_4px_0px_#0f172a] hover:bg-amber-100 hover:shadow-[6px_6px_0px_#0f172a]'
+                                            ? 'bg-slate-900 text-white shadow-[6px_6px_0px_#0284c7]'
+                                            : 'bg-white text-slate-900 shadow-[4px_4px_0px_#0f172a] hover:bg-amber-100 hover:shadow-[6px_6px_0px_#0f172a]'
                                             }`}
                                     >
                                         <div className="flex items-center justify-between gap-1">
@@ -1199,6 +1199,64 @@ function PaymentPanel({ stage, registration, form, onRegisterAnother, onClose })
     );
 }
 
+const WHATSAPP_GROUPS = {
+    software: {
+        name: 'Software & Perception',
+        url: 'https://chat.whatsapp.com/F53PZl3LzGh34OFL1aDqgh'
+    },
+    powertrain: {
+        name: 'Electronics & Powertrain',
+        url: 'https://chat.whatsapp.com/K6wPojX4IeF6SQmMTW8Xro'
+    }
+};
+
+function WhatsAppGroupInvite({ pkgId, tracksEnrolled = [] }) {
+    const isCombo = pkgId === 'combo' || (Array.isArray(tracksEnrolled) && tracksEnrolled.includes('software') && tracksEnrolled.includes('powertrain'));
+    const hasSoftware = isCombo || pkgId === 'software' || tracksEnrolled?.includes('software');
+    const hasPowertrain = isCombo || pkgId === 'powertrain' || tracksEnrolled?.includes('powertrain');
+
+    return (
+        <div className="mt-4 border-3 border-slate-900 bg-emerald-50 p-4 shadow-[4px_4px_0px_#0f172a]">
+            <div className="flex items-center gap-2">
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-600 font-mono text-xs font-black text-white">
+                    💬
+                </span>
+                <span className="font-mono text-xs font-black uppercase tracking-wider text-emerald-950">
+                    Official WhatsApp Group{isCombo ? 's' : ''}
+                </span>
+            </div>
+            <p className="mt-1.5 text-xs font-bold leading-relaxed text-slate-700">
+                All future updates, meeting links, lab reporting instructions, and study materials will be shared here. Please join your track group:
+            </p>
+
+            <div className="mt-3 flex flex-col gap-2">
+                {hasSoftware && (
+                    <a
+                        href={WHATSAPP_GROUPS.software.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="press flex items-center justify-between border-2 border-slate-900 bg-[#25D366] hover:bg-[#20bd5a] px-3.5 py-2.5 font-mono text-xs font-black uppercase text-slate-950 shadow-[2px_2px_0px_#0f172a] no-underline"
+                    >
+                        <span>Join Software &amp; Perception Group →</span>
+                        <span className="rounded bg-slate-900 px-1.5 py-0.5 text-[10px] text-white">WhatsApp ↗</span>
+                    </a>
+                )}
+                {hasPowertrain && (
+                    <a
+                        href={WHATSAPP_GROUPS.powertrain.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="press flex items-center justify-between border-2 border-slate-900 bg-[#25D366] hover:bg-[#20bd5a] px-3.5 py-2.5 font-mono text-xs font-black uppercase text-slate-950 shadow-[2px_2px_0px_#0f172a] no-underline"
+                    >
+                        <span>Join Electronics &amp; Powertrain Group →</span>
+                        <span className="rounded bg-slate-900 px-1.5 py-0.5 text-[10px] text-white">WhatsApp ↗</span>
+                    </a>
+                )}
+            </div>
+        </div>
+    );
+}
+
 function ReceiptPanel({ registration, form, onRegisterAnother, onClose }) {
     /* The server's public view has no roll number, department or phone, so
        those come from the form just submitted (it is not cleared on success). */
@@ -1230,6 +1288,9 @@ function ReceiptPanel({ registration, form, onRegisterAnother, onClose }) {
                         ))}
                     </dl>
                 </div>
+
+                <WhatsAppGroupInvite pkgId={registration.package || form.package} tracksEnrolled={registration.tracksEnrolled} />
+
                 <p className="mt-4 text-sm font-bold text-slate-600">
                     Keep your receipt handy. Session details will be shared with you before the workshop begins.
                 </p>
@@ -1332,6 +1393,7 @@ function ReceiptLookupDialog({ onClose }) {
                                                 </div>
                                             ))}
                                         </dl>
+                                        <WhatsAppGroupInvite pkgId={record.package} tracksEnrolled={record.tracksEnrolled} />
                                         <button
                                             type="button"
                                             onClick={() => downloadReceipt(rows, record.receiptNo || record.registrationId)}
