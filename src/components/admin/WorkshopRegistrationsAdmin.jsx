@@ -181,7 +181,7 @@ export default function WorkshopRegistrationsAdmin({ showStatus }) {
 
     // Filter registrations by status, package, and search query
     const filteredRegistrations = useMemo(() => {
-        return registrations.filter((reg) => {
+        const list = registrations.filter((reg) => {
             if (statusFilter !== 'all' && reg.status !== statusFilter) return false;
             if (packageFilter !== 'all' && reg.package !== packageFilter) return false;
 
@@ -197,6 +197,18 @@ export default function WorkshopRegistrationsAdmin({ showStatus }) {
             const matchPayment = reg.razorpayPaymentId?.toLowerCase().includes(q);
 
             return matchName || matchEmail || matchPhone || matchRollNo || matchDept || matchReceipt || matchOrder || matchPayment;
+        });
+
+        // Sort latest receipts first (descending by receiptNo or paidAt)
+        return [...list].sort((a, b) => {
+            if (a.receiptNo && b.receiptNo) {
+                return b.receiptNo.localeCompare(a.receiptNo, undefined, { numeric: true });
+            }
+            if (a.receiptNo) return -1;
+            if (b.receiptNo) return 1;
+            const timeA = new Date(a.paidAt || a.createdAt || 0).getTime();
+            const timeB = new Date(b.paidAt || b.createdAt || 0).getTime();
+            return timeB - timeA;
         });
     }, [registrations, statusFilter, packageFilter, searchQuery]);
 

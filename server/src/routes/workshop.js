@@ -650,7 +650,7 @@ router.get('/registrations', authenticateToken, requireLeadOrAdmin, requireDb, a
             }
         }
 
-        const rawList = await WorkshopRegistration.find(filter).sort({ createdAt: -1 }).lean();
+        const rawList = await WorkshopRegistration.find(filter).sort({ receiptNo: -1, paidAt: -1, createdAt: -1 }).lean();
 
         // Annotate each registration with supersession info
         const registrations = rawList.map(r => {

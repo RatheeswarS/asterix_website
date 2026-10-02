@@ -308,6 +308,7 @@ export default function WorkshopPage({ onBack }) {
     const [upsellOpen, setUpsellOpen] = useState(false);
     const formRef = useRef(null);
     const detailRef = useRef(null);
+    const [previewSyllabus, setPreviewSyllabus] = useState(null); // { url, name } | null
 
     const { siteData } = useWebsiteData();
     const dynamicTracks = siteData?.workshop?.tracks || {};
@@ -659,7 +660,12 @@ export default function WorkshopPage({ onBack }) {
                             })}
                         </div>
 
-                        <TrackDetail key={track.id} track={track} onRegister={openRegister} />
+                        <TrackDetail
+                            key={track.id}
+                            track={track}
+                            onRegister={openRegister}
+                            onPreviewSyllabus={(url, name) => setPreviewSyllabus({ url, name })}
+                        />
 
                         {/* Flexible Upgrade Anytime Banner on Home Page */}
                         <div className="mt-8 border-4 border-slate-900 bg-amber-300 p-5 shadow-[6px_6px_0px_#0f172a] sm:p-6">
@@ -846,6 +852,14 @@ export default function WorkshopPage({ onBack }) {
 
                 {lookupOpen && <ReceiptLookupDialog onClose={() => setLookupOpen(false)} />}
 
+                {previewSyllabus && (
+                    <SyllabusPreviewModal
+                        url={previewSyllabus.url}
+                        trackName={previewSyllabus.name}
+                        onClose={() => setPreviewSyllabus(null)}
+                    />
+                )}
+
                 {/* Registration pop-up: Details -> Confirm -> Payment, sliding sideways. */}
                 {registerOpen && (
                     <RegisterDialog step={stepFor(stage)} canClose={canClose} onClose={closeRegister}>
@@ -1001,7 +1015,7 @@ export default function WorkshopPage({ onBack }) {
     );
 }
 
-function TrackDetail({ track, onRegister }) {
+function TrackDetail({ track, onRegister, onPreviewSyllabus }) {
     const isSoftware = track.id === 'software';
     const otherTrackName = isSoftware ? 'Powertrain' : 'Software';
     const facts = [
@@ -1010,6 +1024,12 @@ function TrackDetail({ track, onRegister }) {
         ['Timing', track.timing],
         ['Price', formatPrice(WORKSHOP_PACKAGES.find(p => p.id === track.id))]
     ];
+
+    const hasSyllabus = Boolean(track.syllabus);
+    const isImageKit = typeof track.syllabus === 'string' && track.syllabus.includes('ik.imagekit.io');
+    const downloadUrl = isImageKit
+        ? `${track.syllabus}${track.syllabus.includes('?') ? '&' : '?'}ik-attachment=true`
+        : track.syllabus;
 
     return (
         <article className="mt-8 border-4 border-slate-900 bg-white p-5 shadow-[8px_8px_0px_#0f172a] sm:p-8 anim-pop" role="tabpanel">
@@ -1038,7 +1058,71 @@ function TrackDetail({ track, onRegister }) {
             <p className="mt-2 text-sm font-bold leading-relaxed text-slate-700">
                 {track.topics.map(topic => topic.title).join(' · ')}.
             </p>
-            <p className="mt-1 text-xs font-bold text-slate-500">Full topic list and weekly plan in the syllabus PDF.</p>
+            <p className="mt-1 text-xs font-bold text-slate-500">Full topic list, weekly lab breakdown, and milestone schedule in the syllabus PDF.</p>
+
+            {/* Dedicated Syllabus & Curriculum Document Card */}
+            {hasSyllabus && (
+                <div className="mt-6 border-3 border-slate-900 bg-sky-50 p-4 sm:p-5 shadow-[4px_4px_0px_#0f172a]">
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                        <div className="space-y-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                                <span className="border-2 border-slate-900 bg-sky-400 px-2 py-0.5 font-mono text-[10px] font-black uppercase text-slate-900">
+                                    ✦ Official Curriculum Document
+                                </span>
+                                {isImageKit ? (
+                                    <span className="font-mono text-[10px] font-black uppercase text-emerald-700 bg-emerald-100 px-1.5 py-0.5 border border-emerald-400">
+                                        Cloud Verified PDF
+                                    </span>
+                                ) : (
+                                    <span className="font-mono text-[10px] font-bold text-slate-500 uppercase">
+                                        PDF Document
+                                    </span>
+                                )}
+                            </div>
+                            <h4 className="text-base sm:text-lg font-black uppercase text-slate-900">
+                                {track.name} Syllabus &amp; Weekly Plan
+                            </h4>
+                            <p className="text-xs font-bold text-slate-600 max-w-xl">
+                                Full breakdown of the 4-week roadmap, lecture topics, hands-on lab modules, milestone deliverables, and bonus session schedule.
+                            </p>
+                        </div>
+
+                        <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 shrink-0">
+                            {onPreviewSyllabus && (
+                                <button
+                                    type="button"
+                                    onClick={() => onPreviewSyllabus(track.syllabus, track.name)}
+                                    className="press border-2 border-slate-900 bg-white px-3.5 py-2.5 font-mono text-xs font-black uppercase text-slate-900 shadow-[3px_3px_0px_#0f172a] hover:bg-amber-100 flex items-center gap-1.5 cursor-pointer"
+                                >
+                                    <span>👁</span>
+                                    <span>Preview</span>
+                                </button>
+                            )}
+
+                            <a
+                                href={track.syllabus}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="press border-2 border-slate-900 bg-sky-500 px-3.5 py-2.5 font-mono text-xs font-black uppercase text-white shadow-[3px_3px_0px_#0f172a] hover:bg-sky-600 flex items-center gap-1.5 no-underline cursor-pointer"
+                            >
+                                <span>View PDF</span>
+                                <span>↗</span>
+                            </a>
+
+                            <a
+                                href={downloadUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                download={`${track.id}_syllabus.pdf`}
+                                className="press border-2 border-slate-900 bg-slate-900 px-3.5 py-2.5 font-mono text-xs font-black uppercase text-amber-300 shadow-[3px_3px_0px_#0284c7] hover:bg-slate-800 flex items-center gap-1.5 no-underline cursor-pointer"
+                            >
+                                <span>Download</span>
+                                <span>↓</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Handbook & guided resources note */}
             <div className="mt-5 inline-flex items-center gap-2 border-2 border-slate-900 bg-sky-50 px-3.5 py-2 font-mono text-xs font-black uppercase text-slate-900 shadow-[2px_2px_0px_#0f172a]">
@@ -1063,7 +1147,7 @@ function TrackDetail({ track, onRegister }) {
                     <button
                         type="button"
                         onClick={() => onRegister('combo')}
-                        className="press shrink-0 border-2 border-slate-900 bg-amber-300 px-4 py-2.5 font-mono text-xs font-black uppercase shadow-[3px_3px_0px_#0f172a] hover:bg-amber-400"
+                        className="press shrink-0 border-2 border-slate-900 bg-amber-300 px-4 py-2.5 font-mono text-xs font-black uppercase shadow-[3px_3px_0px_#0f172a] hover:bg-amber-400 cursor-pointer"
                     >
                         Get Combo (1,750) ✦
                     </button>
@@ -1071,16 +1155,28 @@ function TrackDetail({ track, onRegister }) {
             </div>
 
             <div className="mt-8 flex flex-wrap gap-3">
-                <a
-                    href={track.syllabus}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    download
-                    className="press inline-flex items-center gap-2 border-2 border-slate-900 bg-white px-5 py-3 font-mono text-xs font-black uppercase text-slate-900 no-underline shadow-[4px_4px_0px_#0f172a] hover:bg-sky-100"
-                >
-                    Download syllabus & plan (PDF) ↓
-                </a>
-                <button type="button" onClick={() => onRegister(track.id)} className="press border-2 border-slate-900 bg-amber-300 px-5 py-3 font-mono text-xs font-black uppercase shadow-[4px_4px_0px_#0f172a] hover:bg-amber-400">
+                {hasSyllabus && (
+                    <>
+                        <a
+                            href={track.syllabus}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="press inline-flex items-center gap-2 border-2 border-slate-900 bg-white px-5 py-3 font-mono text-xs font-black uppercase text-slate-900 no-underline shadow-[4px_4px_0px_#0f172a] hover:bg-sky-100 cursor-pointer"
+                        >
+                            View syllabus &amp; plan (PDF) ↗
+                        </a>
+                        <a
+                            href={downloadUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            download={`${track.id}_syllabus.pdf`}
+                            className="press inline-flex items-center gap-2 border-2 border-slate-900 bg-slate-100 px-5 py-3 font-mono text-xs font-black uppercase text-slate-900 no-underline shadow-[4px_4px_0px_#0f172a] hover:bg-slate-200 cursor-pointer"
+                        >
+                            Download PDF ↓
+                        </a>
+                    </>
+                )}
+                <button type="button" onClick={() => onRegister(track.id)} className="press border-2 border-slate-900 bg-amber-300 px-5 py-3 font-mono text-xs font-black uppercase shadow-[4px_4px_0px_#0f172a] hover:bg-amber-400 cursor-pointer">
                     Register ✦
                 </button>
             </div>
@@ -1088,6 +1184,97 @@ function TrackDetail({ track, onRegister }) {
                 * Syllabus, schedule and other details are subject to change.
             </p>
         </article>
+    );
+}
+
+function SyllabusPreviewModal({ url, trackName, onClose }) {
+    useModal(true, onClose);
+    if (!url) return null;
+
+    const isImageKit = typeof url === 'string' && url.includes('ik.imagekit.io');
+    const downloadUrl = isImageKit
+        ? `${url}${url.includes('?') ? '&' : '?'}ik-attachment=true`
+        : url;
+
+    return createPortal(
+        <div
+            className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/85 backdrop-blur-sm p-2 sm:p-6 anim-fade"
+            onClick={onClose}
+            data-lenis-prevent
+            role="dialog"
+            aria-modal="true"
+            aria-label={`${trackName} Syllabus PDF Preview`}
+        >
+            <div
+                className="anim-pop-center flex h-[94dvh] w-full max-w-5xl flex-col border-4 border-slate-900 bg-white shadow-[8px_8px_0px_#0f172a]"
+                onClick={(e) => e.stopPropagation()}
+            >
+                {/* Header */}
+                <div className="flex items-center justify-between border-b-4 border-slate-900 bg-slate-900 px-4 py-3 text-white">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                        <span className="border border-amber-300 bg-amber-300 px-2 py-0.5 font-mono text-[10px] font-black uppercase text-slate-900">
+                            Syllabus Viewer
+                        </span>
+                        <h3 className="truncate font-mono text-sm font-black uppercase text-white sm:text-base">
+                            {trackName} • Curriculum PDF
+                        </h3>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <a
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="press hidden sm:inline-flex items-center gap-1 border-2 border-white bg-sky-500 px-3 py-1 font-mono text-xs font-black uppercase text-white shadow-[2px_2px_0px_#fff] hover:bg-sky-600 no-underline cursor-pointer"
+                        >
+                            Open in New Tab ↗
+                        </a>
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="press flex h-8 w-8 items-center justify-center border-2 border-white bg-rose-500 font-mono text-sm font-bold text-white hover:bg-rose-600 cursor-pointer"
+                            aria-label="Close Preview"
+                        >
+                            ✕
+                        </button>
+                    </div>
+                </div>
+
+                {/* PDF Viewer Frame */}
+                <div className="relative flex-1 bg-slate-100 overflow-hidden">
+                    <iframe
+                        src={`${url}#toolbar=1&navpanes=0`}
+                        title={`${trackName} Syllabus PDF`}
+                        className="w-full h-full border-none"
+                    />
+                </div>
+
+                {/* Footer Controls */}
+                <div className="flex flex-wrap items-center justify-between gap-3 border-t-4 border-slate-900 bg-amber-100 px-4 py-2.5">
+                    <p className="font-mono text-xs font-bold text-slate-700 truncate">
+                        Official Team Asterix workshop curriculum and milestone plan.
+                    </p>
+                    <div className="flex items-center gap-2">
+                        <a
+                            href={downloadUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            download={`${trackName.toLowerCase().replace(/[^a-z0-9]+/g, '_')}_syllabus.pdf`}
+                            className="press border-2 border-slate-900 bg-white px-3 py-1 font-mono text-xs font-black uppercase text-slate-900 shadow-[2px_2px_0px_#0f172a] hover:bg-sky-100 no-underline cursor-pointer"
+                        >
+                            Download PDF ↓
+                        </a>
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="press border-2 border-slate-900 bg-slate-900 px-3.5 py-1 font-mono text-xs font-black uppercase text-white hover:bg-slate-800 cursor-pointer"
+                        >
+                            Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>,
+        document.body
     );
 }
 

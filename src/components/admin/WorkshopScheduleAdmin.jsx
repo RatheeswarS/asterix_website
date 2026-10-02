@@ -17,7 +17,7 @@ function newScheduleId(trackId) {
 }
 
 export default function WorkshopScheduleAdmin({ currentUser, isAdmin, showStatus, onImageUpload }) {
-    const { siteData, updateWorkshop } = useWebsiteData();
+    const { siteData, updateWorkshop, syncToServer, syncState } = useWebsiteData();
     const workshop = siteData.workshop || { tracks: WORKSHOP_TRACKS };
     const tracks = workshop.tracks || WORKSHOP_TRACKS;
 
@@ -25,11 +25,29 @@ export default function WorkshopScheduleAdmin({ currentUser, isAdmin, showStatus
     const trackKeys = Object.keys(WORKSHOP_TRACKS);
     const [selectedTrackId, setSelectedTrackId] = useState(trackKeys[0] || 'software');
     const [isUploading, setIsUploading] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
 
     // Active track data with fallback to canonical defaults
     const currentTrack = {
         ...WORKSHOP_TRACKS[selectedTrackId],
         ...(tracks[selectedTrackId] || {})
+    };
+
+    const handleSaveWorkshop = async () => {
+        setIsSaving(true);
+        showStatus?.('Saving workshop details to Cloud...');
+        try {
+            const ok = await syncToServer(siteData);
+            if (ok) {
+                showStatus?.('✓ Workshop changes synced to cloud successfully!');
+            } else {
+                showStatus?.('Saved locally. Connect to network to sync.');
+            }
+        } catch {
+            showStatus?.('Failed to sync. Saved locally.');
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     // Helper to update current track's fields
@@ -151,34 +169,65 @@ export default function WorkshopScheduleAdmin({ currentUser, isAdmin, showStatus
                 <WorkshopRegistrationsAdmin showStatus={showStatus} />
             ) : (
                 <>
-                    {/* Track Switcher Tabs */}
-                    <div className="flex flex-wrap gap-2">
-                        {trackKeys.map((key) => {
-                            const t = WORKSHOP_TRACKS[key];
-                            const active = selectedTrackId === key;
-                            return (
-                                <button
-                                    key={key}
-                                    type="button"
-                                    onClick={() => setSelectedTrackId(key)}
-                                    className={`px-4 py-2 border border-slate-900 font-mono text-xs font-black uppercase cursor-pointer transition-all ${
-                                        active
-                                            ? 'bg-slate-900 text-white'
-                                            : 'bg-white hover:bg-slate-50 text-slate-800'
-                                    }`}
-                                >
-                                    {t.name}
-                                </button>
-                            );
-                        })}
+                    {/* Track Switcher Tabs & Cloud Save Action */}
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-b-2 border-slate-900 pb-3">
+                        <div className="flex flex-wrap gap-2">
+                            {trackKeys.map((key) => {
+                                const t = WORKSHOP_TRACKS[key];
+                                const active = selectedTrackId === key;
+                                return (
+                                    <button
+                                        key={key}
+                                        type="button"
+                                        onClick={() => setSelectedTrackId(key)}
+                                        className={`px-4 py-2 border border-slate-900 font-mono text-xs font-black uppercase cursor-pointer transition-all ${
+                                            active
+                                                ? 'bg-slate-900 text-white shadow-[2px_2px_0px_#0284c7]'
+                                                : 'bg-white hover:bg-slate-50 text-slate-800'
+                                        }`}
+                                    >
+                                        {t.name}
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-mono font-bold text-slate-500 hidden sm:inline">
+                                {syncState === 'saving' ? '⟳ Syncing...' : syncState === 'synced' ? '● Synced to Database' : ''}
+                            </span>
+                            <button
+                                type="button"
+                                onClick={handleSaveWorkshop}
+                                disabled={isSaving}
+                                className="press px-4 py-2 bg-emerald-400 hover:bg-emerald-500 text-slate-900 font-mono font-black text-xs uppercase border-2 border-slate-900 shadow-[2px_2px_0px_#0f172a] cursor-pointer disabled:opacity-50"
+                            >
+                                {isSaving ? 'Saving...' : '💾 Save Workshop Changes'}
+                            </button>
+                        </div>
                     </div>
 
             {/* SECTION 1: SYLLABUS DOCUMENT MANAGEMENT */}
             <div className="p-5 bg-white border-2 border-slate-900 shadow-[3px_3px_0px_#0f172a] space-y-4">
                 <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-3">
-                    <h3 className="text-lg font-black uppercase text-slate-900">
-                        Syllabus Document (PDF)
-                    </h3>
+                    <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="text-lg font-black uppercase text-slate-900">
+                            Syllabus Document (PDF)
+                        </h3>
+                        {currentTrack.syllabus?.includes('ik.imagekit.io') ? (
+                            <span className="px-2 py-0.5 text-[10px] font-mono font-black uppercase bg-emerald-100 text-emerald-800 border border-emerald-500">
+                                🍃 ImageKit Cloud CDN
+                            </span>
+                        ) : currentTrack.syllabus?.startsWith('http') ? (
+                            <span className="px-2 py-0.5 text-[10px] font-mono font-black uppercase bg-sky-100 text-sky-800 border border-sky-500">
+                                🌐 External URL
+                            </span>
+                        ) : (
+                            <span className="px-2 py-0.5 text-[10px] font-mono font-black uppercase bg-slate-100 text-slate-700 border border-slate-400">
+                                📁 Local Default
+                            </span>
+                        )}
+                    </div>
                     {currentTrack.syllabus && (
                         <a
                             href={currentTrack.syllabus}
@@ -204,7 +253,7 @@ export default function WorkshopScheduleAdmin({ currentUser, isAdmin, showStatus
                     </div>
 
                     <div className="flex gap-2">
-                        <label className={`${btnPrimary} flex-1 text-center truncate`}>
+                        <label className={`${btnPrimary} flex-1 text-center truncate cursor-pointer`}>
                             <span>{isUploading ? 'Uploading...' : 'Upload PDF'}</span>
                             <input
                                 type="file"

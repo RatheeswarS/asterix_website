@@ -707,6 +707,7 @@ export function WebsiteDataProvider({ children }) {
             contact: dataToSync.contact,
             sponsorship: dataToSync.sponsorship || initialSponsorshipData,
             recruitment: normalizeRecruitment(dataToSync.recruitment),
+            workshop: normalizeWorkshop(dataToSync.workshop),
             lastModified: new Date().toISOString()
         };
 
