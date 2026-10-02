@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { apiUrl } from '../../lib/api';
 import { AUTH_TOKEN_KEY } from '../../context/WebsiteDataContext';
+import WorkshopAnalyticsGraphs from './WorkshopAnalyticsGraphs';
 
 export default function WorkshopRegistrationsAdmin({ showStatus }) {
     const [registrations, setRegistrations] = useState([]);
@@ -318,6 +319,9 @@ export default function WorkshopRegistrationsAdmin({ showStatus }) {
                     <span className="text-[10px] font-mono text-slate-500 block mt-0.5 truncate">Total Seats</span>
                 </div>
             </div>
+
+            {/* Visual Analytics Graphs */}
+            <WorkshopAnalyticsGraphs registrations={registrations} />
 
             {/* Filter and Search Bar */}
             <div className="p-3 sm:p-4 bg-slate-50 border-2 border-slate-900 shadow-[3px_3px_0px_#0f172a] space-y-3">
