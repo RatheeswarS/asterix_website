@@ -3,7 +3,6 @@ import { useWebsiteData, AUTH_TOKEN_KEY } from '../../context/WebsiteDataContext
 import { apiUrl } from '../../lib/api';
 import Icon from '../Icon';
 import ImageField from './ImageField';
-import RecruitmentAdmin from './RecruitmentAdmin';
 import WorkshopScheduleAdmin from './WorkshopScheduleAdmin';
 import WorkshopRegistrationsAdmin from './WorkshopRegistrationsAdmin';
 import teamLogo from '../../assets/Screenshot 2026-08-26 232320.png';
@@ -519,7 +518,6 @@ export default function AdminDashboard({ onExit }) {
         { id: 'story', label: 'Our Story', icon: 'book' },
         { id: 'subsystems', label: 'Subsystems & Squad', icon: 'vehicle' },
         { id: 'sponsorship', label: 'Sponsorship Portal', icon: 'folder' },
-        { id: 'recruitment', label: 'Subsystem Recruitment', icon: 'users' },
         { id: 'workshop-schedule', label: 'Workshop Schedule', icon: 'calendar' },
         { id: 'workshop-registrations', label: 'Workshop Registrations & Paid', icon: 'users' },
         { id: 'gallery', label: 'Media Gallery', icon: 'camera' },
@@ -737,13 +735,7 @@ export default function AdminDashboard({ onExit }) {
                                         <span>Manage Sponsorship Documents & Inquiries</span>
                                         <span>→</span>
                                     </button>
-                                    <button
-                                        onClick={() => setActiveTab('recruitment')}
-                                        className="press press-flat p-3 border-2 border-slate-900 bg-slate-50 hover:bg-sky-50 text-left font-mono font-bold text-xs flex items-center justify-between cursor-pointer"
-                                    >
-                                        <span>Manage Recruitment Tracks & Problem Statements</span>
-                                        <span>→</span>
-                                    </button>
+
                                     <button
                                         onClick={() => setActiveTab('workshop-schedule')}
                                         className="press press-flat p-3 border-2 border-slate-900 bg-slate-50 hover:bg-sky-50 text-left font-mono font-bold text-xs flex items-center justify-between cursor-pointer"
@@ -1503,9 +1495,7 @@ export default function AdminDashboard({ onExit }) {
 
 
 
-                    {activeTab === 'recruitment' && (
-                        <RecruitmentAdmin showStatus={showStatus} onImageUpload={handleImageUpload} />
-                    )}
+
 
                     {activeTab === 'workshop-schedule' && (
                         <WorkshopScheduleAdmin
