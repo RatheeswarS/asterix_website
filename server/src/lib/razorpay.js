@@ -70,6 +70,33 @@ export async function createRazorpayOrder({ amountPaise, currency, receipt, note
     return body;
 }
 
+/**
+ * Fetches all payments associated with an order from Razorpay API.
+ */
+export async function fetchOrderPayments(orderId) {
+    if (!orderId || !isRazorpayConfigured()) return [];
+    const keyId = envValue('RAZORPAY_KEY_ID');
+    const keySecret = envValue('RAZORPAY_KEY_SECRET');
+    const auth = Buffer.from(`${keyId}:${keySecret}`).toString('base64');
+
+    try {
+        const response = await fetch(`${API_BASE}/orders/${encodeURIComponent(orderId)}/payments`, {
+            method: 'GET',
+            headers: {
+                Authorization: `Basic ${auth}`
+            },
+            signal: AbortSignal.timeout(10000)
+        });
+
+        if (!response.ok) return [];
+        const data = await response.json().catch(() => ({}));
+        return Array.isArray(data?.items) ? data.items : [];
+    } catch (err) {
+        console.error(`Failed to fetch payments for order ${orderId}:`, err.message);
+        return [];
+    }
+}
+
 function safeEqualHex(expected, received) {
     const a = Buffer.from(String(expected), 'utf8');
     const b = Buffer.from(String(received || ''), 'utf8');

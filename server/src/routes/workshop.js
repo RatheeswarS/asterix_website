@@ -17,6 +17,7 @@ import {
     isWebhookConfigured,
     getRazorpayKeyId,
     createRazorpayOrder,
+    fetchOrderPayments,
     verifyPaymentSignature,
     verifyWebhookSignature
 } from '../lib/razorpay.js';
@@ -192,14 +193,31 @@ router.post('/register', requireDb, async (req, res) => {
             });
         }
 
-        const registration = await WorkshopRegistration.create({
-            ...data,
-            package: pkg.id,
-            tracksEnrolled: pkg.tracksIncluded,
-            amount: pkg.price,
-            currency: WORKSHOP_CURRENCY,
-            status: 'pending'
+        // Reuse or update any existing pending registration for this student to prevent duplicate rows
+        let registration = await WorkshopRegistration.findOne({
+            status: 'pending',
+            $or: [{ email: data.email }, { phone: data.phone }, { rollNo: data.rollNo }]
         });
+
+        if (registration) {
+            Object.assign(registration, data, {
+                package: pkg.id,
+                tracksEnrolled: pkg.tracksIncluded,
+                amount: pkg.price,
+                currency: WORKSHOP_CURRENCY,
+                status: 'pending'
+            });
+            await registration.save();
+        } else {
+            registration = await WorkshopRegistration.create({
+                ...data,
+                package: pkg.id,
+                tracksEnrolled: pkg.tracksIncluded,
+                amount: pkg.price,
+                currency: WORKSHOP_CURRENCY,
+                status: 'pending'
+            });
+        }
 
         let order;
         try {
@@ -456,30 +474,59 @@ router.post('/receipt-lookup', requireDb, async (req, res) => {
         if (lookupLimited(req)) {
             return res.status(429).json({ error: 'Too many attempts. Please wait a few minutes and try again.' });
         }
-        const rollNo = String(req.body?.rollNo ?? '').trim().slice(0, 40);
+        const rollNo = String(req.body?.rollNo ?? '').trim().slice(0, 100);
         const phone = String(req.body?.phone ?? req.body?.mobile ?? '').trim();
+        const email = String(req.body?.email ?? '').trim().toLowerCase();
         const query = String(req.body?.query ?? '').trim();
 
-        const terms = [rollNo, phone, query].filter(Boolean);
-        if (terms.length === 0) {
-            return res.status(400).json({ error: 'Enter your College Registration Number or Phone Number.' });
+        const rawTerms = [rollNo, phone, email, query].filter(Boolean);
+        if (rawTerms.length === 0) {
+            return res.status(400).json({ error: 'Enter your College Registration Number, Roll Number, Email, or Phone Number.' });
         }
 
         const orConditions = [];
-        for (const term of terms) {
-            // Match rollNo directly (case-insensitive exact or trimmed)
+        for (const raw of rawTerms) {
+            const term = raw.trim();
+            if (!term) continue;
+
+            // Direct rollNo match (case-insensitive)
             orConditions.push({ rollNo: new RegExp(`^\\s*${escapeRegex(term)}\\s*$`, 'i') });
 
-            // Match phone (clean digits)
+            // Direct email match
+            orConditions.push({ email: term.toLowerCase() });
+            orConditions.push({ email: new RegExp(`^${escapeRegex(term.toLowerCase())}$`, 'i') });
+
+            // If term looks like a college email prefix / roll no (e.g. "26m125" or "26z182"), match email starting with term + "@"
+            if (/^[a-z0-9_-]+$/i.test(term)) {
+                orConditions.push({ email: new RegExp(`^${escapeRegex(term.toLowerCase())}@`, 'i') });
+            }
+
+            // Receipt number match (e.g. "AST-WS-0028" or "0028" or "28")
+            if (/^AST-WS-\d+$/i.test(term)) {
+                orConditions.push({ receiptNo: term.toUpperCase() });
+            } else if (/^\d{1,4}$/.test(term)) {
+                orConditions.push({ receiptNo: formatReceiptNo(parseInt(term, 10)) });
+            }
+
+            // Phone match (clean 10 digits)
             const digits = normalizePhone(term);
             if (digits.length >= 10) {
                 orConditions.push({ phone: digits.slice(-10) });
             }
             orConditions.push({ phone: term });
 
-            // Also check partial roll number if 4 or more chars
-            if (term.length >= 4) {
+            // Order ID / Payment ID
+            if (term.startsWith('order_')) {
+                orConditions.push({ razorpayOrderId: term });
+            }
+            if (term.startsWith('pay_')) {
+                orConditions.push({ razorpayPaymentId: term });
+            }
+
+            // Partial roll number or name if length >= 4 and not an email
+            if (term.length >= 4 && !term.includes('@')) {
                 orConditions.push({ rollNo: new RegExp(escapeRegex(term), 'i') });
+                orConditions.push({ name: new RegExp(escapeRegex(term), 'i') });
             }
         }
 
@@ -489,8 +536,33 @@ router.post('/receipt-lookup', requireDb, async (req, res) => {
         }).sort({ paidAt: -1 }).limit(5);
 
         if (regs.length === 0) {
+            // Check if there is a pending registration that was actually captured in Razorpay
+            const pendingMatches = await WorkshopRegistration.find({
+                status: 'pending',
+                razorpayOrderId: { $exists: true, $ne: '' },
+                $or: orConditions
+            }).limit(3);
+
+            for (const pending of pendingMatches) {
+                try {
+                    const payments = await fetchOrderPayments(pending.razorpayOrderId);
+                    const captured = payments.find(p => p.status === 'captured');
+                    if (captured) {
+                        const isUpgrade = pending.package !== 'combo' && captured.amount === 75000;
+                        const updated = await markPaid(pending._id, captured.id, isUpgrade);
+                        if (updated && updated.status === 'paid') {
+                            regs.push(updated);
+                        }
+                    }
+                } catch (err) {
+                    console.error('Error during auto-reconciliation on lookup:', err);
+                }
+            }
+        }
+
+        if (regs.length === 0) {
             return res.status(404).json({
-                error: 'No paid registration found for that number. Please verify what you entered.'
+                error: 'No paid registration found for that detail. Please verify your Registration Number, Roll Number, Email, or Phone Number.'
             });
         }
 
@@ -565,7 +637,34 @@ router.get('/registrations', authenticateToken, requireLeadOrAdmin, requireDb, a
             filter.status = status;
         }
 
-        const registrations = await WorkshopRegistration.find(filter).sort({ createdAt: -1 }).lean();
+        const allRegistrations = await WorkshopRegistration.find({}).sort({ createdAt: -1 }).lean();
+
+        // Identify which candidate identifiers already have a confirmed paid registration
+        const paidCandidateKeys = new Set();
+        for (const r of allRegistrations) {
+            if (r.status === 'paid') {
+                if (r.rollNo) paidCandidateKeys.add(r.rollNo.toLowerCase().trim());
+                if (r.email) paidCandidateKeys.add(r.email.toLowerCase().trim());
+                const cleanPhone = normalizePhone(r.phone);
+                if (cleanPhone) paidCandidateKeys.add(cleanPhone);
+            }
+        }
+
+        const rawList = await WorkshopRegistration.find(filter).sort({ createdAt: -1 }).lean();
+
+        // Annotate each registration with supersession info
+        const registrations = rawList.map(r => {
+            const isPending = r.status === 'pending';
+            const candidatePaid = isPending && (
+                (r.rollNo && paidCandidateKeys.has(r.rollNo.toLowerCase().trim())) ||
+                (r.email && paidCandidateKeys.has(r.email.toLowerCase().trim())) ||
+                (r.phone && paidCandidateKeys.has(normalizePhone(r.phone)))
+            );
+            return {
+                ...r,
+                isSuperseded: Boolean(candidatePaid)
+            };
+        });
 
         if (format === 'csv') {
             const lines = [
@@ -579,16 +678,174 @@ router.get('/registrations', authenticateToken, requireLeadOrAdmin, requireDb, a
             return res.send('﻿' + lines.join('\r\n'));
         }
 
-        const summary = { total: registrations.length, paid: 0, pending: 0, failed: 0, revenue: 0 };
-        for (const r of registrations) {
-            summary[r.status] += 1;
-            if (r.status === 'paid') summary.revenue += r.amount;
+        const summary = {
+            total: allRegistrations.length,
+            paid: 0,
+            pending: 0,
+            failed: 0,
+            revenue: 0,
+            supersededPending: 0,
+            trulyPending: 0
+        };
+
+        for (const r of allRegistrations) {
+            summary[r.status] = (summary[r.status] || 0) + 1;
+            if (r.status === 'paid') {
+                summary.revenue += r.amount;
+            } else if (r.status === 'pending') {
+                const candidatePaid = (
+                    (r.rollNo && paidCandidateKeys.has(r.rollNo.toLowerCase().trim())) ||
+                    (r.email && paidCandidateKeys.has(r.email.toLowerCase().trim())) ||
+                    (r.phone && paidCandidateKeys.has(normalizePhone(r.phone)))
+                );
+                if (candidatePaid) {
+                    summary.supersededPending += 1;
+                } else {
+                    summary.trulyPending += 1;
+                }
+            }
         }
 
         res.json({ success: true, summary, registrations });
     } catch (err) {
         console.error('Error fetching workshop registrations:', err);
         res.status(500).json({ error: 'Failed to fetch registrations.' });
+    }
+});
+
+/**
+ * POST /api/workshop/registrations/:id/verify-razorpay
+ * Protected: SuperAdmins, Leads, and Members.
+ * Strictly verifies payment with Razorpay API.
+ * Refuses to mark paid unless Razorpay API explicitly confirms status === 'captured'.
+ */
+router.post('/registrations/:id/verify-razorpay', authenticateToken, requireLeadOrAdmin, requireDb, async (req, res) => {
+    try {
+        const { id } = req.params;
+        if (!mongoose.isValidObjectId(id)) {
+            return res.status(400).json({ error: 'Invalid registration ID.' });
+        }
+
+        const reg = await WorkshopRegistration.findById(id);
+        if (!reg) {
+            return res.status(404).json({ error: 'Registration not found.' });
+        }
+
+        if (reg.status === 'paid') {
+            const withReceipt = await ensureReceipt(reg);
+            return res.json({ success: true, message: 'Registration is already confirmed as paid.', registration: publicView(withReceipt) });
+        }
+
+        if (!reg.razorpayOrderId) {
+            return res.status(400).json({ error: 'No Razorpay order ID exists for this registration.' });
+        }
+
+        const payments = await fetchOrderPayments(reg.razorpayOrderId);
+        const captured = payments.find(p => p.status === 'captured');
+
+        if (!captured) {
+            const lastStatus = payments[0]?.status || 'no payment recorded in Razorpay';
+            return res.status(400).json({
+                error: `Razorpay reports this order is NOT paid. Status in Razorpay: "${lastStatus}". Only payments confirmed captured by Razorpay can be marked as paid.`
+            });
+        }
+
+        const isUpgrade = reg.package !== 'combo' && captured.amount === 75000;
+        const updated = await markPaid(reg._id, captured.id, isUpgrade);
+
+        console.log(`[RAZORPAY VERIFIED] Order ${reg.razorpayOrderId} confirmed captured by Razorpay. Marked PAID with payment ID ${captured.id}`);
+        res.json({
+            success: true,
+            message: `Razorpay confirmed payment of ₹${(captured.amount / 100).toFixed(2)} (${captured.id}). Receipt ${updated.receiptNo} generated!`,
+            registration: updated
+        });
+    } catch (err) {
+        console.error('Error verifying registration with Razorpay:', err);
+        res.status(500).json({ error: 'Failed to verify status with Razorpay API.' });
+    }
+});
+
+/**
+ * POST /api/workshop/registrations/sync-razorpay
+ * Protected: SuperAdmins, Leads, and Members.
+ * Checks all pending registrations against Razorpay API to see if any were actually captured,
+ * and automatically marks them paid with receipts.
+ */
+router.post('/registrations/sync-razorpay', authenticateToken, requireLeadOrAdmin, requireDb, async (req, res) => {
+    try {
+        const pendingRegs = await WorkshopRegistration.find({
+            status: 'pending',
+            razorpayOrderId: { $exists: true, $ne: '' }
+        });
+
+        let reconciledCount = 0;
+        const reconciledList = [];
+
+        for (const reg of pendingRegs) {
+            try {
+                const payments = await fetchOrderPayments(reg.razorpayOrderId);
+                const captured = payments.find(p => p.status === 'captured');
+                if (captured) {
+                    const isUpgrade = reg.package !== 'combo' && captured.amount === 75000;
+                    const updated = await markPaid(reg._id, captured.id, isUpgrade);
+                    if (updated) {
+                        reconciledCount++;
+                        reconciledList.push({
+                            id: updated._id,
+                            name: updated.name,
+                            rollNo: updated.rollNo,
+                            receiptNo: updated.receiptNo,
+                            paymentId: captured.id
+                        });
+                    }
+                }
+            } catch (err) {
+                console.error(`Error checking Razorpay for reg ${reg._id}:`, err.message);
+            }
+        }
+
+        res.json({
+            success: true,
+            checked: pendingRegs.length,
+            reconciledCount,
+            reconciledList,
+            message: reconciledCount > 0
+                ? `Reconciled ${reconciledCount} registration(s) from Razorpay!`
+                : `Checked ${pendingRegs.length} pending registration(s). All are genuinely unpaid.`
+        });
+    } catch (err) {
+        console.error('Error syncing registrations with Razorpay:', err);
+        res.status(500).json({ error: 'Failed to sync with Razorpay.' });
+    }
+});
+
+/**
+ * DELETE /api/workshop/registrations/:id
+ * Protected: SuperAdmins, Leads, and Members.
+ * Deletes an abandoned or duplicate pending registration.
+ */
+router.delete('/registrations/:id', authenticateToken, requireLeadOrAdmin, requireDb, async (req, res) => {
+    try {
+        const { id } = req.params;
+        if (!mongoose.isValidObjectId(id)) {
+            return res.status(400).json({ error: 'Invalid registration ID.' });
+        }
+
+        const reg = await WorkshopRegistration.findById(id);
+        if (!reg) {
+            return res.status(404).json({ error: 'Registration not found.' });
+        }
+
+        if (reg.status === 'paid') {
+            return res.status(403).json({ error: 'Cannot delete a confirmed paid registration.' });
+        }
+
+        await WorkshopRegistration.findByIdAndDelete(id);
+        console.log(`[ADMIN] Deleted duplicate pending registration ${id} (${reg.name})`);
+        res.json({ success: true, message: 'Registration record removed successfully.' });
+    } catch (err) {
+        console.error('Error deleting registration:', err);
+        res.status(500).json({ error: 'Failed to delete registration.' });
     }
 });
 

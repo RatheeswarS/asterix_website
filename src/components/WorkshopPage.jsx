@@ -1522,7 +1522,7 @@ function ReceiptLookupDialog({ onClose }) {
         const phoneTrimmed = lookup.phone.trim();
 
         if (!rollTrimmed && !phoneTrimmed) {
-            setError('Please enter your College Registration Number or Phone Number.');
+            setError('Please enter your College Roll No, Registration No, Email, or Phone Number.');
             return;
         }
 
@@ -1532,10 +1532,14 @@ function ReceiptLookupDialog({ onClose }) {
             const { ok, data } = await postJson('/api/workshop/receipt-lookup', {
                 rollNo: rollTrimmed,
                 phone: phoneTrimmed,
+                email: rollTrimmed.includes('@') ? rollTrimmed : undefined,
                 query: rollTrimmed || phoneTrimmed
             });
-            if (ok && data.receipts?.length) setReceipts(data.receipts);
-            else setError(data.error || 'No paid registration found. Please check your details and try again.');
+            if (ok && data.receipts?.length) {
+                setReceipts(data.receipts);
+            } else {
+                setError(data.error || 'No paid registration found. Please check your details and try again.');
+            }
         } catch {
             setError('Could not reach the server. Check your connection and try again.');
         } finally {
@@ -1689,21 +1693,21 @@ function ReceiptLookupDialog({ onClose }) {
                     ) : (
                         <form onSubmit={handleSubmit} noValidate className="space-y-4">
                             <p className="text-sm font-bold text-slate-700">
-                                Enter your <span className="font-black text-slate-900">College Registration Number</span> or <span className="font-black text-slate-900">Registered Phone Number</span> to find and download your receipt.
+                                Enter your <span className="font-black text-slate-900">College Roll No, Reg No, or Email</span> to find and download your receipt.
                             </p>
 
-                            <Field label="Option 1: College Registration Number">
+                            <Field label="Option 1: Roll No, University Reg No, or College Email">
                                 <input
                                     className={inputClass(false)}
                                     value={lookup.rollNo}
                                     onChange={e => update('rollNo', e.target.value)}
                                     autoComplete="off"
-                                    autoCapitalize="characters"
+                                    autoCapitalize="none"
                                     autoCorrect="off"
                                     spellCheck={false}
                                     enterKeyHint="next"
-                                    maxLength={40}
-                                    placeholder="e.g. 24BCE1234 / Roll No"
+                                    maxLength={80}
+                                    placeholder="e.g. 26m125 / 715526114026 / 26m125@psgitech.ac.in"
                                 />
                             </Field>
 

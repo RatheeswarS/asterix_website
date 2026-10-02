@@ -7,11 +7,14 @@ export default function WorkshopRegistrationsAdmin({ showStatus }) {
     const [summary, setSummary] = useState({ total: 0, paid: 0, pending: 0, failed: 0, revenue: 0 });
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
-    const [statusFilter, setStatusFilter] = useState('all');
+    // By default, show ONLY the confirmed paid list as requested
+    const [statusFilter, setStatusFilter] = useState('paid');
     const [packageFilter, setPackageFilter] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedRegistration, setSelectedRegistration] = useState(null);
     const [isExporting, setIsExporting] = useState(false);
+    const [actionBusyId, setActionBusyId] = useState(null);
+    const [isSyncingRazorpay, setIsSyncingRazorpay] = useState(false);
 
     const fetchRegistrations = useCallback(async (isSilent = false) => {
         if (!isSilent) setIsLoading(true);
@@ -53,10 +56,10 @@ export default function WorkshopRegistrationsAdmin({ showStatus }) {
         let isMounted = true;
         fetchRegistrations(false);
 
-        // Auto-refresh every 6 seconds for live tracking of payments
+        // Auto-refresh every 8 seconds for live tracking of payments
         const timer = setInterval(() => {
             if (isMounted) fetchRegistrations(true);
-        }, 6000);
+        }, 8000);
 
         return () => {
             isMounted = false;
@@ -96,6 +99,83 @@ export default function WorkshopRegistrationsAdmin({ showStatus }) {
             alert('Failed to download CSV: ' + err.message);
         } finally {
             setIsExporting(false);
+        }
+    };
+
+    // Verify a single registration's payment strictly with Razorpay API
+    const handleVerifySingleRazorpay = async (reg) => {
+        setActionBusyId(reg._id);
+        try {
+            const token = sessionStorage.getItem(AUTH_TOKEN_KEY) || localStorage.getItem('admin_token');
+            const res = await fetch(apiUrl(`/api/workshop/registrations/${reg._id}/verify-razorpay`), {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Payment not verified by Razorpay');
+
+            if (showStatus) showStatus(data.message || `✓ Razorpay confirmed payment for ${reg.name}`);
+            setSelectedRegistration(null);
+            await fetchRegistrations(true);
+        } catch (err) {
+            alert(err.message);
+        } finally {
+            setActionBusyId(null);
+        }
+    };
+
+    // Delete an unneeded pending registration
+    const handleDeleteRegistration = async (reg) => {
+        if (!window.confirm(`Are you sure you want to remove the pending registration for ${reg.name} (${reg.rollNo})?`)) {
+            return;
+        }
+
+        setActionBusyId(reg._id);
+        try {
+            const token = sessionStorage.getItem(AUTH_TOKEN_KEY) || localStorage.getItem('admin_token');
+            const res = await fetch(apiUrl(`/api/workshop/registrations/${reg._id}`), {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed to delete registration');
+
+            if (showStatus) showStatus('✓ Registration record removed.');
+            setSelectedRegistration(null);
+            await fetchRegistrations(true);
+        } catch (err) {
+            alert(err.message);
+        } finally {
+            setActionBusyId(null);
+        }
+    };
+
+    // Bulk check pending registrations against Razorpay API
+    const handleSyncRazorpay = async () => {
+        setIsSyncingRazorpay(true);
+        try {
+            const token = sessionStorage.getItem(AUTH_TOKEN_KEY) || localStorage.getItem('admin_token');
+            const res = await fetch(apiUrl('/api/workshop/registrations/sync-razorpay'), {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed to sync with Razorpay');
+            if (showStatus) showStatus(data.message || 'Razorpay sync complete!');
+            await fetchRegistrations(true);
+        } catch (err) {
+            console.error('Razorpay sync failed:', err);
+            alert('Razorpay Sync error: ' + err.message);
+        } finally {
+            setIsSyncingRazorpay(false);
         }
     };
 
@@ -141,38 +221,48 @@ export default function WorkshopRegistrationsAdmin({ showStatus }) {
     };
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6 max-w-full overflow-hidden">
             {/* Header */}
-            <div className="flex flex-wrap items-center justify-between gap-4 border-b-2 border-slate-200 pb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b-2 border-slate-200 pb-3 sm:pb-4">
                 <div>
-                    <div className="flex items-center gap-2">
-                        <h2 className="text-2xl font-black uppercase text-slate-900">
-                            Workshop Registrations & Payments
+                    <div className="flex flex-wrap items-center gap-2">
+                        <h2 className="text-xl sm:text-2xl font-black uppercase text-slate-900 leading-tight">
+                            Workshop Registrations
                         </h2>
                         <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 border border-emerald-400 font-mono text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                            LIVE SYNC (6s)
+                            LIVE SYNC
                         </span>
                     </div>
-                    <p className="text-xs font-bold text-slate-500 font-mono mt-1">
-                        Track candidates registered for Team Asterix workshops, confirmed payments, receipt numbers, and Razorpay transaction IDs.
+                    <p className="text-[11px] sm:text-xs font-bold text-slate-500 font-mono mt-1">
+                        Viewing confirmed candidates and verified payments.
                     </p>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                    <button
+                        type="button"
+                        onClick={handleSyncRazorpay}
+                        disabled={isSyncingRazorpay || isLoading}
+                        className="press flex-1 sm:flex-none px-3 py-1.5 bg-amber-400 hover:bg-amber-300 border-2 border-slate-900 text-slate-900 font-mono font-black text-xs uppercase shadow-[2px_2px_0px_#0f172a] cursor-pointer disabled:opacity-50 text-center flex items-center justify-center gap-1.5"
+                        title="Checks all pending registrations against Razorpay API and marks paid if captured"
+                    >
+                        <span>⚡</span>
+                        <span>{isSyncingRazorpay ? 'Syncing...' : 'Sync Razorpay'}</span>
+                    </button>
                     <button
                         type="button"
                         onClick={() => fetchRegistrations(false)}
-                        disabled={isLoading}
-                        className="press px-3.5 py-1.5 bg-white hover:bg-slate-100 border-2 border-slate-900 text-slate-900 font-mono font-black text-xs uppercase shadow-[2px_2px_0px_#0f172a] cursor-pointer disabled:opacity-50"
+                        disabled={isLoading || isSyncingRazorpay}
+                        className="press flex-1 sm:flex-none px-3 py-1.5 bg-white hover:bg-slate-100 border-2 border-slate-900 text-slate-900 font-mono font-black text-xs uppercase shadow-[2px_2px_0px_#0f172a] cursor-pointer disabled:opacity-50 text-center"
                     >
-                        {isLoading ? '⟳ Loading...' : '⟳ Refresh Data'}
+                        {isLoading ? '⟳ Refreshing...' : '⟳ Refresh'}
                     </button>
                     <button
                         type="button"
                         onClick={handleExportCSV}
                         disabled={isExporting || registrations.length === 0}
-                        className="press px-3.5 py-1.5 bg-emerald-400 hover:bg-emerald-300 border-2 border-slate-900 text-slate-900 font-mono font-black text-xs uppercase shadow-[2px_2px_0px_#0f172a] cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+                        className="press flex-1 sm:flex-none px-3 py-1.5 bg-emerald-400 hover:bg-emerald-300 border-2 border-slate-900 text-slate-900 font-mono font-black text-xs uppercase shadow-[2px_2px_0px_#0f172a] cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
                     >
                         <span>📥</span>
                         <span>{isExporting ? 'Exporting...' : 'Export CSV'}</span>
@@ -182,7 +272,7 @@ export default function WorkshopRegistrationsAdmin({ showStatus }) {
 
             {/* Error Banner */}
             {error && (
-                <div className="p-4 bg-rose-50 border-2 border-rose-600 text-rose-800 font-mono text-xs font-bold space-y-1">
+                <div className="p-3 sm:p-4 bg-rose-50 border-2 border-rose-600 text-rose-800 font-mono text-xs font-bold space-y-1">
                     <div className="flex items-center justify-between">
                         <span>⚠️ {error}</span>
                         <button onClick={() => fetchRegistrations(false)} className="underline cursor-pointer">Retry</button>
@@ -191,54 +281,48 @@ export default function WorkshopRegistrationsAdmin({ showStatus }) {
             )}
 
             {/* Key Metrics Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-                <div className="p-4 bg-sky-50 border-2 border-slate-900 shadow-[3px_3px_0px_#0f172a]">
-                    <span className="text-[10px] font-mono font-black text-sky-600 uppercase block">Total Registered</span>
-                    <span className="text-3xl font-black text-slate-900">{summary.total}</span>
-                    <span className="text-[10px] font-mono text-slate-500 block mt-1">Candidates</span>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3.5">
+                <div className="p-3 sm:p-4 bg-emerald-50 border-2 border-slate-900 shadow-[3px_3px_0px_#0f172a]">
+                    <span className="text-[10px] font-mono font-black text-emerald-700 uppercase block truncate">Confirmed Paid</span>
+                    <span className="text-2xl sm:text-3xl font-black text-emerald-700">{summary.paid}</span>
+                    <span className="text-[10px] font-mono text-emerald-700 font-bold block mt-0.5 truncate">Receipts Issued</span>
                 </div>
 
-                <div className="p-4 bg-emerald-50 border-2 border-slate-900 shadow-[3px_3px_0px_#0f172a]">
-                    <span className="text-[10px] font-mono font-black text-emerald-700 uppercase block">Confirmed Paid</span>
-                    <span className="text-3xl font-black text-emerald-700">{summary.paid}</span>
-                    <span className="text-[10px] font-mono text-emerald-700 font-bold block mt-1">Receipts Generated</span>
+                <div className="p-3 sm:p-4 bg-emerald-400 text-slate-950 border-2 border-slate-900 shadow-[3px_3px_0px_#0f172a]">
+                    <span className="text-[10px] font-mono font-black uppercase block truncate">Total Revenue</span>
+                    <span className="text-xl sm:text-2xl lg:text-3xl font-black truncate block">{formatCurrency(summary.revenue)}</span>
+                    <span className="text-[10px] font-mono font-bold block mt-0.5 truncate">INR Collected</span>
                 </div>
 
-                <div className="p-4 bg-emerald-400 text-slate-950 border-2 border-slate-900 shadow-[3px_3px_0px_#0f172a]">
-                    <span className="text-[10px] font-mono font-black uppercase block">Total Revenue</span>
-                    <span className="text-2xl sm:text-3xl font-black">{formatCurrency(summary.revenue)}</span>
-                    <span className="text-[10px] font-mono font-bold block mt-1">Collected in INR</span>
+                <div className="p-3 sm:p-4 bg-amber-50 border-2 border-slate-900 shadow-[3px_3px_0px_#0f172a]">
+                    <span className="text-[10px] font-mono font-black text-amber-700 uppercase block truncate">Pending Unpaid</span>
+                    <span className="text-2xl sm:text-3xl font-black text-amber-700">{summary.pending}</span>
+                    <span className="text-[10px] font-mono text-slate-500 block mt-0.5 truncate">Candidates</span>
                 </div>
 
-                <div className="p-4 bg-amber-50 border-2 border-slate-900 shadow-[3px_3px_0px_#0f172a]">
-                    <span className="text-[10px] font-mono font-black text-amber-700 uppercase block">Pending Checkout</span>
-                    <span className="text-3xl font-black text-amber-700">{summary.pending}</span>
-                    <span className="text-[10px] font-mono text-slate-500 block mt-1">Payment Unfinished</span>
-                </div>
-
-                <div className="p-4 bg-rose-50 border-2 border-slate-900 shadow-[3px_3px_0px_#0f172a]">
-                    <span className="text-[10px] font-mono font-black text-rose-700 uppercase block">Failed Attempts</span>
-                    <span className="text-3xl font-black text-rose-700">{summary.failed}</span>
-                    <span className="text-[10px] font-mono text-slate-500 block mt-1">Transaction Failed</span>
+                <div className="p-3 sm:p-4 bg-sky-50 border-2 border-slate-900 shadow-[3px_3px_0px_#0f172a]">
+                    <span className="text-[10px] font-mono font-black text-sky-600 uppercase block truncate">Total Registered</span>
+                    <span className="text-2xl sm:text-3xl font-black text-slate-900">{summary.total}</span>
+                    <span className="text-[10px] font-mono text-slate-500 block mt-0.5 truncate">Total Seats</span>
                 </div>
             </div>
 
             {/* Filter and Search Bar */}
-            <div className="p-4 bg-slate-50 border-2 border-slate-900 shadow-[3px_3px_0px_#0f172a] space-y-3">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <div className="p-3 sm:p-4 bg-slate-50 border-2 border-slate-900 shadow-[3px_3px_0px_#0f172a] space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3">
                     {/* Status Filter */}
                     <div>
                         <label className="block text-[10px] font-mono font-black uppercase text-slate-700 mb-1">
-                            Payment Status
+                            Status (Default: Paid)
                         </label>
                         <select
                             value={statusFilter}
                             onChange={(e) => setStatusFilter(e.target.value)}
-                            className="w-full px-3 py-1.5 border border-slate-900 bg-white font-mono text-xs font-bold focus:outline-none"
+                            className="w-full px-2.5 py-1.5 border-2 border-slate-900 bg-white font-mono text-xs font-bold focus:outline-none"
                         >
-                            <option value="all">All Statuses ({registrations.length})</option>
-                            <option value="paid">✓ Confirmed Paid ({summary.paid})</option>
-                            <option value="pending">⏳ Pending Checkout ({summary.pending})</option>
+                            <option value="paid">✓ Confirmed Paid ({summary.paid}) [Default]</option>
+                            <option value="pending">⏳ Pending Unpaid ({summary.pending})</option>
+                            <option value="all">All Registrations ({registrations.length})</option>
                             <option value="failed">✕ Payment Failed ({summary.failed})</option>
                         </select>
                     </div>
@@ -251,7 +335,7 @@ export default function WorkshopRegistrationsAdmin({ showStatus }) {
                         <select
                             value={packageFilter}
                             onChange={(e) => setPackageFilter(e.target.value)}
-                            className="w-full px-3 py-1.5 border border-slate-900 bg-white font-mono text-xs font-bold focus:outline-none"
+                            className="w-full px-2.5 py-1.5 border-2 border-slate-900 bg-white font-mono text-xs font-bold focus:outline-none"
                         >
                             <option value="all">All Packages</option>
                             <option value="software">Software Track</option>
@@ -261,17 +345,17 @@ export default function WorkshopRegistrationsAdmin({ showStatus }) {
                     </div>
 
                     {/* Search Input */}
-                    <div className="md:col-span-2">
+                    <div className="sm:col-span-2">
                         <label className="block text-[10px] font-mono font-black uppercase text-slate-700 mb-1">
-                            Search Candidate / Receipt / Payment ID
+                            Search Candidate / Roll No / Email
                         </label>
                         <div className="relative">
                             <input
                                 type="text"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder="Search by name, email, phone, roll no, AST-WS-xxxx, order/pay ID..."
-                                className="w-full px-3 py-1.5 border border-slate-900 bg-white font-mono text-xs focus:outline-none"
+                                placeholder="Search by name, roll no, email, AST-WS-xxxx..."
+                                className="w-full px-3 py-1.5 border-2 border-slate-900 bg-white font-mono text-xs focus:outline-none"
                             />
                             {searchQuery && (
                                 <button
@@ -285,31 +369,121 @@ export default function WorkshopRegistrationsAdmin({ showStatus }) {
                     </div>
                 </div>
 
-                <div className="flex items-center justify-between text-[11px] font-mono font-bold text-slate-500 pt-1 border-t border-slate-200">
+                <div className="flex flex-wrap items-center justify-between gap-1 text-[11px] font-mono font-bold text-slate-500 pt-1 border-t border-slate-200">
                     <span>Showing {filteredRegistrations.length} of {registrations.length} entries</span>
-                    {(statusFilter !== 'all' || packageFilter !== 'all' || searchQuery) && (
+                    {(statusFilter !== 'paid' || packageFilter !== 'all' || searchQuery) && (
                         <button
-                            onClick={() => { setStatusFilter('all'); setPackageFilter('all'); setSearchQuery(''); }}
+                            onClick={() => { setStatusFilter('paid'); setPackageFilter('all'); setSearchQuery(''); }}
                             className="text-sky-600 hover:underline cursor-pointer"
                         >
-                            Reset Filters
+                            Reset to Paid Only
                         </button>
                     )}
                 </div>
             </div>
 
-            {/* Registrations Data Table */}
-            <div className="bg-white border-2 border-slate-900 shadow-[4px_4px_0px_#0f172a] overflow-x-auto">
+            {/* Mobile-Friendly Candidate Cards (Visible on screens < 768px) */}
+            <div className="block md:hidden space-y-3">
+                {isLoading && registrations.length === 0 ? (
+                    <div className="p-8 text-center text-slate-500 font-mono font-bold bg-white border-2 border-slate-900">
+                        <span className="w-4 h-4 border-2 border-sky-500 border-t-transparent rounded-full animate-spin inline-block mr-2 align-middle"></span>
+                        <span>Loading registrations...</span>
+                    </div>
+                ) : filteredRegistrations.length === 0 ? (
+                    <div className="p-6 text-center text-slate-500 font-mono text-xs font-bold bg-white border-2 border-slate-900">
+                        No registrations found matching this filter.
+                    </div>
+                ) : (
+                    filteredRegistrations.map((reg) => {
+                        const isPaid = reg.status === 'paid';
+                        const isPending = reg.status === 'pending';
+
+                        return (
+                            <div
+                                key={reg._id || reg.receiptNo}
+                                className="p-3.5 bg-white border-2 border-slate-900 shadow-[3px_3px_0px_#0f172a] space-y-2.5 font-mono text-xs"
+                            >
+                                <div className="flex items-center justify-between gap-2 border-b border-slate-200 pb-2">
+                                    {reg.receiptNo ? (
+                                        <span className="px-2 py-0.5 bg-emerald-100 text-emerald-900 border border-emerald-600 font-black text-xs">
+                                            {reg.receiptNo}
+                                        </span>
+                                    ) : (
+                                        <span className="px-2 py-0.5 bg-amber-100 text-amber-900 border border-amber-500 font-bold text-[10px] uppercase">
+                                            ⏳ Unpaid
+                                        </span>
+                                    )}
+
+                                    <div className="flex items-center gap-1.5">
+                                        <span className={`px-2 py-0.5 border text-[10px] font-black uppercase ${
+                                            reg.package === 'combo'
+                                                ? 'bg-purple-100 text-purple-900 border-purple-400'
+                                                : reg.package === 'software'
+                                                    ? 'bg-sky-100 text-sky-900 border-sky-400'
+                                                    : 'bg-amber-100 text-amber-900 border-amber-400'
+                                        }`}>
+                                            {reg.package}
+                                        </span>
+                                        <span className="font-black text-slate-900">₹{reg.amount}</span>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <h4 className="text-sm font-black text-slate-900 uppercase leading-snug">{reg.name}</h4>
+                                    <div className="text-[11px] font-bold text-slate-700 mt-0.5">
+                                        {reg.rollNo} • Year {reg.year} ({reg.department})
+                                    </div>
+                                    <div className="text-[10px] text-slate-500 break-all">{reg.email}</div>
+                                    <div className="text-[10px] text-sky-700 font-bold mt-0.5">{reg.phone}</div>
+                                </div>
+
+                                <div className="text-[10px] text-slate-500 flex items-center justify-between pt-1 border-t border-slate-100">
+                                    <span>
+                                        {isPaid ? `Paid: ${formatDate(reg.paidAt)}` : `Registered: ${formatDate(reg.createdAt)}`}
+                                    </span>
+                                    {reg.razorpayPaymentId ? (
+                                        <span className="font-bold text-slate-700 truncate max-w-[120px]">{reg.razorpayPaymentId}</span>
+                                    ) : null}
+                                </div>
+
+                                <div className="flex items-center gap-2 pt-1">
+                                    {isPending && (
+                                        <button
+                                            type="button"
+                                            onClick={() => handleVerifySingleRazorpay(reg)}
+                                            disabled={actionBusyId === reg._id}
+                                            className="press flex-1 py-1.5 bg-amber-400 hover:bg-amber-300 border-2 border-slate-900 text-slate-950 font-mono text-xs font-black uppercase text-center shadow-[1px_1px_0px_#0f172a] disabled:opacity-50"
+                                            title="Check Razorpay API to see if candidate paid"
+                                        >
+                                            {actionBusyId === reg._id ? 'Checking…' : '⚡ Check Razorpay'}
+                                        </button>
+                                    )}
+                                    <button
+                                        type="button"
+                                        onClick={() => setSelectedRegistration(reg)}
+                                        className="press flex-1 py-1.5 bg-slate-100 hover:bg-sky-100 border-2 border-slate-900 text-slate-900 font-mono text-xs font-black uppercase text-center shadow-[1px_1px_0px_#0f172a]"
+                                    >
+                                        Details →
+                                    </button>
+                                </div>
+                            </div>
+                        );
+                    })
+                )}
+            </div>
+
+            {/* Desktop Table (Visible on screens >= 768px) */}
+            <div className="hidden md:block bg-white border-2 border-slate-900 shadow-[4px_4px_0px_#0f172a] overflow-x-auto">
                 <table className="w-full text-left border-collapse font-mono text-xs">
                     <thead>
                         <tr className="bg-slate-900 text-white font-black uppercase text-[11px] border-b-2 border-slate-900">
-                            <th className="p-3"># Receipt</th>
+                            <th className="p-3 whitespace-nowrap"># Receipt</th>
                             <th className="p-3">Candidate</th>
-                            <th className="p-3">Roll No & Dept</th>
-                            <th className="p-3">Package / Tracks</th>
+                            <th className="p-3">Roll No &amp; Dept</th>
+                            <th className="p-3">Package</th>
                             <th className="p-3">Amount</th>
                             <th className="p-3">Status</th>
-                            <th className="p-3">Payment details</th>
+                            <th className="p-3">Payment Info</th>
                             <th className="p-3 text-right">Actions</th>
                         </tr>
                     </thead>
@@ -319,21 +493,20 @@ export default function WorkshopRegistrationsAdmin({ showStatus }) {
                                 <td colSpan={8} className="p-8 text-center text-slate-500 font-bold">
                                     <div className="flex items-center justify-center gap-2">
                                         <span className="w-3 h-3 border-2 border-sky-500 border-t-transparent rounded-full animate-spin"></span>
-                                        <span>Fetching workshop registrations from database...</span>
+                                        <span>Fetching workshop registrations...</span>
                                     </div>
                                 </td>
                             </tr>
                         ) : filteredRegistrations.length === 0 ? (
                             <tr>
                                 <td colSpan={8} className="p-8 text-center text-slate-500 font-bold">
-                                    No registrations found matching your filter criteria.
+                                    No registrations found matching this filter criteria.
                                 </td>
                             </tr>
                         ) : (
                             filteredRegistrations.map((reg) => {
                                 const isPaid = reg.status === 'paid';
                                 const isPending = reg.status === 'pending';
-                                const isFailed = reg.status === 'failed';
 
                                 return (
                                     <tr key={reg._id || reg.receiptNo} className="hover:bg-sky-50/50 transition-colors">
@@ -363,7 +536,7 @@ export default function WorkshopRegistrationsAdmin({ showStatus }) {
                                         </td>
 
                                         {/* Package / Tracks */}
-                                        <td className="p-3">
+                                        <td className="p-3 whitespace-nowrap">
                                             <span className={`inline-block px-2 py-0.5 border text-[10px] font-black uppercase ${
                                                 reg.package === 'combo'
                                                     ? 'bg-purple-100 text-purple-900 border-purple-400'
@@ -386,18 +559,13 @@ export default function WorkshopRegistrationsAdmin({ showStatus }) {
                                         {/* Status */}
                                         <td className="p-3 whitespace-nowrap">
                                             {isPaid && (
-                                                <span className="px-2 py-1 bg-emerald-500 text-white font-black border border-slate-900 shadow-[1px_1px_0px_#0f172a] text-[10px] uppercase flex items-center gap-1 w-fit">
+                                                <span className="px-2 py-0.5 bg-emerald-500 text-white font-black border border-slate-900 shadow-[1px_1px_0px_#0f172a] text-[10px] uppercase flex items-center gap-1 w-fit">
                                                     <span>✓ PAID</span>
                                                 </span>
                                             )}
                                             {isPending && (
-                                                <span className="px-2 py-1 bg-amber-300 text-slate-950 font-black border border-slate-900 shadow-[1px_1px_0px_#0f172a] text-[10px] uppercase flex items-center gap-1 w-fit">
+                                                <span className="px-2 py-0.5 bg-amber-300 text-slate-950 font-black border border-slate-900 shadow-[1px_1px_0px_#0f172a] text-[10px] uppercase flex items-center gap-1 w-fit">
                                                     <span>⏳ PENDING</span>
-                                                </span>
-                                            )}
-                                            {isFailed && (
-                                                <span className="px-2 py-1 bg-rose-500 text-white font-black border border-slate-900 shadow-[1px_1px_0px_#0f172a] text-[10px] uppercase flex items-center gap-1 w-fit">
-                                                    <span>✕ FAILED</span>
                                                 </span>
                                             )}
                                             {reg.paidAt && (
@@ -408,16 +576,16 @@ export default function WorkshopRegistrationsAdmin({ showStatus }) {
                                         </td>
 
                                         {/* Payment IDs */}
-                                        <td className="p-3 text-[10px]">
+                                        <td className="p-3 text-[10px] max-w-[140px] truncate">
                                             {reg.razorpayPaymentId ? (
                                                 <div>
-                                                    <span className="text-slate-400">Pay ID: </span>
+                                                    <span className="text-slate-400">Pay: </span>
                                                     <span className="font-bold text-slate-800">{reg.razorpayPaymentId}</span>
                                                 </div>
                                             ) : null}
                                             {reg.razorpayOrderId ? (
                                                 <div>
-                                                    <span className="text-slate-400">Order ID: </span>
+                                                    <span className="text-slate-400">Ord: </span>
                                                     <span className="text-slate-600">{reg.razorpayOrderId}</span>
                                                 </div>
                                             ) : (
@@ -426,14 +594,27 @@ export default function WorkshopRegistrationsAdmin({ showStatus }) {
                                         </td>
 
                                         {/* Actions */}
-                                        <td className="p-3 text-right">
-                                            <button
-                                                type="button"
-                                                onClick={() => setSelectedRegistration(reg)}
-                                                className="press px-2.5 py-1 bg-slate-100 hover:bg-sky-100 border border-slate-900 text-slate-900 font-mono text-[10px] font-black uppercase cursor-pointer"
-                                            >
-                                                Details &rarr;
-                                            </button>
+                                        <td className="p-3 text-right whitespace-nowrap">
+                                            <div className="flex items-center justify-end gap-1.5">
+                                                {isPending && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleVerifySingleRazorpay(reg)}
+                                                        disabled={actionBusyId === reg._id}
+                                                        className="press px-2 py-1 bg-amber-400 hover:bg-amber-300 border border-slate-900 text-slate-950 font-mono text-[10px] font-black uppercase cursor-pointer disabled:opacity-50"
+                                                        title="Check Razorpay API to see if candidate paid"
+                                                    >
+                                                        {actionBusyId === reg._id ? 'Checking…' : '⚡ Check Razorpay'}
+                                                    </button>
+                                                )}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setSelectedRegistration(reg)}
+                                                    className="press px-2.5 py-1 bg-slate-100 hover:bg-sky-100 border border-slate-900 text-slate-900 font-mono text-[10px] font-black uppercase cursor-pointer"
+                                                >
+                                                    Details →
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 );
@@ -443,16 +624,17 @@ export default function WorkshopRegistrationsAdmin({ showStatus }) {
                 </table>
             </div>
 
+
             {/* Modal for Candidate Details */}
             {selectedRegistration && (
-                <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-                    <div className="bg-white border-4 border-slate-900 shadow-[10px_10px_0px_#0f172a] max-w-lg w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+                <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+                    <div className="bg-white border-4 border-slate-900 shadow-[8px_8px_0px_#0f172a] max-w-lg w-full p-4 sm:p-6 space-y-4 max-h-[90vh] overflow-y-auto max-w-[calc(100vw-2rem)]">
                         <div className="flex items-center justify-between border-b-2 border-slate-900 pb-3">
                             <div>
                                 <span className="text-[10px] font-mono font-black text-sky-600 uppercase block">
                                     REGISTRATION RECORD
                                 </span>
-                                <h3 className="text-xl font-black uppercase text-slate-900">
+                                <h3 className="text-lg sm:text-xl font-black uppercase text-slate-900 leading-tight">
                                     {selectedRegistration.name}
                                 </h3>
                             </div>
@@ -460,7 +642,7 @@ export default function WorkshopRegistrationsAdmin({ showStatus }) {
                                 onClick={() => setSelectedRegistration(null)}
                                 className="press px-2.5 py-1 bg-slate-100 hover:bg-rose-100 border border-slate-900 text-slate-900 font-mono font-black text-xs uppercase cursor-pointer"
                             >
-                                ✕ Close
+                                ✕
                             </button>
                         </div>
 
@@ -469,7 +651,7 @@ export default function WorkshopRegistrationsAdmin({ showStatus }) {
                                 <div>
                                     <span className="text-[10px] text-slate-500 uppercase block">Receipt Number</span>
                                     <span className="text-base font-black text-slate-900">
-                                        {selectedRegistration.receiptNo || 'Pending Payment'}
+                                        {selectedRegistration.receiptNo || 'Unpaid (Pending)'}
                                     </span>
                                 </div>
                                 <span className={`px-2 py-1 text-xs font-black uppercase border border-slate-900 ${
@@ -479,7 +661,7 @@ export default function WorkshopRegistrationsAdmin({ showStatus }) {
                                 </span>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3 p-3 bg-slate-50 border border-slate-200">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 p-3 bg-slate-50 border border-slate-200">
                                 <div>
                                     <span className="text-[10px] text-slate-500 block">Email Address</span>
                                     <span className="font-bold text-slate-900 break-all">{selectedRegistration.email}</span>
@@ -493,7 +675,7 @@ export default function WorkshopRegistrationsAdmin({ showStatus }) {
                                     <span className="font-bold text-slate-900">{selectedRegistration.rollNo}</span>
                                 </div>
                                 <div>
-                                    <span className="text-[10px] text-slate-500 block">Year & Dept</span>
+                                    <span className="text-[10px] text-slate-500 block">Year &amp; Dept</span>
                                     <span className="font-bold text-slate-900">Year {selectedRegistration.year} - {selectedRegistration.department}</span>
                                 </div>
                                 <div>
@@ -507,14 +689,14 @@ export default function WorkshopRegistrationsAdmin({ showStatus }) {
                             </div>
 
                             <div className="p-3 bg-slate-50 border border-slate-200 space-y-1">
-                                <div className="text-[10px] text-slate-500 uppercase font-black">Razorpay Transaction Details</div>
+                                <div className="text-[10px] text-slate-500 uppercase font-black">Transaction References</div>
                                 <div>
                                     <span className="text-slate-500">Order ID: </span>
-                                    <span className="font-bold text-slate-900">{selectedRegistration.razorpayOrderId || 'N/A'}</span>
+                                    <span className="font-bold text-slate-900 break-all">{selectedRegistration.razorpayOrderId || 'N/A'}</span>
                                 </div>
                                 <div>
                                     <span className="text-slate-500">Payment ID: </span>
-                                    <span className="font-bold text-slate-900">{selectedRegistration.razorpayPaymentId || 'N/A'}</span>
+                                    <span className="font-bold text-slate-900 break-all">{selectedRegistration.razorpayPaymentId || 'N/A'}</span>
                                 </div>
                                 <div>
                                     <span className="text-slate-500">Paid At: </span>
@@ -527,13 +709,38 @@ export default function WorkshopRegistrationsAdmin({ showStatus }) {
                             </div>
                         </div>
 
-                        <div className="pt-2 flex justify-end">
-                            <button
-                                onClick={() => setSelectedRegistration(null)}
-                                className="press px-4 py-2 bg-slate-900 text-white font-mono font-black text-xs uppercase cursor-pointer"
-                            >
-                                Done
-                            </button>
+                        <div className="pt-2 flex flex-wrap items-center justify-between gap-2 border-t border-slate-200">
+                            <div>
+                                {selectedRegistration.status === 'pending' && (
+                                    <button
+                                        type="button"
+                                        onClick={() => handleDeleteRegistration(selectedRegistration)}
+                                        disabled={actionBusyId === selectedRegistration._id}
+                                        className="press px-3 py-1.5 bg-rose-50 hover:bg-rose-100 border border-rose-600 text-rose-700 font-mono font-bold text-xs uppercase cursor-pointer"
+                                    >
+                                        🗑 Delete Entry
+                                    </button>
+                                )}
+                            </div>
+                            <div className="flex items-center gap-2">
+                                {selectedRegistration.status === 'pending' && (
+                                    <button
+                                        type="button"
+                                        onClick={() => handleVerifySingleRazorpay(selectedRegistration)}
+                                        disabled={actionBusyId === selectedRegistration._id}
+                                        className="press px-3.5 py-1.5 bg-amber-400 hover:bg-amber-300 border-2 border-slate-900 text-slate-950 font-mono font-black text-xs uppercase cursor-pointer disabled:opacity-50"
+                                        title="Check Razorpay API to see if candidate paid"
+                                    >
+                                        {actionBusyId === selectedRegistration._id ? 'Checking Razorpay…' : '⚡ Check with Razorpay'}
+                                    </button>
+                                )}
+                                <button
+                                    onClick={() => setSelectedRegistration(null)}
+                                    className="press px-4 py-2 bg-slate-900 text-white font-mono font-black text-xs uppercase cursor-pointer"
+                                >
+                                    Done
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
