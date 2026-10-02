@@ -306,6 +306,7 @@ export const WORKSHOP_DEPARTMENTS = [
     'Electrical and Electronics Engineering',
     'Electronics and Communication Engineering',
     'Electronics Engineering (VLSI Design and Technology)',
+    'Instrumentation and Control Engineering',
     'Mechanical Engineering',
     'Robotics and Artificial Intelligence'
 ].sort((a, b) => a.localeCompare(b));
