@@ -302,6 +302,7 @@ export const WORKSHOP_PACKAGES = [
 // only accepts these exact values.
 export const WORKSHOP_DEPARTMENTS = [
     'Artificial Intelligence and Data Science',
+    'Civil Engineering',
     'Computer Science and Engineering',
     'Electrical and Electronics Engineering',
     'Electronics and Communication Engineering',

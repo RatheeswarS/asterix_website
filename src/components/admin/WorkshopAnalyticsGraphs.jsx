@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 
 // Department abbreviations for clean badge display
 const DEPT_SHORT_CODES = {
+    'Civil Engineering': 'CIVIL',
     'Computer Science and Engineering': 'CSE',
     'Electrical and Electronics Engineering': 'EEE',
     'Electronics and Communication Engineering': 'ECE',
@@ -21,6 +22,7 @@ const DEPT_COLORS = [
     { bg: 'bg-amber-500', bar: '#f59e0b', text: 'text-amber-700', badge: 'bg-amber-100 border-amber-400' },
     { bg: 'bg-emerald-500', bar: '#10b981', text: 'text-emerald-700', badge: 'bg-emerald-100 border-emerald-400' },
     { bg: 'bg-orange-500', bar: '#f97316', text: 'text-orange-700', badge: 'bg-orange-100 border-orange-400' },
+    { bg: 'bg-cyan-500', bar: '#06b6d4', text: 'text-cyan-700', badge: 'bg-cyan-100 border-cyan-400' },
 ];
 
 const COURSE_CONFIG = {
