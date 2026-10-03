@@ -293,64 +293,210 @@ export default function WorkshopRegistrationsAdmin({ showStatus }) {
                 </div>
             )}
 
-            {/* Key Metrics Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3.5">
-                <div className="p-3 sm:p-4 bg-emerald-50 border-2 border-slate-900 shadow-[3px_3px_0px_#0f172a]">
-                    <span className="text-[10px] font-mono font-black text-emerald-700 uppercase block truncate">Confirmed Paid</span>
-                    <span className="text-2xl sm:text-3xl font-black text-emerald-700">{summary.paid}</span>
-                    <span className="text-[10px] font-mono text-emerald-700 font-bold block mt-0.5 truncate">Receipts Issued</span>
+            {/* Key Metrics Cards - 3 cards per row */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                {/* 1. Confirmed Paid */}
+                <div className="p-4 sm:p-5 bg-emerald-50 border-2 border-slate-900 shadow-[4px_4px_0px_#0f172a] flex flex-col justify-between">
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                        <span className="text-xs font-mono font-black text-emerald-800 uppercase tracking-wider">
+                            Confirmed Paid
+                        </span>
+                        <span className="px-2 py-0.5 bg-emerald-200 text-emerald-900 border border-emerald-500 font-mono text-[10px] font-black uppercase">
+                            Verified
+                        </span>
+                    </div>
+                    <div className="my-1">
+                        <span className="text-3xl sm:text-4xl font-black text-emerald-700 tracking-tight font-mono">
+                            {summary.paid}
+                        </span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs font-mono text-emerald-800 font-bold border-t border-emerald-200 pt-2 mt-2">
+                        <span>Receipts Issued</span>
+                        <span className="text-slate-600">
+                            {summary.total > 0 ? `${Math.round((summary.paid / summary.total) * 100)}% conversion` : '—'}
+                        </span>
+                    </div>
                 </div>
 
-                <div className="p-3 sm:p-4 bg-emerald-400 text-slate-950 border-2 border-slate-900 shadow-[3px_3px_0px_#0f172a]">
-                    <span className="text-[10px] font-mono font-black uppercase block truncate">Total Revenue</span>
-                    <span className="text-xl sm:text-2xl lg:text-3xl font-black truncate block">{formatCurrency(summary.revenue)}</span>
-                    <span className="text-[10px] font-mono font-bold block mt-0.5 truncate">INR Collected</span>
+                {/* 2. Total Revenue */}
+                <div className="p-4 sm:p-5 bg-emerald-400 text-slate-950 border-2 border-slate-900 shadow-[4px_4px_0px_#0f172a] flex flex-col justify-between">
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                        <span className="text-xs font-mono font-black uppercase tracking-wider text-slate-950">
+                            Total Revenue
+                        </span>
+                        <span className="px-2 py-0.5 bg-white text-slate-950 border border-slate-950 font-mono text-[10px] font-black uppercase shadow-[1px_1px_0px_#0f172a]">
+                            INR Net
+                        </span>
+                    </div>
+                    <div className="my-1">
+                        <span className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-950 tracking-tight font-mono whitespace-nowrap">
+                            {formatCurrency(summary.revenue)}
+                        </span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs font-mono font-bold text-slate-900 border-t border-emerald-500 pt-2 mt-2">
+                        <span>Razorpay Settlements</span>
+                        <span className="bg-emerald-300 px-1.5 py-0.2 border border-slate-900 text-[10px]">Active</span>
+                    </div>
                 </div>
 
-                <div className={`p-3 sm:p-4 ${summary.powertrainCapacity?.soldOut ? 'bg-rose-100 border-rose-600' : 'bg-amber-100'} border-2 border-slate-900 shadow-[3px_3px_0px_#0f172a]`}>
-                    <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-mono font-black uppercase text-amber-900 block truncate">Powertrain Cap</span>
+                {/* 3. Total Registered */}
+                <div className="p-4 sm:p-5 bg-slate-50 border-2 border-slate-900 shadow-[4px_4px_0px_#0f172a] flex flex-col justify-between">
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                        <span className="text-xs font-mono font-black text-slate-700 uppercase tracking-wider">
+                            Total Registered
+                        </span>
+                        <span className="px-2 py-0.5 bg-slate-200 text-slate-800 border border-slate-400 font-mono text-[10px] font-black uppercase">
+                            All Records
+                        </span>
+                    </div>
+                    <div className="my-1">
+                        <span className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight font-mono">
+                            {summary.total}
+                        </span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs font-mono text-slate-600 font-bold border-t border-slate-200 pt-2 mt-2">
+                        <span>All Attempts Recorded</span>
+                        <span className="text-amber-700">{summary.pending} Unpaid</span>
+                    </div>
+                </div>
+
+                {/* 4. Powertrain Track Capacity */}
+                <div className={`p-4 sm:p-5 ${summary.powertrainCapacity?.soldOut ? 'bg-rose-50 border-rose-600' : 'bg-amber-50'} border-2 border-slate-900 shadow-[4px_4px_0px_#0f172a] flex flex-col justify-between`}>
+                    <div>
+                        <div className="flex items-center justify-between gap-2 mb-2">
+                            <span className="text-xs font-mono font-black uppercase tracking-wider text-amber-900">
+                                Powertrain Capacity
+                            </span>
+                            {summary.powertrainCapacity && (
+                                <span className={`text-[10px] font-mono font-black px-2 py-0.5 border ${
+                                    summary.powertrainCapacity.soldOut
+                                        ? 'bg-rose-600 text-white border-rose-700 shadow-[1px_1px_0px_#0f172a]'
+                                        : 'bg-amber-400 text-slate-950 border-amber-600 shadow-[1px_1px_0px_#0f172a]'
+                                }`}>
+                                    {summary.powertrainCapacity.soldOut
+                                        ? 'SOLD OUT'
+                                        : `${summary.powertrainCapacity.seatsLeft} SEATS LEFT`}
+                                </span>
+                            )}
+                        </div>
+
+                        <div className="flex items-baseline gap-2 my-1">
+                            <span className="text-3xl sm:text-4xl font-black text-slate-900 font-mono tracking-tight">
+                                {summary.powertrainCapacity?.totalPowertrainPaid ?? 0}
+                            </span>
+                            <span className="text-sm font-mono font-bold text-slate-500">
+                                / {summary.powertrainCapacity?.maxSeats ?? 160} cap
+                            </span>
+                        </div>
+
+                        {/* Progress Bar */}
                         {summary.powertrainCapacity && (
-                            <span className={`text-[9px] font-mono font-black px-1.5 py-0.5 border ${summary.powertrainCapacity.soldOut ? 'bg-rose-600 text-white border-rose-700' : 'bg-amber-400 text-slate-950 border-amber-500'}`}>
-                                {summary.powertrainCapacity.soldOut ? 'SOLD OUT' : `${summary.powertrainCapacity.seatsLeft} LEFT`}
-                            </span>
+                            <div className="w-full bg-slate-200 border border-slate-900 h-2.5 my-2 overflow-hidden shadow-inner">
+                                <div
+                                    className={`h-full transition-all duration-500 ${
+                                        summary.powertrainCapacity.soldOut ? 'bg-rose-600' : 'bg-amber-500'
+                                    }`}
+                                    style={{
+                                        width: `${Math.min(
+                                            100,
+                                            Math.round(
+                                                (summary.powertrainCapacity.totalPowertrainPaid /
+                                                    summary.powertrainCapacity.maxSeats) *
+                                                    100
+                                            )
+                                        )}%`
+                                    }}
+                                />
+                            </div>
                         )}
                     </div>
-                    <span className="text-2xl sm:text-3xl font-black text-slate-900">
-                        {summary.powertrainCapacity ? `${summary.powertrainCapacity.totalPowertrainPaid} / ${summary.powertrainCapacity.maxSeats}` : '—'}
-                    </span>
-                    <span className="text-[10px] font-mono text-slate-700 font-bold block mt-0.5 truncate">
-                        PT ({summary.powertrainCapacity?.powertrainAlonePaid ?? 0}) + Combo ({summary.powertrainCapacity?.comboPaid ?? 0})
-                    </span>
+
+                    <div className="text-xs font-mono text-slate-700 font-bold border-t border-amber-200/80 pt-2 mt-2 flex items-center justify-between">
+                        <span>PT Alone: {summary.powertrainCapacity?.powertrainAlonePaid ?? 0}</span>
+                        <span>Combo: {summary.powertrainCapacity?.comboPaid ?? 0}</span>
+                    </div>
                 </div>
 
-                <div className={`p-3 sm:p-4 ${summary.softwareCapacity?.soldOut ? 'bg-rose-100 border-rose-600' : 'bg-sky-100'} border-2 border-slate-900 shadow-[3px_3px_0px_#0f172a]`}>
-                    <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-mono font-black uppercase text-sky-900 block truncate">Software Cap</span>
+                {/* 5. Software Track Capacity */}
+                <div className={`p-4 sm:p-5 ${summary.softwareCapacity?.soldOut ? 'bg-rose-50 border-rose-600' : 'bg-sky-50'} border-2 border-slate-900 shadow-[4px_4px_0px_#0f172a] flex flex-col justify-between`}>
+                    <div>
+                        <div className="flex items-center justify-between gap-2 mb-2">
+                            <span className="text-xs font-mono font-black uppercase tracking-wider text-sky-900">
+                                Software Capacity
+                            </span>
+                            {summary.softwareCapacity && (
+                                <span className={`text-[10px] font-mono font-black px-2 py-0.5 border ${
+                                    summary.softwareCapacity.soldOut
+                                        ? 'bg-rose-600 text-white border-rose-700 shadow-[1px_1px_0px_#0f172a]'
+                                        : summary.softwareCapacity.seatsLeft <= 25
+                                        ? 'bg-amber-400 text-slate-950 border-amber-600 shadow-[1px_1px_0px_#0f172a]'
+                                        : 'bg-sky-400 text-slate-950 border-sky-600 shadow-[1px_1px_0px_#0f172a]'
+                                }`}>
+                                    {summary.softwareCapacity.soldOut
+                                        ? 'SOLD OUT'
+                                        : summary.softwareCapacity.seatsLeft <= 25
+                                        ? `${summary.softwareCapacity.seatsLeft} SEATS LEFT`
+                                        : 'AVAILABLE'}
+                                </span>
+                            )}
+                        </div>
+
+                        <div className="flex items-baseline gap-2 my-1">
+                            <span className="text-3xl sm:text-4xl font-black text-slate-900 font-mono tracking-tight">
+                                {summary.softwareCapacity?.totalSoftwarePaid ?? 0}
+                            </span>
+                            <span className="text-sm font-mono font-bold text-slate-500">
+                                / {summary.softwareCapacity?.maxSeats ?? 160} cap
+                            </span>
+                        </div>
+
+                        {/* Progress Bar */}
                         {summary.softwareCapacity && (
-                            <span className={`text-[9px] font-mono font-black px-1.5 py-0.5 border ${summary.softwareCapacity.soldOut ? 'bg-rose-600 text-white border-rose-700' : 'bg-sky-400 text-slate-950 border-sky-500'}`}>
-                                {summary.softwareCapacity.soldOut ? 'SOLD OUT' : summary.softwareCapacity.seatsLeft <= 25 ? `${summary.softwareCapacity.seatsLeft} LEFT` : 'LIMITED'}
-                            </span>
+                            <div className="w-full bg-slate-200 border border-slate-900 h-2.5 my-2 overflow-hidden shadow-inner">
+                                <div
+                                    className={`h-full transition-all duration-500 ${
+                                        summary.softwareCapacity.soldOut ? 'bg-rose-600' : 'bg-sky-500'
+                                    }`}
+                                    style={{
+                                        width: `${Math.min(
+                                            100,
+                                            Math.round(
+                                                (summary.softwareCapacity.totalSoftwarePaid /
+                                                    summary.softwareCapacity.maxSeats) *
+                                                    100
+                                            )
+                                        )}%`
+                                    }}
+                                />
+                            </div>
                         )}
                     </div>
-                    <span className="text-2xl sm:text-3xl font-black text-slate-900">
-                        {summary.softwareCapacity ? `${summary.softwareCapacity.totalSoftwarePaid} / ${summary.softwareCapacity.maxSeats}` : '—'}
-                    </span>
-                    <span className="text-[10px] font-mono text-slate-700 font-bold block mt-0.5 truncate">
-                        Soft ({summary.softwareCapacity?.softwareAlonePaid ?? 0}) + Combo ({summary.softwareCapacity?.comboPaid ?? 0})
-                    </span>
+
+                    <div className="text-xs font-mono text-slate-700 font-bold border-t border-sky-200/80 pt-2 mt-2 flex items-center justify-between">
+                        <span>Soft Alone: {summary.softwareCapacity?.softwareAlonePaid ?? 0}</span>
+                        <span>Combo: {summary.softwareCapacity?.comboPaid ?? 0}</span>
+                    </div>
                 </div>
 
-                <div className="p-3 sm:p-4 bg-amber-50 border-2 border-slate-900 shadow-[3px_3px_0px_#0f172a]">
-                    <span className="text-[10px] font-mono font-black text-amber-700 uppercase block truncate">Pending Unpaid</span>
-                    <span className="text-2xl sm:text-3xl font-black text-amber-700">{summary.pending}</span>
-                    <span className="text-[10px] font-mono text-slate-500 block mt-0.5 truncate">Candidates</span>
-                </div>
-
-                <div className="p-3 sm:p-4 bg-slate-50 border-2 border-slate-900 shadow-[3px_3px_0px_#0f172a]">
-                    <span className="text-[10px] font-mono font-black text-slate-600 uppercase block truncate">Total Registered</span>
-                    <span className="text-2xl sm:text-3xl font-black text-slate-900">{summary.total}</span>
-                    <span className="text-[10px] font-mono text-slate-500 block mt-0.5 truncate">Total Seats</span>
+                {/* 6. Pending Unpaid */}
+                <div className="p-4 sm:p-5 bg-amber-50 border-2 border-slate-900 shadow-[4px_4px_0px_#0f172a] flex flex-col justify-between">
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                        <span className="text-xs font-mono font-black text-amber-800 uppercase tracking-wider">
+                            Pending Unpaid
+                        </span>
+                        <span className="px-2 py-0.5 bg-amber-200 text-amber-900 border border-amber-400 font-mono text-[10px] font-black uppercase">
+                            Follow Up
+                        </span>
+                    </div>
+                    <div className="my-1">
+                        <span className="text-3xl sm:text-4xl font-black text-amber-600 tracking-tight font-mono">
+                            {summary.pending}
+                        </span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs font-mono text-slate-600 font-bold border-t border-amber-200 pt-2 mt-2">
+                        <span>Unverified Orders</span>
+                        <span className="text-amber-800 font-bold">Use Sync Razorpay</span>
+                    </div>
                 </div>
             </div>
 
