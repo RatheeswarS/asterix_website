@@ -22,6 +22,7 @@ import sponsorInquiryRoutes from './routes/sponsorInquiries.js';
 import uploadRoutes from './routes/upload.js';
 import submissionRoutes from './routes/submissions.js';
 import workshopRoutes from './routes/workshop.js';
+import attendanceRoutes from './routes/attendance.js';
 import { describeRazorpayStatus } from './lib/razorpay.js';
 
 const app = express();
@@ -108,6 +109,7 @@ app.use('/api/sponsor-inquiries', sponsorInquiryRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/submissions', submissionRoutes);
 app.use('/api/workshop', workshopRoutes);
+app.use('/api/workshop/attendance', attendanceRoutes);
 
 // Global error handler
 app.use((err, req, res, _next) => {

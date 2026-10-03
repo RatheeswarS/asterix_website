@@ -21,6 +21,8 @@ const BajaModelPage = lazy(() => import("./components/BajaModelPage"));
 const AdminDashboard = lazy(() => import("./components/admin/AdminDashboard"));
 const SponsorPage = lazy(() => import("./components/SponsorPage"));
 const WorkshopPage = lazy(() => import("./components/WorkshopPage"));
+const WorkshopAttendanceProjector = lazy(() => import("./components/admin/WorkshopAttendanceProjector"));
+const WorkshopAttendanceCheckin = lazy(() => import("./components/WorkshopAttendanceCheckin"));
 
 function MainApp() {
     const [selectedSubsystem, setSelectedSubsystem] = useState(null);
@@ -28,6 +30,8 @@ function MainApp() {
     const [isAdminOpen, setIsAdminOpen] = useState(() => window.location.hash.startsWith('#admin'));
     const [isSponsorPage, setIsSponsorPage] = useState(() => window.location.hash === '#sponsor');
     const [isWorkshopPage, setIsWorkshopPage] = useState(() => window.location.hash === '#workshop');
+    const [isAttendancePage, setIsAttendancePage] = useState(() => window.location.hash.startsWith('#attendance') && !window.location.hash.startsWith('#attendance-projector'));
+    const [isProjectorPage, setIsProjectorPage] = useState(() => window.location.hash.startsWith('#attendance-projector'));
     const [lenisInstance, setLenisInstance] = useState(null);
 
     const scrollToTop = () => {
@@ -49,6 +53,8 @@ function MainApp() {
             setIsAdminOpen(hash.startsWith('#admin'));
             setIsSponsorPage(hash === '#sponsor');
             setIsWorkshopPage(hash === '#workshop');
+            setIsAttendancePage(hash.startsWith('#attendance') && !hash.startsWith('#attendance-projector'));
+            setIsProjectorPage(hash.startsWith('#attendance-projector'));
             if (hash === '#model') setIsModelPage(true);
             scrollToTop();
         };
@@ -64,7 +70,7 @@ function MainApp() {
 
     useEffect(() => {
         scrollToTop();
-    }, [isSponsorPage, isWorkshopPage, selectedSubsystem, isModelPage, isAdminOpen]);
+    }, [isSponsorPage, isWorkshopPage, isAttendancePage, isProjectorPage, selectedSubsystem, isModelPage, isAdminOpen]);
 
     useEffect(() => {
         // Readers who ask for reduced motion get the browser's native scroll.
@@ -186,6 +192,22 @@ function MainApp() {
         return (
             <Suspense fallback={pageFallback}>
                 <WorkshopPage onBack={handleBackToHome} />
+            </Suspense>
+        );
+    }
+
+    if (isProjectorPage) {
+        return (
+            <Suspense fallback={pageFallback}>
+                <WorkshopAttendanceProjector onExit={handleBackToHome} />
+            </Suspense>
+        );
+    }
+
+    if (isAttendancePage) {
+        return (
+            <Suspense fallback={pageFallback}>
+                <WorkshopAttendanceCheckin onGoHome={handleBackToHome} />
             </Suspense>
         );
     }

@@ -33,7 +33,6 @@ const COURSE_CONFIG = {
 function describeDonutArc(cx, cy, rInner, rOuter, startAngle, endAngle) {
     const angleDiff = endAngle - startAngle;
     if (angleDiff >= 2 * Math.PI - 0.0001) {
-        // Full circle fallback: split into two half arcs
         const midAngle = startAngle + Math.PI;
         return `${describeDonutArc(cx, cy, rInner, rOuter, startAngle, midAngle)} ${describeDonutArc(cx, cy, rInner, rOuter, midAngle, endAngle)}`;
     }
@@ -53,13 +52,21 @@ function describeDonutArc(cx, cy, rInner, rOuter, startAngle, endAngle) {
     return `M ${x1_out} ${y1_out} A ${rOuter} ${rOuter} 0 ${largeArc} 1 ${x2_out} ${y2_out} L ${x2_in} ${y2_in} A ${rInner} ${rInner} 0 ${largeArc} 0 ${x1_in} ${y1_in} Z`;
 }
 
+// 12-hour label helper
+const formatHourLabel = (h) => {
+    if (h === 0) return '12 AM';
+    if (h === 12) return '12 PM';
+    return h < 12 ? `${h} AM` : `${h - 12} PM`;
+};
+
 export default function WorkshopAnalyticsGraphs({ registrations = [] }) {
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [datasetScope, setDatasetScope] = useState('paid'); // 'paid' | 'all'
     const [chartMode, setChartMode] = useState('sunburst'); // 'sunburst' | 'stackedBar'
     const [hoveredSlice, setHoveredSlice] = useState(null);
     const [highlightDept, setHighlightDept] = useState(null);
-    const [activeHoverBar, setActiveHoverBar] = useState(null);
+    const [selectedDateFilter, setSelectedDateFilter] = useState('peak'); // 'peak' | 'all' | 'YYYY-MM-DD'
+    const [hoveredHour, setHoveredHour] = useState(null);
 
     // Filter registrations based on scope
     const scopedList = useMemo(() => {
@@ -213,34 +220,137 @@ export default function WorkshopAnalyticsGraphs({ registrations = [] }) {
         };
     }, [scopedList]);
 
-    // 4. DAILY REGISTRATION VELOCITY (TIMELINE)
-    const velocityStats = useMemo(() => {
-        const dayMap = {};
+    // 4. TIME INTELLIGENCE: HOURLY RUSH & TIME-OF-DAY SURGE ANALYSIS
+    const timeIntelligence = useMemo(() => {
+        // Collect timestamps converted to IST
+        const records = [];
+        const dateCountMap = {};
 
         scopedList.forEach(r => {
             const raw = datasetScope === 'paid' ? (r.paidAt || r.createdAt) : r.createdAt;
             if (!raw) return;
-            const dateObj = new Date(raw);
-            if (isNaN(dateObj.getTime())) return;
+            const d = new Date(raw);
+            if (isNaN(d.getTime())) return;
 
-            const yyyy = dateObj.getFullYear();
-            const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
-            const dd = String(dateObj.getDate()).padStart(2, '0');
-            const key = `${yyyy}-${mm}-${dd}`;
-            const label = dateObj.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+            // IST Conversions
+            const hourFormatter = new Intl.DateTimeFormat('en-IN', { timeZone: 'Asia/Kolkata', hour: 'numeric', hour12: false });
+            const dateFormatter = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' });
+            const labelFormatter = new Intl.DateTimeFormat('en-IN', { timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short' });
 
-            if (!dayMap[key]) {
-                dayMap[key] = { key, label, count: 0, dateObj };
-            }
-            dayMap[key].count += 1;
+            const hour = parseInt(hourFormatter.format(d), 10);
+            const dateKey = dateFormatter.format(d);
+            const dateLabel = labelFormatter.format(d);
+
+            records.push({ hour, dateKey, dateLabel, raw: d });
+            dateCountMap[dateKey] = (dateCountMap[dateKey] || { key: dateKey, label: dateLabel, count: 0 });
+            dateCountMap[dateKey].count += 1;
         });
 
-        const timeline = Object.values(dayMap).sort((a, b) => a.key.localeCompare(b.key));
-        const maxDaily = timeline.length > 0 ? Math.max(...timeline.map(d => d.count)) : 1;
-        const peakDay = timeline.length > 0 ? [...timeline].sort((a, b) => b.count - a.count)[0] : null;
+        const availableDates = Object.values(dateCountMap).sort((a, b) => b.count - a.count);
+        const peakDate = availableDates[0] || null;
 
-        return { timeline, maxDaily, peakDay };
-    }, [scopedList, datasetScope]);
+        // Determine which date filter applies
+        const activeDateKey = selectedDateFilter === 'peak'
+            ? peakDate?.key
+            : selectedDateFilter === 'all'
+                ? 'all'
+                : selectedDateFilter;
+
+        // Filter records for the active date selection
+        const targetRecords = activeDateKey === 'all'
+            ? records
+            : records.filter(r => r.dateKey === activeDateKey);
+
+        // 24-Hour Histogram Array
+        const hourlyBuckets = Array.from({ length: 24 }, (_, h) => ({
+            hour: h,
+            label: formatHourLabel(h),
+            range: `${formatHourLabel(h)} – ${formatHourLabel((h + 1) % 24)}`,
+            count: 0,
+            pct: 0
+        }));
+
+        targetRecords.forEach(r => {
+            if (r.hour >= 0 && r.hour < 24) {
+                hourlyBuckets[r.hour].count += 1;
+            }
+        });
+
+        const totalWindowRegistrations = targetRecords.length;
+        hourlyBuckets.forEach(b => {
+            b.pct = totalWindowRegistrations > 0 ? ((b.count / totalWindowRegistrations) * 100).toFixed(1) : 0;
+        });
+
+        const maxHourlyCount = Math.max(1, ...hourlyBuckets.map(b => b.count));
+        const peakHourBucket = [...hourlyBuckets].sort((a, b) => b.count - a.count)[0];
+
+        // Group into 4 Actionable Time-of-Day Slots
+        const timeSlots = [
+            {
+                id: 'morning',
+                label: 'Morning Lectures',
+                hours: '06:00 – 12:00',
+                icon: '🌅',
+                color: '#0284c7',
+                border: 'border-sky-500',
+                bg: 'bg-sky-50',
+                count: hourlyBuckets.slice(6, 12).reduce((sum, b) => sum + b.count, 0)
+            },
+            {
+                id: 'afternoon',
+                label: 'Afternoon & Labs',
+                hours: '12:00 – 17:00',
+                icon: '☀️',
+                color: '#f59e0b',
+                border: 'border-amber-500',
+                bg: 'bg-amber-50',
+                count: hourlyBuckets.slice(12, 17).reduce((sum, b) => sum + b.count, 0)
+            },
+            {
+                id: 'evening',
+                label: 'Evening Rush / Hostels',
+                hours: '17:00 – 21:00',
+                icon: '⚡',
+                color: '#ef4444',
+                border: 'border-rose-500',
+                bg: 'bg-rose-50',
+                count: hourlyBuckets.slice(17, 21).reduce((sum, b) => sum + b.count, 0)
+            },
+            {
+                id: 'night',
+                label: 'Night Owls',
+                hours: '21:00 – 06:00',
+                icon: '🌙',
+                color: '#8b5cf6',
+                border: 'border-violet-500',
+                bg: 'bg-violet-50',
+                count: [
+                    ...hourlyBuckets.slice(21, 24),
+                    ...hourlyBuckets.slice(0, 6)
+                ].reduce((sum, b) => sum + b.count, 0)
+            }
+        ].map(slot => ({
+            ...slot,
+            pct: totalWindowRegistrations > 0 ? ((slot.count / totalWindowRegistrations) * 100).toFixed(1) : 0
+        }));
+
+        const primeSlot = [...timeSlots].sort((a, b) => b.count - a.count)[0];
+
+        return {
+            availableDates,
+            peakDate,
+            activeDateKey,
+            activeDateLabel: activeDateKey === 'all'
+                ? 'All Dates Combined'
+                : availableDates.find(d => d.key === activeDateKey)?.label || activeDateKey,
+            hourlyBuckets,
+            maxHourlyCount,
+            peakHourBucket,
+            timeSlots,
+            primeSlot,
+            totalInScope: totalWindowRegistrations
+        };
+    }, [scopedList, datasetScope, selectedDateFilter]);
 
     const formatCurrency = (amt) =>
         new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amt || 0);
@@ -259,7 +369,7 @@ export default function WorkshopAnalyticsGraphs({ registrations = [] }) {
                             </span>
                         </h3>
                         <p className="text-[11px] font-bold text-slate-500">
-                            Stacked pie breakdown for departments × courses, package split, and registration velocity.
+                            Real-time breakdown for departments × courses, package split, and hourly rush analysis.
                         </p>
                     </div>
                 </div>
@@ -322,7 +432,7 @@ export default function WorkshopAnalyticsGraphs({ registrations = [] }) {
                                         </h4>
                                     </div>
 
-                                    {/* Chart Mode Switcher + Legend */}
+                                    {/* Chart Mode Switcher */}
                                     <div className="flex flex-wrap items-center gap-2">
                                         <div className="inline-flex border-2 border-slate-900 bg-white p-0.5 text-[10px] font-black uppercase">
                                             <button
@@ -418,7 +528,6 @@ export default function WorkshopAnalyticsGraphs({ registrations = [] }) {
                                                             const isHighlighted = highlightDept === arc.dept.name;
                                                             const isDimmed = highlightDept && !isHighlighted;
 
-                                                            // Department label position
                                                             const rMid = 77;
                                                             const lx = 160 + rMid * Math.cos(arc.midAngle);
                                                             const ly = 160 + rMid * Math.sin(arc.midAngle);
@@ -432,15 +541,9 @@ export default function WorkshopAnalyticsGraphs({ registrations = [] }) {
                                                                         strokeWidth="2"
                                                                         opacity={isDimmed ? 0.25 : (isHovered || isHighlighted) ? 1 : 0.9}
                                                                         className="cursor-pointer transition-all duration-200 hover:brightness-115"
-                                                                        onMouseEnter={() => {
-                                                                            setHoveredSlice({
-                                                                                type: 'inner',
-                                                                                dept: arc.dept
-                                                                            });
-                                                                        }}
+                                                                        onMouseEnter={() => setHoveredSlice({ type: 'inner', dept: arc.dept })}
                                                                         onMouseLeave={() => setHoveredSlice(null)}
                                                                     />
-                                                                    {/* Department label on arc if large enough */}
                                                                     {arc.span > 0.25 && (
                                                                         <text
                                                                             x={lx}
@@ -457,7 +560,7 @@ export default function WorkshopAnalyticsGraphs({ registrations = [] }) {
                                                         })}
                                                     </g>
 
-                                                    {/* Center Core Display (Interactive Inspector) */}
+                                                    {/* Center Core Display */}
                                                     <circle
                                                         cx="160"
                                                         cy="160"
@@ -514,7 +617,7 @@ export default function WorkshopAnalyticsGraphs({ registrations = [] }) {
                                             </div>
                                         </div>
 
-                                        {/* Right Side: Detailed Department & Course Breakdown Table */}
+                                        {/* Right Side: Department Breakdown Cards */}
                                         <div className="lg:col-span-7 space-y-2.5 max-h-[360px] overflow-y-auto pr-1">
                                             {deptCourseStats.list.map((dept) => {
                                                 const isHighlighted = highlightDept === dept.name;
@@ -545,7 +648,7 @@ export default function WorkshopAnalyticsGraphs({ registrations = [] }) {
                                                             </div>
                                                         </div>
 
-                                                        {/* Stacked Mini Bar for this Department */}
+                                                        {/* Stacked Mini Bar */}
                                                         <div className="w-full h-3 border border-slate-900 flex overflow-hidden bg-slate-200 mb-1.5">
                                                             {dept.courses.software.count > 0 && (
                                                                 <div
@@ -655,10 +758,10 @@ export default function WorkshopAnalyticsGraphs({ registrations = [] }) {
                                 )}
                             </div>
 
-                            {/* ROW 2: GRAPH 2 (PACKAGES) & GRAPH 4 (VELOCITY) */}
+                            {/* ROW 2: GRAPH 2 (PACKAGES) & GRAPH 4 (TIME INTELLIGENCE / HOURLY RUSH) */}
                             <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
                                 {/* GRAPH 2: TRACK & PACKAGE BREAKDOWN (5 cols) */}
-                                <div className="lg:col-span-5 bg-slate-50 border-2 border-slate-900 p-4 shadow-[2px_2px_0px_#0f172a] flex flex-col justify-between">
+                                <div className="lg:col-span-4 bg-slate-50 border-2 border-slate-900 p-4 shadow-[2px_2px_0px_#0f172a] flex flex-col justify-between">
                                     <div>
                                         <div className="flex items-center justify-between border-b border-slate-300 pb-2 mb-3">
                                             <div className="flex items-center gap-1.5">
@@ -734,106 +837,205 @@ export default function WorkshopAnalyticsGraphs({ registrations = [] }) {
                                     </div>
                                 </div>
 
-                                {/* GRAPH 4: REGISTRATION & PAYMENT VELOCITY TIMELINE (7 cols) */}
-                                <div className="lg:col-span-7 bg-slate-50 border-2 border-slate-900 p-4 shadow-[2px_2px_0px_#0f172a] flex flex-col justify-between">
+                                {/* GRAPH 4: TIME INTELLIGENCE & HOURLY RUSH ANALYSIS (8 cols) */}
+                                <div className="lg:col-span-8 bg-slate-50 border-2 border-slate-900 p-4 shadow-[2px_2px_0px_#0f172a] flex flex-col justify-between space-y-4">
                                     <div>
-                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-300 pb-2 mb-4">
-                                            <div className="flex items-center gap-1.5">
+                                        {/* Header & Date Scope Controls */}
+                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-slate-300 pb-2.5">
+                                            <div className="flex items-center gap-2">
                                                 <span className="w-2.5 h-2.5 bg-amber-500 border border-slate-900"></span>
-                                                <h4 className="text-xs font-black uppercase text-slate-900">
-                                                    4. Registration Velocity & Momentum
-                                                </h4>
+                                                <div>
+                                                    <h4 className="text-xs font-black uppercase text-slate-900 flex items-center gap-1.5">
+                                                        <span>4. Registration Time Intelligence & Hourly Rush</span>
+                                                        <span className="text-[9px] px-1.5 py-0.2 bg-amber-200 text-amber-900 font-black border border-amber-500">
+                                                            IST (24H)
+                                                        </span>
+                                                    </h4>
+                                                </div>
                                             </div>
-                                            <div className="flex items-center gap-3 text-[10px] text-slate-600 font-bold">
-                                                {velocityStats.peakDay && (
-                                                    <span>
-                                                        🔥 Peak: <strong className="text-slate-900 font-black">{velocityStats.peakDay.label}</strong> ({velocityStats.peakDay.count})
-                                                    </span>
-                                                )}
-                                                <span>Active Days: <strong className="text-slate-900 font-black">{velocityStats.timeline.length}</strong></span>
+
+                                            {/* Date Selector Filter */}
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="text-[10px] font-bold text-slate-500 uppercase">Window:</span>
+                                                <select
+                                                    value={selectedDateFilter}
+                                                    onChange={(e) => setSelectedDateFilter(e.target.value)}
+                                                    className="px-2 py-1 bg-white border border-slate-900 text-[10px] font-black text-slate-900 focus:outline-none cursor-pointer shadow-[1px_1px_0px_#0f172a]"
+                                                >
+                                                    {timeIntelligence.peakDate && (
+                                                        <option value="peak">
+                                                            🔥 Peak Surge: {timeIntelligence.peakDate.label} ({timeIntelligence.peakDate.count})
+                                                        </option>
+                                                    )}
+                                                    <option value="all">
+                                                        All Dates Combined ({scopedList.length})
+                                                    </option>
+                                                    {timeIntelligence.availableDates.map(d => (
+                                                        <option key={d.key} value={d.key}>
+                                                            {d.label} ({d.count} registrations)
+                                                        </option>
+                                                    ))}
+                                                </select>
                                             </div>
                                         </div>
 
-                                        {velocityStats.timeline.length === 0 ? (
-                                            <div className="py-6 text-center text-xs text-slate-400">
-                                                No timeline dates recorded yet.
+                                        {/* Highlight Badges Bar */}
+                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 my-3">
+                                            <div className="p-2 bg-white border border-slate-900 shadow-[1px_1px_0px_#0f172a]">
+                                                <span className="text-[9px] font-bold text-slate-500 uppercase block">Selected Window</span>
+                                                <span className="text-xs font-black text-slate-900 block truncate">
+                                                    {timeIntelligence.activeDateLabel}
+                                                </span>
+                                                <span className="text-[9px] text-slate-500 font-mono">
+                                                    {timeIntelligence.totalInScope} signups
+                                                </span>
                                             </div>
-                                        ) : (
-                                            <div className="space-y-2">
-                                                {/* Responsive SVG Bar Timeline */}
-                                                <div className="relative pt-6 pb-2 overflow-x-auto">
-                                                    <div className="min-w-[420px] h-32 flex items-end gap-2 sm:gap-3 border-b-2 border-slate-900 px-2">
-                                                        {velocityStats.timeline.map((day) => {
-                                                            const barHeightPct = Math.max(12, (day.count / velocityStats.maxDaily) * 100);
-                                                            const isHovered = activeHoverBar === day.key;
-                                                            const isPeak = day.count === velocityStats.maxDaily;
 
-                                                            return (
-                                                                <div
-                                                                    key={day.key}
-                                                                    className="flex-1 flex flex-col items-center h-full justify-end group cursor-pointer relative"
-                                                                    onMouseEnter={() => setActiveHoverBar(day.key)}
-                                                                    onMouseLeave={() => setActiveHoverBar(null)}
-                                                                >
-                                                                    <div className={`text-[10px] font-black mb-1 transition-all ${
-                                                                        isHovered || isPeak
-                                                                            ? 'text-slate-900 scale-110'
-                                                                            : 'text-slate-600'
+                                            <div className="p-2 bg-amber-50 border border-slate-900 shadow-[1px_1px_0px_#0f172a]">
+                                                <span className="text-[9px] font-black text-amber-800 uppercase block">🔥 Peak Rush Hour</span>
+                                                <span className="text-xs font-black text-amber-900 block truncate">
+                                                    {timeIntelligence.peakHourBucket?.range}
+                                                </span>
+                                                <span className="text-[9px] font-bold text-amber-700 font-mono">
+                                                    {timeIntelligence.peakHourBucket?.count} candidates ({timeIntelligence.peakHourBucket?.pct}%)
+                                                </span>
+                                            </div>
+
+                                            <div className="p-2 bg-rose-50 border border-slate-900 shadow-[1px_1px_0px_#0f172a]">
+                                                <span className="text-[9px] font-black text-rose-800 uppercase block">⚡ Prime Time Slot</span>
+                                                <span className="text-xs font-black text-rose-900 block truncate">
+                                                    {timeIntelligence.primeSlot?.label}
+                                                </span>
+                                                <span className="text-[9px] font-bold text-rose-700 font-mono">
+                                                    {timeIntelligence.primeSlot?.count} signups ({timeIntelligence.primeSlot?.pct}%)
+                                                </span>
+                                            </div>
+
+                                            <div className="p-2 bg-sky-50 border border-slate-900 shadow-[1px_1px_0px_#0f172a]">
+                                                <span className="text-[9px] font-black text-sky-800 uppercase block">Avg Speed / Hour</span>
+                                                <span className="text-xs font-black text-slate-900 block">
+                                                    {(timeIntelligence.totalInScope / 24).toFixed(1)} / hr
+                                                </span>
+                                                <span className="text-[9px] font-bold text-sky-700 font-mono">
+                                                    Peak: {timeIntelligence.maxHourlyCount} / hr
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        {/* 24-HOUR HOURLY HISTOGRAM */}
+                                        <div className="space-y-1.5">
+                                            <div className="flex items-center justify-between text-[10px] font-bold text-slate-600">
+                                                <span className="uppercase">Hour-by-Hour Activity (00:00 → 23:59 IST)</span>
+                                                <span className="text-slate-400">Hover bar to inspect specific hour</span>
+                                            </div>
+
+                                            <div className="relative pt-6 pb-2 overflow-x-auto bg-white border border-slate-900 p-2 shadow-[2px_2px_0px_#0f172a]">
+                                                <div className="min-w-[540px] h-32 flex items-end gap-1 sm:gap-1.5 border-b-2 border-slate-900 px-1">
+                                                    {timeIntelligence.hourlyBuckets.map((bucket) => {
+                                                        const isPeak = bucket.count === timeIntelligence.maxHourlyCount && bucket.count > 0;
+                                                        const isHovered = hoveredHour === bucket.hour;
+                                                        const heightPct = bucket.count > 0
+                                                            ? Math.max(10, (bucket.count / timeIntelligence.maxHourlyCount) * 100)
+                                                            : 2;
+
+                                                        return (
+                                                            <div
+                                                                key={bucket.hour}
+                                                                className="flex-1 flex flex-col items-center h-full justify-end group cursor-pointer relative"
+                                                                onMouseEnter={() => setHoveredHour(bucket.hour)}
+                                                                onMouseLeave={() => setHoveredHour(null)}
+                                                            >
+                                                                {/* Count label above bar */}
+                                                                {bucket.count > 0 && (
+                                                                    <div className={`text-[9px] font-black mb-0.5 transition-all ${
+                                                                        isPeak || isHovered ? 'text-slate-900 scale-110 font-black' : 'text-slate-500'
                                                                     }`}>
-                                                                        {day.count}
+                                                                        {bucket.count}
                                                                     </div>
+                                                                )}
 
-                                                                    <div
-                                                                        className={`w-full max-w-[40px] border-2 border-slate-900 transition-all duration-300 relative ${
-                                                                            isPeak
-                                                                                ? 'bg-amber-400 shadow-[2px_2px_0px_#0f172a]'
-                                                                                : 'bg-sky-400 hover:bg-sky-300 shadow-[1px_1px_0px_#0f172a]'
-                                                                        }`}
-                                                                        style={{ height: `${barHeightPct}%` }}
-                                                                    >
-                                                                        {isPeak && (
-                                                                            <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-[9px] font-black uppercase text-amber-800">
-                                                                                ★
-                                                                            </span>
-                                                                        )}
-                                                                    </div>
-
-                                                                    <span className="text-[10px] font-bold text-slate-600 mt-2 truncate max-w-[50px] text-center">
-                                                                        {day.label}
-                                                                    </span>
-
-                                                                    {isHovered && (
-                                                                        <div className="absolute -top-12 z-20 bg-slate-900 text-white px-2 py-1 text-[10px] font-bold border border-slate-700 shadow-md whitespace-nowrap pointer-events-none">
-                                                                            {day.label}: {day.count} candidate{day.count === 1 ? '' : 's'} ({datasetScope})
-                                                                        </div>
+                                                                {/* Vertical Bar */}
+                                                                <div
+                                                                    className={`w-full max-w-[20px] transition-all duration-300 ${
+                                                                        bucket.count === 0
+                                                                            ? 'bg-slate-200 h-[2px]'
+                                                                            : isPeak
+                                                                                ? 'bg-amber-400 border border-slate-900 shadow-[1px_1px_0px_#0f172a]'
+                                                                                : isHovered
+                                                                                    ? 'bg-sky-500 border border-slate-900'
+                                                                                    : 'bg-sky-400 hover:bg-sky-300 border border-slate-900'
+                                                                    }`}
+                                                                    style={{ height: `${heightPct}%` }}
+                                                                >
+                                                                    {isPeak && (
+                                                                        <span className="absolute -top-4 left-1/2 -translate-x-1/2 text-[9px] font-black text-amber-700">
+                                                                            ★
+                                                                        </span>
                                                                     )}
                                                                 </div>
-                                                            );
-                                                        })}
-                                                    </div>
-                                                </div>
 
-                                                <div className="flex items-center justify-between text-[10px] text-slate-500 pt-1">
-                                                    <div className="flex items-center gap-3">
-                                                        <span className="flex items-center gap-1">
-                                                            <span className="w-2.5 h-2.5 bg-sky-400 border border-slate-900 inline-block"></span>
-                                                            <span>Daily Count</span>
-                                                        </span>
-                                                        <span className="flex items-center gap-1">
-                                                            <span className="w-2.5 h-2.5 bg-amber-400 border border-slate-900 inline-block"></span>
-                                                            <span>Peak Day</span>
-                                                        </span>
-                                                    </div>
-                                                    <span>
-                                                        Span: {velocityStats.timeline[0]?.label} → {velocityStats.timeline[velocityStats.timeline.length - 1]?.label}
-                                                    </span>
+                                                                {/* Hour label below axis (every 2 hours on compact, all on hover) */}
+                                                                <span className={`text-[8px] font-bold mt-1.5 tracking-tighter truncate ${
+                                                                    isHovered || isPeak ? 'text-slate-900 font-black' : 'text-slate-500'
+                                                                }`}>
+                                                                    {bucket.hour % 3 === 0 ? formatHourLabel(bucket.hour) : '·'}
+                                                                </span>
+
+                                                                {/* Hover Tooltip Floating Card */}
+                                                                {isHovered && (
+                                                                    <div className="absolute -top-14 z-30 bg-slate-900 text-white px-2.5 py-1 text-[10px] font-bold border border-slate-700 shadow-xl whitespace-nowrap pointer-events-none">
+                                                                        <div className="font-mono text-sky-300">{bucket.range}</div>
+                                                                        <div>{bucket.count} candidates ({bucket.pct}% of period)</div>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    })}
                                                 </div>
                                             </div>
-                                        )}
+                                        </div>
+
+                                        {/* 4 TIME-OF-DAY SLOTS COMPARISON */}
+                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-3">
+                                            {timeIntelligence.timeSlots.map(slot => (
+                                                <div
+                                                    key={slot.id}
+                                                    className={`p-2 border-2 border-slate-900 ${slot.bg} shadow-[2px_2px_0px_#0f172a] flex flex-col justify-between`}
+                                                >
+                                                    <div>
+                                                        <div className="flex items-center justify-between text-xs font-black text-slate-900 mb-0.5">
+                                                            <span className="flex items-center gap-1">
+                                                                <span>{slot.icon}</span>
+                                                                <span className="truncate">{slot.label}</span>
+                                                            </span>
+                                                        </div>
+                                                        <div className="text-[9px] font-bold text-slate-500">
+                                                            {slot.hours}
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="pt-2">
+                                                        <div className="flex items-center justify-between text-xs font-black">
+                                                            <span className="text-slate-900">{slot.count} seats</span>
+                                                            <span className="text-[10px]" style={{ color: slot.color }}>{slot.pct}%</span>
+                                                        </div>
+                                                        {/* Mini progress bar */}
+                                                        <div className="w-full h-1.5 bg-slate-200 border border-slate-900 mt-1 overflow-hidden">
+                                                            <div
+                                                                className="h-full"
+                                                                style={{ width: `${slot.pct}%`, backgroundColor: slot.color }}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
 
-                                    <div className="mt-4 pt-2.5 border-t border-slate-300 text-[10px] text-slate-500">
-                                        Updated in real time based on database registrations.
+                                    {/* Time Intelligence Footnote */}
+                                    <div className="pt-2.5 border-t border-slate-300 flex flex-wrap items-center justify-between text-[10px] text-slate-500">
+                                        <span>Timezone: <strong>Indian Standard Time (IST / UTC+05:30)</strong></span>
+                                        <span>Insight: <strong>{timeIntelligence.primeSlot?.label}</strong> is the most active registration period.</span>
                                     </div>
                                 </div>
                             </div>

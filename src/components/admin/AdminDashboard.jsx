@@ -5,6 +5,7 @@ import Icon from '../Icon';
 import ImageField from './ImageField';
 import WorkshopScheduleAdmin from './WorkshopScheduleAdmin';
 import WorkshopRegistrationsAdmin from './WorkshopRegistrationsAdmin';
+import WorkshopAttendanceAdmin from './WorkshopAttendanceAdmin';
 import teamLogo from '../../assets/Screenshot 2026-08-26 232320.png';
 
 export default function AdminDashboard({ onExit }) {
@@ -520,6 +521,7 @@ export default function AdminDashboard({ onExit }) {
         { id: 'sponsorship', label: 'Sponsorship Portal', icon: 'folder' },
         { id: 'workshop-schedule', label: 'Workshop Schedule', icon: 'calendar' },
         { id: 'workshop-registrations', label: 'Workshop Registrations & Paid', icon: 'users' },
+        { id: 'workshop-attendance', label: 'Workshop Attendance', icon: 'users' },
         { id: 'gallery', label: 'Media Gallery', icon: 'camera' },
         { id: 'updates', label: 'Team Updates', icon: 'megaphone' },
         { id: 'subscribers', label: 'Alliance Leads', icon: 'inbox' },
@@ -1508,6 +1510,15 @@ export default function AdminDashboard({ onExit }) {
 
                     {activeTab === 'workshop-registrations' && (
                         <WorkshopRegistrationsAdmin showStatus={showStatus} />
+                    )}
+
+                    {activeTab === 'workshop-attendance' && (
+                        <WorkshopAttendanceAdmin
+                            showStatus={showStatus}
+                            onOpenProjector={(preferredTrack) => {
+                                window.location.hash = `#attendance-projector?track=${preferredTrack || 'software'}`;
+                            }}
+                        />
                     )}
 
                     {/* TAB 5: GALLERY & MEDIA */}
