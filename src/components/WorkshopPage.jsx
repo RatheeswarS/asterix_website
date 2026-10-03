@@ -1151,7 +1151,7 @@ export default function WorkshopPage({ onBack }) {
                             <div className="relative border-t-4 border-slate-900 bg-slate-50 p-3 sm:p-4">
                                 {upsellOpen && stage === 'form' && (
                                     <UpsellPopover
-                                        offer={upsellFor(selectedPkg, powertrainSeats.soldOut)}
+                                        offer={upsellFor(selectedPkg, { powertrainSoldOut: powertrainSeats.soldOut, softwareSoldOut: softwareSeats.soldOut })}
                                         onAccept={acceptUpsell}
                                         onDecline={() => { setUpsellOpen(false); setStage('review'); }}
                                         onDismiss={() => setUpsellOpen(false)}

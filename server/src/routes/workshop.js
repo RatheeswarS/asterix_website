@@ -63,7 +63,7 @@ async function markPaid(registrationId, paymentId, isUpgrade = false) {
     let reg = await WorkshopRegistration.findById(registrationId);
     if (!reg) return null;
 
-    if (isUpgrade || (reg.status === 'paid' && reg.package !== 'combo')) {
+    if (isUpgrade) {
         reg.package = 'combo';
         reg.tracksEnrolled = ['software', 'powertrain'];
         reg.amount = 1750;
@@ -71,6 +71,10 @@ async function markPaid(registrationId, paymentId, isUpgrade = false) {
         reg.status = 'paid';
         reg.paidAt = new Date();
         await reg.save();
+        return ensureReceipt(reg);
+    }
+
+    if (reg.status === 'paid') {
         return ensureReceipt(reg);
     }
 
@@ -504,7 +508,26 @@ router.post('/verify', requireDb, async (req, res) => {
             return res.status(404).json({ error: 'Registration not found for this order.' });
         }
 
-        const isUpgrade = reg.status === 'paid' && reg.package !== 'combo';
+        // If this registration is already paid with this exact payment, duplicate verify call -> return idempotently
+        if (reg.status === 'paid' && reg.razorpayPaymentId === String(paymentId)) {
+            const withReceipt = await ensureReceipt(reg);
+            return res.json({ success: true, registration: publicView(withReceipt), upgraded: false });
+        }
+
+        // An upgrade is ONLY valid if the user was already paid single-track and this checkout payment was captured for 750 (75000 paise)
+        let isUpgrade = false;
+        if (reg.status === 'paid' && reg.package !== 'combo') {
+            try {
+                const payments = await fetchOrderPayments(orderId);
+                const captured = payments.find(p => p.id === String(paymentId) || p.status === 'captured');
+                if (captured && captured.amount === 75000) {
+                    isUpgrade = true;
+                }
+            } catch (err) {
+                console.error('Error verifying upgrade payment amount:', err.message);
+            }
+        }
+
         const paid = await markPaid(reg._id, String(paymentId), isUpgrade);
         res.json({ success: true, registration: publicView(paid), upgraded: isUpgrade });
     } catch (err) {
@@ -544,7 +567,7 @@ router.post('/webhook', async (req, res) => {
         if (!reg) return res.json({ received: true });
 
         if (event.event === 'payment.captured') {
-            const isUpgrade = reg.status === 'paid' && reg.package !== 'combo';
+            const isUpgrade = reg.status === 'paid' && reg.package !== 'combo' && payment.amount === 75000;
             const expectedPaise = isUpgrade ? 75000 : Math.round(reg.amount * 100);
             if (payment.amount !== expectedPaise || payment.currency !== reg.currency) {
                 console.error(`Workshop webhook amount mismatch on ${payment.order_id}: got ${payment.amount} ${payment.currency}, expected ${expectedPaise} ${reg.currency}`);
