@@ -294,7 +294,7 @@ export default function WorkshopRegistrationsAdmin({ showStatus }) {
             )}
 
             {/* Key Metrics Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3.5">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3.5">
                 <div className="p-3 sm:p-4 bg-emerald-50 border-2 border-slate-900 shadow-[3px_3px_0px_#0f172a]">
                     <span className="text-[10px] font-mono font-black text-emerald-700 uppercase block truncate">Confirmed Paid</span>
                     <span className="text-2xl sm:text-3xl font-black text-emerald-700">{summary.paid}</span>
@@ -305,6 +305,23 @@ export default function WorkshopRegistrationsAdmin({ showStatus }) {
                     <span className="text-[10px] font-mono font-black uppercase block truncate">Total Revenue</span>
                     <span className="text-xl sm:text-2xl lg:text-3xl font-black truncate block">{formatCurrency(summary.revenue)}</span>
                     <span className="text-[10px] font-mono font-bold block mt-0.5 truncate">INR Collected</span>
+                </div>
+
+                <div className={`p-3 sm:p-4 ${summary.powertrainCapacity?.soldOut ? 'bg-rose-100 border-rose-600' : 'bg-amber-100'} border-2 border-slate-900 shadow-[3px_3px_0px_#0f172a]`}>
+                    <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-mono font-black uppercase text-amber-900 block truncate">Powertrain Cap</span>
+                        {summary.powertrainCapacity && (
+                            <span className={`text-[9px] font-mono font-black px-1.5 py-0.5 border ${summary.powertrainCapacity.soldOut ? 'bg-rose-600 text-white border-rose-700' : 'bg-amber-400 text-slate-950 border-amber-500'}`}>
+                                {summary.powertrainCapacity.soldOut ? 'SOLD OUT' : `${summary.powertrainCapacity.seatsLeft} LEFT`}
+                            </span>
+                        )}
+                    </div>
+                    <span className="text-2xl sm:text-3xl font-black text-slate-900">
+                        {summary.powertrainCapacity ? `${summary.powertrainCapacity.totalPowertrainPaid} / ${summary.powertrainCapacity.maxSeats}` : '—'}
+                    </span>
+                    <span className="text-[10px] font-mono text-slate-700 font-bold block mt-0.5 truncate">
+                        PT ({summary.powertrainCapacity?.powertrainAlonePaid ?? 0}) + Combo ({summary.powertrainCapacity?.comboPaid ?? 0})
+                    </span>
                 </div>
 
                 <div className="p-3 sm:p-4 bg-amber-50 border-2 border-slate-900 shadow-[3px_3px_0px_#0f172a]">

@@ -73,7 +73,8 @@ const COMBO_SAVING = isPriced(COMBO_PACKAGE) && SINGLE_PACKAGES.every(isPriced)
     : 0;
 
 // For a single-track choice: the other track and what adding it would cost.
-function upsellFor(pkg) {
+function upsellFor(pkg, powertrainSoldOut = false) {
+    if (powertrainSoldOut) return null;
     if (!pkg || !COMBO_PACKAGE || COMBO_SAVING <= 0 || pkg.tracksIncluded.length !== 1) return null;
     const other = SINGLE_PACKAGES.find(p => p.id !== pkg.id);
     if (!other) return null;
@@ -97,13 +98,16 @@ function loadRazorpayCheckout() {
     });
 }
 
-function validate(form) {
+function validate(form, powertrainSoldOut = false) {
     // Checked in the order the fields appear on the page (track choice first),
     // so the first key is the topmost problem.
     const errors = {};
     const pkg = WORKSHOP_PACKAGES.find(p => p.id === form.package);
     if (!pkg) errors.package = 'Choose a track.';
     else if (!isPriced(pkg)) errors.package = 'Pricing for this package is not announced yet.';
+    else if (powertrainSoldOut && (pkg.id === 'powertrain' || pkg.id === 'combo')) {
+        errors.package = 'Electronics & Powertrain (and Combo) registrations are fully booked (160 seats filled).';
+    }
     if (form.name.trim().length < 2) errors.name = 'Enter your full name.';
     if (!form.rollNo.trim()) errors.rollNo = 'Enter your registered number.';
     if (!WORKSHOP_DEPARTMENTS.includes(form.department)) errors.department = 'Select your department.';
@@ -319,10 +323,46 @@ export default function WorkshopPage({ onBack }) {
     const selectedPkg = WORKSHOP_PACKAGES.find(p => p.id === form.package) || null;
     const anyPriced = WORKSHOP_PACKAGES.some(isPriced);
 
+    const [powertrainSeats, setPowertrainSeats] = useState({
+        maxSeats: 160,
+        seatsLeft: null,
+        soldOut: false
+    });
+
+    // Live fetch of seat counts
+    useEffect(() => {
+        let isMounted = true;
+        const fetchSeatStatus = async () => {
+            try {
+                const res = await fetch(apiUrl('/api/workshop/packages'));
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.powertrainSeats && isMounted) {
+                        setPowertrainSeats(data.powertrainSeats);
+                    }
+                }
+            } catch {
+                // graceful fallback
+            }
+        };
+        fetchSeatStatus();
+        const timer = setInterval(fetchSeatStatus, 15000);
+        return () => {
+            isMounted = false;
+            clearInterval(timer);
+        };
+    }, []);
+
     const openRegister = (packageId) => {
         if (typeof packageId === 'string' && packageId) {
-            setForm(prev => ({ ...prev, package: packageId }));
-            setFieldErrors(prev => ({ ...prev, package: undefined }));
+            if ((packageId === 'powertrain' || packageId === 'combo') && powertrainSeats.soldOut) {
+                setForm(prev => ({ ...prev, package: 'software' }));
+                setError('Electronics & Powertrain (and Combo) registrations are fully booked (160 seats filled). You can still register for Software & Perception.');
+            } else {
+                setForm(prev => ({ ...prev, package: packageId }));
+                setFieldErrors(prev => ({ ...prev, package: undefined }));
+                setError('');
+            }
         }
         setUpgradePrompt(null);
         setRegisterOpen(true);
@@ -351,7 +391,7 @@ export default function WorkshopPage({ onBack }) {
 
     const handleConfirm = (event) => {
         event.preventDefault();
-        const errors = validate(form);
+        const errors = validate(form, powertrainSeats.soldOut);
         setFieldErrors(errors);
         const keys = Object.keys(errors);
         if (keys.length > 0) {
@@ -366,8 +406,8 @@ export default function WorkshopPage({ onBack }) {
             return;
         }
         setError('');
-        // One track picked: offer the combo once before moving on.
-        if (upsellFor(selectedPkg) && !upsellOpen) {
+        // One track picked: offer the combo once before moving on (if not sold out).
+        if (upsellFor(selectedPkg, powertrainSeats.soldOut) && !upsellOpen) {
             setUpsellOpen(true);
             return;
         }
@@ -376,6 +416,7 @@ export default function WorkshopPage({ onBack }) {
     };
 
     const acceptUpsell = () => {
+        if (powertrainSeats.soldOut) return;
         updateField('package', COMBO_PACKAGE.id);
         setStage('review');
     };
@@ -651,6 +692,24 @@ export default function WorkshopPage({ onBack }) {
                                         <span className="mt-1.5 sm:mt-2 block text-sm sm:text-2xl lg:text-3xl font-black uppercase leading-tight">
                                             {t.name}
                                         </span>
+                                        {/* Display seats left only for powertrain; for software do not mention anything */}
+                                        {id === 'powertrain' && powertrainSeats?.seatsLeft !== null && (
+                                            <div className="mt-2 flex items-center gap-1.5 flex-wrap">
+                                                <span className={`inline-flex items-center gap-1 font-mono text-[10px] sm:text-xs font-black uppercase px-2 py-0.5 border-2 border-slate-900 ${
+                                                    powertrainSeats.soldOut
+                                                        ? 'bg-rose-500 text-white'
+                                                        : 'bg-amber-400 text-slate-950 shadow-[2px_2px_0px_#0f172a]'
+                                                }`}>
+                                                    <span>{powertrainSeats.soldOut ? '✕' : '⚡'}</span>
+                                                    <span>{powertrainSeats.soldOut ? 'Sold Out (160/160)' : `${powertrainSeats.seatsLeft} seats left`}</span>
+                                                </span>
+                                                {!powertrainSeats.soldOut && (
+                                                    <span className={`font-mono text-[10px] font-bold ${active ? 'text-amber-200' : 'text-slate-500'}`}>
+                                                        (Cap: 160)
+                                                    </span>
+                                                )}
+                                            </div>
+                                        )}
                                         <span className={`mt-2 hidden text-sm font-bold sm:block ${active ? 'text-slate-300' : 'text-slate-600'
                                             }`}>
                                             {t.tagline}
@@ -663,6 +722,7 @@ export default function WorkshopPage({ onBack }) {
                         <TrackDetail
                             key={track.id}
                             track={track}
+                            powertrainSeats={powertrainSeats}
                             onRegister={openRegister}
                             onPreviewSyllabus={(url, name) => setPreviewSyllabus({ url, name })}
                         />
@@ -671,9 +731,18 @@ export default function WorkshopPage({ onBack }) {
                         <div className="mt-8 border-4 border-slate-900 bg-amber-300 p-5 shadow-[6px_6px_0px_#0f172a] sm:p-6">
                             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                                 <div className="space-y-1">
-                                    <span className="inline-block border-2 border-slate-900 bg-slate-900 px-2.5 py-0.5 font-mono text-[10px] sm:text-xs font-black uppercase text-amber-300">
-                                        ★ Flexible Upgrade Policy
-                                    </span>
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        <span className="inline-block border-2 border-slate-900 bg-slate-900 px-2.5 py-0.5 font-mono text-[10px] sm:text-xs font-black uppercase text-amber-300">
+                                            ★ Flexible Upgrade Policy
+                                        </span>
+                                        {powertrainSeats?.seatsLeft !== null && (
+                                            <span className={`inline-block border-2 border-slate-900 px-2 py-0.5 font-mono text-[10px] sm:text-xs font-black uppercase ${
+                                                powertrainSeats.soldOut ? 'bg-rose-500 text-white' : 'bg-slate-900 text-amber-300'
+                                            }`}>
+                                                {powertrainSeats.soldOut ? 'Powertrain Full' : `${powertrainSeats.seatsLeft} Powertrain Seats Left`}
+                                            </span>
+                                        )}
+                                    </div>
                                     <h3 className="text-lg sm:text-2xl font-black uppercase leading-tight text-slate-900">
                                         You can upgrade anytime later for 750
                                     </h3>
@@ -684,9 +753,14 @@ export default function WorkshopPage({ onBack }) {
                                 <button
                                     type="button"
                                     onClick={() => openRegister('combo')}
-                                    className="press shrink-0 border-2 border-slate-900 bg-slate-900 px-5 py-3 font-mono text-xs font-black uppercase text-amber-300 shadow-[3px_3px_0px_#0284c7] hover:bg-slate-800"
+                                    disabled={powertrainSeats?.soldOut}
+                                    className={`press shrink-0 border-2 border-slate-900 px-5 py-3 font-mono text-xs font-black uppercase shadow-[3px_3px_0px_#0284c7] ${
+                                        powertrainSeats?.soldOut
+                                            ? 'bg-slate-300 text-slate-500 cursor-not-allowed'
+                                            : 'bg-slate-900 text-amber-300 hover:bg-slate-800 cursor-pointer'
+                                    }`}
                                 >
-                                    Get Dual-Track (1,750) ✦
+                                    {powertrainSeats?.soldOut ? 'Combo Sold Out ✕' : 'Get Dual-Track (1,750) ✦'}
                                 </button>
                             </div>
                         </div>
@@ -879,11 +953,16 @@ export default function WorkshopPage({ onBack }) {
                                         {WORKSHOP_PACKAGES.map((pkg, index) => {
                                             const selected = form.package === pkg.id;
                                             const isCombo = pkg.id === COMBO_PACKAGE?.id;
+                                            const isPowertrainOrCombo = pkg.id === 'powertrain' || pkg.id === 'combo';
+                                            const isSoldOut = isPowertrainOrCombo && (powertrainSeats.soldOut || (powertrainSeats.seatsLeft !== null && powertrainSeats.seatsLeft <= 0));
                                             return (
                                                 <label
                                                     key={pkg.id}
-                                                    className={`press flex min-h-14 cursor-pointer items-center justify-between gap-3 border-2 p-3.5 ${fieldErrors.package ? 'border-red-600' : 'border-slate-950'
-                                                        } ${selected ? 'bg-amber-300 shadow-[4px_4px_0px_#0f172a]' : 'bg-slate-50 hover:bg-amber-50'}`}
+                                                    className={`press flex min-h-14 items-center justify-between gap-3 border-2 p-3.5 ${
+                                                        isSoldOut
+                                                            ? 'opacity-60 bg-slate-100 border-slate-300 cursor-not-allowed'
+                                                            : 'cursor-pointer ' + (fieldErrors.package ? 'border-red-600' : 'border-slate-950') + ' ' + (selected ? 'bg-amber-300 shadow-[4px_4px_0px_#0f172a]' : 'bg-slate-50 hover:bg-amber-50')
+                                                    }`}
                                                 >
                                                     <span className="flex min-w-0 items-center gap-3">
                                                         <input
@@ -891,20 +970,34 @@ export default function WorkshopPage({ onBack }) {
                                                             name="package"
                                                             value={pkg.id}
                                                             checked={selected}
-                                                            onChange={() => updateField('package', pkg.id)}
+                                                            disabled={isSoldOut}
+                                                            onChange={() => !isSoldOut && updateField('package', pkg.id)}
                                                             data-field={index === 0 ? 'package' : undefined}
-                                                            className="h-5 w-5 shrink-0 accent-slate-900"
+                                                            className="h-5 w-5 shrink-0 accent-slate-900 disabled:opacity-40"
                                                         />
                                                         <span className="min-w-0">
-                                                            {isCombo && (
-                                                                <span className="mb-1 flex flex-wrap gap-1.5">
-                                                                    <span className="border-2 border-slate-900 bg-slate-900 px-1.5 py-0.5 font-mono text-[10px] font-black uppercase text-amber-300">★ Recommended</span>
-                                                                    {COMBO_SAVING > 0 && (
-                                                                        <span className="border-2 border-slate-900 bg-green-400 px-1.5 py-0.5 font-mono text-[10px] font-black uppercase text-slate-900">Save {formatAmount(COMBO_SAVING)}</span>
-                                                                    )}
-                                                                </span>
-                                                            )}
-                                                            <span className="block text-sm font-black uppercase">{pkg.name}</span>
+                                                            <span className="mb-1 flex flex-wrap gap-1.5 items-center">
+                                                                {isCombo && (
+                                                                    <>
+                                                                        <span className="border-2 border-slate-900 bg-slate-900 px-1.5 py-0.5 font-mono text-[10px] font-black uppercase text-amber-300">★ Recommended</span>
+                                                                        {COMBO_SAVING > 0 && (
+                                                                            <span className="border-2 border-slate-900 bg-green-400 px-1.5 py-0.5 font-mono text-[10px] font-black uppercase text-slate-900">Save {formatAmount(COMBO_SAVING)}</span>
+                                                                        )}
+                                                                    </>
+                                                                )}
+                                                                {/* Show seats left ONLY for powertrain and combo; for software do not mention anything */}
+                                                                {isPowertrainOrCombo && powertrainSeats.seatsLeft !== null && (
+                                                                    <span className={`border-2 border-slate-900 px-1.5 py-0.5 font-mono text-[10px] font-black uppercase ${
+                                                                        isSoldOut ? 'bg-rose-500 text-white' : 'bg-amber-400 text-slate-950'
+                                                                    }`}>
+                                                                        {isSoldOut ? 'Sold Out (160/160 filled)' : `${powertrainSeats.seatsLeft} seats left`}
+                                                                    </span>
+                                                                )}
+                                                            </span>
+                                                            <span className="block text-sm font-black uppercase">
+                                                                {pkg.name}
+                                                                {isSoldOut && <span className="ml-2 text-xs font-black text-rose-600">(SOLD OUT)</span>}
+                                                            </span>
                                                             {pkg.tracksIncluded.length > 1 && (
                                                                 <span className="block font-mono text-[11px] font-bold text-slate-600">
                                                                     {pkg.tracksIncluded.map(id => WORKSHOP_TRACKS[id].name).join(' + ')}
@@ -972,7 +1065,7 @@ export default function WorkshopPage({ onBack }) {
                             <div className="relative border-t-4 border-slate-900 bg-slate-50 p-3 sm:p-4">
                                 {upsellOpen && stage === 'form' && (
                                     <UpsellPopover
-                                        offer={upsellFor(selectedPkg)}
+                                        offer={upsellFor(selectedPkg, powertrainSeats.soldOut)}
                                         onAccept={acceptUpsell}
                                         onDecline={() => { setUpsellOpen(false); setStage('review'); }}
                                         onDismiss={() => setUpsellOpen(false)}
@@ -1015,8 +1108,9 @@ export default function WorkshopPage({ onBack }) {
     );
 }
 
-function TrackDetail({ track, onRegister, onPreviewSyllabus }) {
+function TrackDetail({ track, powertrainSeats, onRegister, onPreviewSyllabus }) {
     const isSoftware = track.id === 'software';
+    const isPowertrain = track.id === 'powertrain';
     const otherTrackName = isSoftware ? 'Powertrain' : 'Software';
     const facts = [
         ['Dates', track.dates],
@@ -1024,6 +1118,14 @@ function TrackDetail({ track, onRegister, onPreviewSyllabus }) {
         ['Timing', track.timing],
         ['Price', formatPrice(WORKSHOP_PACKAGES.find(p => p.id === track.id))]
     ];
+
+    // For powertrain: show seat availability; for software do not mention anything
+    if (isPowertrain && powertrainSeats?.seatsLeft !== null) {
+        facts.push([
+            'Seats Left',
+            powertrainSeats.soldOut ? 'Sold Out' : `${powertrainSeats.seatsLeft} of 160 left`
+        ]);
+    }
 
     const hasSyllabus = Boolean(track.syllabus);
     const isImageKit = typeof track.syllabus === 'string' && track.syllabus.includes('ik.imagekit.io');
@@ -1037,6 +1139,22 @@ function TrackDetail({ track, onRegister, onPreviewSyllabus }) {
             {track.tagline && (
                 <p className="mt-2 text-base font-bold text-sky-700 sm:text-lg">{track.tagline}</p>
             )}
+
+            {/* Prominent seat limit display for Powertrain (strictly omitted for software) */}
+            {isPowertrain && powertrainSeats?.seatsLeft !== null && (
+                <div className="mt-4 flex items-center gap-2.5 flex-wrap">
+                    <span className={`inline-flex items-center gap-1.5 border-2 border-slate-900 px-3.5 py-1.5 font-mono text-xs font-black uppercase shadow-[3px_3px_0px_#0f172a] ${
+                        powertrainSeats.soldOut ? 'bg-rose-500 text-white' : 'bg-amber-300 text-slate-950'
+                    }`}>
+                        <span>{powertrainSeats.soldOut ? '🚫' : '⚡'}</span>
+                        <span>{powertrainSeats.soldOut ? 'SOLD OUT (160/160 FILLED)' : `${powertrainSeats.seatsLeft} SEATS LEFT`}</span>
+                    </span>
+                    <span className="font-mono text-xs font-bold text-slate-600">
+                        Limited to 160 participants (powertrain alone &amp; combo combined)
+                    </span>
+                </div>
+            )}
+
             <p className="mt-2 max-w-3xl text-sm font-bold leading-relaxed text-slate-600 sm:text-base">{track.overview}</p>
             {track.highlight && (
                 <p className="mt-4 inline-block border-2 border-slate-900 bg-green-400 px-3 py-1.5 font-mono text-xs font-black uppercase shadow-[3px_3px_0px_#0f172a]">
@@ -1044,11 +1162,11 @@ function TrackDetail({ track, onRegister, onPreviewSyllabus }) {
                 </p>
             )}
 
-            <dl className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <dl className={`mt-6 grid grid-cols-2 gap-3 ${isPowertrain ? 'lg:grid-cols-5' : 'lg:grid-cols-4'}`}>
                 {facts.map(([label, value]) => (
-                    <div key={label} className={`border-2 border-slate-900 p-3 ${label === 'Price' ? 'bg-amber-300' : 'bg-sky-50'}`}>
+                    <div key={label} className={`border-2 border-slate-900 p-3 ${label === 'Price' ? 'bg-amber-300' : label === 'Seats Left' ? (powertrainSeats?.soldOut ? 'bg-rose-100' : 'bg-amber-100') : 'bg-sky-50'}`}>
                         <dt className="font-mono text-[10px] font-black uppercase tracking-widest text-slate-600">{label}</dt>
-                        <dd className="mt-1 text-sm font-black">{value}</dd>
+                        <dd className={`mt-1 text-sm font-black ${label === 'Seats Left' && powertrainSeats?.soldOut ? 'text-rose-600' : ''}`}>{value}</dd>
                     </div>
                 ))}
             </dl>
@@ -1134,9 +1252,18 @@ function TrackDetail({ track, onRegister, onPreviewSyllabus }) {
             <div className="mt-6 border-3 border-dashed border-slate-900 bg-amber-50 p-4 sm:p-5">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
-                        <span className="font-mono text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-amber-900">
-                            ★ Dual-Track Bundle Discount
-                        </span>
+                        <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-mono text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-amber-900">
+                                ★ Dual-Track Bundle Discount
+                            </span>
+                            {powertrainSeats?.seatsLeft !== null && (
+                                <span className={`font-mono text-[10px] font-black uppercase px-2 py-0.5 border ${
+                                    powertrainSeats.soldOut ? 'bg-rose-500 text-white border-rose-700' : 'bg-amber-300 text-slate-900 border-slate-900'
+                                }`}>
+                                    {powertrainSeats.soldOut ? 'Powertrain Full' : `${powertrainSeats.seatsLeft} Powertrain Seats Left`}
+                                </span>
+                            )}
+                        </div>
                         <p className="mt-0.5 text-base sm:text-lg font-black uppercase text-slate-900">
                             Want both tracks? Add {otherTrackName} for just 750 more →
                         </p>
@@ -1147,9 +1274,14 @@ function TrackDetail({ track, onRegister, onPreviewSyllabus }) {
                     <button
                         type="button"
                         onClick={() => onRegister('combo')}
-                        className="press shrink-0 border-2 border-slate-900 bg-amber-300 px-4 py-2.5 font-mono text-xs font-black uppercase shadow-[3px_3px_0px_#0f172a] hover:bg-amber-400 cursor-pointer"
+                        disabled={powertrainSeats?.soldOut}
+                        className={`press shrink-0 border-2 border-slate-900 px-4 py-2.5 font-mono text-xs font-black uppercase shadow-[3px_3px_0px_#0f172a] ${
+                            powertrainSeats?.soldOut
+                                ? 'bg-slate-300 text-slate-500 cursor-not-allowed'
+                                : 'bg-amber-300 text-slate-900 hover:bg-amber-400 cursor-pointer'
+                        }`}
                     >
-                        Get Combo (1,750) ✦
+                        {powertrainSeats?.soldOut ? 'Combo Sold Out ✕' : 'Get Combo (1,750) ✦'}
                     </button>
                 </div>
             </div>
@@ -1176,8 +1308,17 @@ function TrackDetail({ track, onRegister, onPreviewSyllabus }) {
                         </a>
                     </>
                 )}
-                <button type="button" onClick={() => onRegister(track.id)} className="press border-2 border-slate-900 bg-amber-300 px-5 py-3 font-mono text-xs font-black uppercase shadow-[4px_4px_0px_#0f172a] hover:bg-amber-400 cursor-pointer">
-                    Register ✦
+                <button
+                    type="button"
+                    onClick={() => onRegister(track.id)}
+                    disabled={isPowertrain && powertrainSeats?.soldOut}
+                    className={`press border-2 border-slate-900 px-5 py-3 font-mono text-xs font-black uppercase shadow-[4px_4px_0px_#0f172a] ${
+                        isPowertrain && powertrainSeats?.soldOut
+                            ? 'bg-slate-300 text-slate-500 cursor-not-allowed'
+                            : 'bg-amber-300 hover:bg-amber-400 cursor-pointer text-slate-900'
+                    }`}
+                >
+                    {isPowertrain && powertrainSeats?.soldOut ? 'Sold Out (160/160) ✕' : 'Register ✦'}
                 </button>
             </div>
             <p className="mt-4 font-mono text-[10px] font-bold uppercase text-slate-500">
