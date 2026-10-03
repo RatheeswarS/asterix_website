@@ -294,7 +294,7 @@ export default function WorkshopRegistrationsAdmin({ showStatus }) {
             )}
 
             {/* Key Metrics Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3.5">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3.5">
                 <div className="p-3 sm:p-4 bg-emerald-50 border-2 border-slate-900 shadow-[3px_3px_0px_#0f172a]">
                     <span className="text-[10px] font-mono font-black text-emerald-700 uppercase block truncate">Confirmed Paid</span>
                     <span className="text-2xl sm:text-3xl font-black text-emerald-700">{summary.paid}</span>
@@ -324,14 +324,31 @@ export default function WorkshopRegistrationsAdmin({ showStatus }) {
                     </span>
                 </div>
 
+                <div className={`p-3 sm:p-4 ${summary.softwareCapacity?.soldOut ? 'bg-rose-100 border-rose-600' : 'bg-sky-100'} border-2 border-slate-900 shadow-[3px_3px_0px_#0f172a]`}>
+                    <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-mono font-black uppercase text-sky-900 block truncate">Software Cap</span>
+                        {summary.softwareCapacity && (
+                            <span className={`text-[9px] font-mono font-black px-1.5 py-0.5 border ${summary.softwareCapacity.soldOut ? 'bg-rose-600 text-white border-rose-700' : 'bg-sky-400 text-slate-950 border-sky-500'}`}>
+                                {summary.softwareCapacity.soldOut ? 'SOLD OUT' : summary.softwareCapacity.seatsLeft <= 25 ? `${summary.softwareCapacity.seatsLeft} LEFT` : 'LIMITED'}
+                            </span>
+                        )}
+                    </div>
+                    <span className="text-2xl sm:text-3xl font-black text-slate-900">
+                        {summary.softwareCapacity ? `${summary.softwareCapacity.totalSoftwarePaid} / ${summary.softwareCapacity.maxSeats}` : '—'}
+                    </span>
+                    <span className="text-[10px] font-mono text-slate-700 font-bold block mt-0.5 truncate">
+                        Soft ({summary.softwareCapacity?.softwareAlonePaid ?? 0}) + Combo ({summary.softwareCapacity?.comboPaid ?? 0})
+                    </span>
+                </div>
+
                 <div className="p-3 sm:p-4 bg-amber-50 border-2 border-slate-900 shadow-[3px_3px_0px_#0f172a]">
                     <span className="text-[10px] font-mono font-black text-amber-700 uppercase block truncate">Pending Unpaid</span>
                     <span className="text-2xl sm:text-3xl font-black text-amber-700">{summary.pending}</span>
                     <span className="text-[10px] font-mono text-slate-500 block mt-0.5 truncate">Candidates</span>
                 </div>
 
-                <div className="p-3 sm:p-4 bg-sky-50 border-2 border-slate-900 shadow-[3px_3px_0px_#0f172a]">
-                    <span className="text-[10px] font-mono font-black text-sky-600 uppercase block truncate">Total Registered</span>
+                <div className="p-3 sm:p-4 bg-slate-50 border-2 border-slate-900 shadow-[3px_3px_0px_#0f172a]">
+                    <span className="text-[10px] font-mono font-black text-slate-600 uppercase block truncate">Total Registered</span>
                     <span className="text-2xl sm:text-3xl font-black text-slate-900">{summary.total}</span>
                     <span className="text-[10px] font-mono text-slate-500 block mt-0.5 truncate">Total Seats</span>
                 </div>

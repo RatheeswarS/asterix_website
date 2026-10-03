@@ -144,8 +144,9 @@ function validateRegistration(body) {
     return { data, pkg, errors };
 }
 
-// Maximum seats cap for Electronics & Powertrain (combined powertrain alone + combo)
+// Maximum seats cap for tracks (combined track alone + combo)
 export const POWERTRAIN_MAX_SEATS = 160;
+export const SOFTWARE_MAX_SEATS = 160;
 
 /**
  * Calculates current confirmed paid participants and remaining seats for Powertrain.
@@ -173,17 +174,48 @@ export async function getPowertrainSeatStats() {
 }
 
 /**
+ * Calculates current confirmed paid participants and remaining seats for Software.
+ */
+export async function getSoftwareSeatStats() {
+    try {
+        if (!isMongoConnected()) {
+            return { maxSeats: SOFTWARE_MAX_SEATS, paidCount: 0, seatsLeft: SOFTWARE_MAX_SEATS, soldOut: false };
+        }
+        const paidCount = await WorkshopRegistration.countDocuments({
+            status: 'paid',
+            package: { $in: ['software', 'combo'] }
+        });
+        const seatsLeft = Math.max(0, SOFTWARE_MAX_SEATS - paidCount);
+        return {
+            maxSeats: SOFTWARE_MAX_SEATS,
+            paidCount,
+            seatsLeft,
+            soldOut: seatsLeft <= 0
+        };
+    } catch (err) {
+        console.error('Error calculating software seat stats:', err);
+        return { maxSeats: SOFTWARE_MAX_SEATS, paidCount: 0, seatsLeft: SOFTWARE_MAX_SEATS, soldOut: false };
+    }
+}
+
+/**
  * GET /api/workshop/packages
  * Public package catalogue with real-time seat status for front end.
  */
 router.get('/packages', async (req, res) => {
-    const powertrainSeats = await getPowertrainSeatStats();
+    const [powertrainSeats, softwareSeats] = await Promise.all([
+        getPowertrainSeatStats(),
+        getSoftwareSeatStats()
+    ]);
+    const comboSoldOut = powertrainSeats.soldOut || softwareSeats.soldOut;
+    const comboSeatsLeft = Math.min(powertrainSeats.seatsLeft, softwareSeats.seatsLeft);
+
     res.json({
         success: true,
         currency: WORKSHOP_CURRENCY,
         tracks: WORKSHOP_TRACKS,
         packages: WORKSHOP_PACKAGES.map(pkg => {
-            if (pkg.id === 'powertrain' || pkg.id === 'combo') {
+            if (pkg.id === 'powertrain') {
                 return {
                     ...pkg,
                     seatsLeft: powertrainSeats.seatsLeft,
@@ -191,21 +223,50 @@ router.get('/packages', async (req, res) => {
                     open: powertrainSeats.soldOut ? false : pkg.open
                 };
             }
+            if (pkg.id === 'software') {
+                return {
+                    ...pkg,
+                    seatsLeft: softwareSeats.seatsLeft,
+                    soldOut: softwareSeats.soldOut,
+                    open: softwareSeats.soldOut ? false : pkg.open
+                };
+            }
+            if (pkg.id === 'combo') {
+                return {
+                    ...pkg,
+                    seatsLeft: comboSeatsLeft,
+                    soldOut: comboSoldOut,
+                    open: comboSoldOut ? false : pkg.open
+                };
+            }
             return pkg;
         }),
-        powertrainSeats
+        powertrainSeats,
+        softwareSeats,
+        comboSeats: {
+            seatsLeft: comboSeatsLeft,
+            soldOut: comboSoldOut
+        }
     });
 });
 
 /**
  * GET /api/workshop/seats
- * Public. Returns real-time capacity and remaining seats for Powertrain (cap 160 across powertrain alone & combo).
+ * Public. Returns real-time capacity and remaining seats for Powertrain and Software (cap 160 each across track alone & combo).
  */
 router.get('/seats', async (req, res) => {
-    const powertrainSeats = await getPowertrainSeatStats();
+    const [powertrainSeats, softwareSeats] = await Promise.all([
+        getPowertrainSeatStats(),
+        getSoftwareSeatStats()
+    ]);
     res.json({
         success: true,
-        powertrain: powertrainSeats
+        powertrain: powertrainSeats,
+        software: softwareSeats,
+        combo: {
+            seatsLeft: Math.min(powertrainSeats.seatsLeft, softwareSeats.seatsLeft),
+            soldOut: powertrainSeats.soldOut || softwareSeats.soldOut
+        }
     });
 });
 
@@ -231,7 +292,19 @@ router.post('/register', requireDb, async (req, res) => {
             const seatStats = await getPowertrainSeatStats();
             if (seatStats.soldOut) {
                 return res.status(409).json({
-                    error: 'Electronics & Powertrain workshop (and Combo) registrations are fully booked. All 160 seats have been filled.',
+                    error: 'Electronics & Powertrain workshop registrations are fully booked (160 seats filled).',
+                    soldOut: true,
+                    seatsLeft: 0
+                });
+            }
+        }
+
+        // Enforce 160 seats capacity limit for Software (both software alone and combo)
+        if (pkg.id === 'software' || pkg.id === 'combo') {
+            const seatStats = await getSoftwareSeatStats();
+            if (seatStats.soldOut) {
+                return res.status(409).json({
+                    error: 'Software & Autonomous Systems workshop registrations are fully booked (160 seats filled).',
                     soldOut: true,
                     seatsLeft: 0
                 });
@@ -358,6 +431,18 @@ router.post('/upgrade', requireDb, async (req, res) => {
             if (seatStats.soldOut) {
                 return res.status(409).json({
                     error: 'Electronics & Powertrain track has reached its maximum capacity of 160 participants. Upgrades to Combo are currently closed.',
+                    soldOut: true,
+                    seatsLeft: 0
+                });
+            }
+        }
+
+        // Upgrading from Powertrain to Combo claims a seat in Software
+        if (reg.package === 'powertrain') {
+            const seatStats = await getSoftwareSeatStats();
+            if (seatStats.soldOut) {
+                return res.status(409).json({
+                    error: 'Software & Autonomous Systems track has reached its maximum capacity of 160 participants. Upgrades to Combo are currently closed.',
                     soldOut: true,
                     seatsLeft: 0
                 });
@@ -786,6 +871,7 @@ router.get('/registrations', authenticateToken, requireLeadOrAdmin, requireDb, a
         const comboPaid = allRegistrations.filter(r => r.status === 'paid' && r.package === 'combo').length;
         const softwareAlonePaid = allRegistrations.filter(r => r.status === 'paid' && r.package === 'software').length;
         const totalPowertrainPaid = powertrainAlonePaid + comboPaid;
+        const totalSoftwarePaid = softwareAlonePaid + comboPaid;
 
         summary.powertrainCapacity = {
             maxSeats: POWERTRAIN_MAX_SEATS,
@@ -795,6 +881,15 @@ router.get('/registrations', authenticateToken, requireLeadOrAdmin, requireDb, a
             totalPowertrainPaid,
             seatsLeft: Math.max(0, POWERTRAIN_MAX_SEATS - totalPowertrainPaid),
             soldOut: totalPowertrainPaid >= POWERTRAIN_MAX_SEATS
+        };
+
+        summary.softwareCapacity = {
+            maxSeats: SOFTWARE_MAX_SEATS,
+            softwareAlonePaid,
+            comboPaid,
+            totalSoftwarePaid,
+            seatsLeft: Math.max(0, SOFTWARE_MAX_SEATS - totalSoftwarePaid),
+            soldOut: totalSoftwarePaid >= SOFTWARE_MAX_SEATS
         };
 
         res.json({ success: true, summary, registrations });

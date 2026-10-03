@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { apiUrl } from '../lib/api';
 import { useWebsiteData } from '../context/WebsiteDataContext';
@@ -72,9 +72,43 @@ const COMBO_SAVING = isPriced(COMBO_PACKAGE) && SINGLE_PACKAGES.every(isPriced)
     ? SINGLE_PACKAGES.reduce((sum, p) => sum + p.price, 0) - COMBO_PACKAGE.price
     : 0;
 
+/**
+ * Computes badge text according to capacity and threshold rules:
+ * - When remaining seats are <= 0 (or sold out): "Sold Out"
+ * - When remaining seats are <= 25: "X seats left"
+ * - When remaining seats are > 25: "Limited seats available"
+ */
+function getSeatBadgeInfo(seatsInfo) {
+    if (!seatsInfo || seatsInfo.seatsLeft === null || seatsInfo.seatsLeft === undefined) {
+        return null;
+    }
+    if (seatsInfo.soldOut || seatsInfo.seatsLeft <= 0) {
+        return {
+            text: 'Sold Out',
+            fullText: 'Sold Out',
+            isSoldOut: true,
+            isLimited: false
+        };
+    }
+    if (seatsInfo.seatsLeft <= 25) {
+        return {
+            text: `${seatsInfo.seatsLeft} seats left`,
+            fullText: `${seatsInfo.seatsLeft} seats left`,
+            isSoldOut: false,
+            isLimited: false
+        };
+    }
+    return {
+        text: 'Limited seats available',
+        fullText: 'Limited seats available',
+        isSoldOut: false,
+        isLimited: true
+    };
+}
+
 // For a single-track choice: the other track and what adding it would cost.
-function upsellFor(pkg, powertrainSoldOut = false) {
-    if (powertrainSoldOut) return null;
+function upsellFor(pkg, { powertrainSoldOut = false, softwareSoldOut = false } = {}) {
+    if (powertrainSoldOut || softwareSoldOut) return null;
     if (!pkg || !COMBO_PACKAGE || COMBO_SAVING <= 0 || pkg.tracksIncluded.length !== 1) return null;
     const other = SINGLE_PACKAGES.find(p => p.id !== pkg.id);
     if (!other) return null;
@@ -98,15 +132,21 @@ function loadRazorpayCheckout() {
     });
 }
 
-function validate(form, powertrainSoldOut = false) {
+function validate(form, { powertrainSoldOut = false, softwareSoldOut = false } = {}) {
     // Checked in the order the fields appear on the page (track choice first),
     // so the first key is the topmost problem.
     const errors = {};
     const pkg = WORKSHOP_PACKAGES.find(p => p.id === form.package);
     if (!pkg) errors.package = 'Choose a track.';
     else if (!isPriced(pkg)) errors.package = 'Pricing for this package is not announced yet.';
-    else if (powertrainSoldOut && (pkg.id === 'powertrain' || pkg.id === 'combo')) {
-        errors.package = 'Electronics & Powertrain (and Combo) registrations are fully booked (160 seats filled).';
+    else if (pkg.id === 'powertrain' && powertrainSoldOut) {
+        errors.package = 'Electronics & Powertrain is completely full! Only Software & Autonomous Systems track is available — learn the brains behind the vehicle (ROS, AI & Perception). Stay tuned for future workshops by our team.';
+    } else if (pkg.id === 'software' && softwareSoldOut) {
+        errors.package = 'Software & Autonomous Systems workshop registrations are fully booked. Stay tuned for future workshops by our team.';
+    } else if (pkg.id === 'combo' && (powertrainSoldOut || softwareSoldOut)) {
+        errors.package = powertrainSoldOut
+            ? 'Dual-Track Combo is closed as Powertrain has reached its limit. Only the Software & Autonomous Systems track is available! Stay tuned for future workshops by our team.'
+            : 'Dual-Track Combo registrations are currently closed. Stay tuned for future workshops by our team.';
     }
     if (form.name.trim().length < 2) errors.name = 'Enter your full name.';
     if (!form.rollNo.trim()) errors.rollNo = 'Enter your registered number.';
@@ -328,6 +368,18 @@ export default function WorkshopPage({ onBack }) {
         seatsLeft: null,
         soldOut: false
     });
+    const [softwareSeats, setSoftwareSeats] = useState({
+        maxSeats: 160,
+        seatsLeft: null,
+        soldOut: false
+    });
+
+    const comboSeats = useMemo(() => ({
+        seatsLeft: (powertrainSeats.seatsLeft !== null && softwareSeats.seatsLeft !== null)
+            ? Math.min(powertrainSeats.seatsLeft, softwareSeats.seatsLeft)
+            : (powertrainSeats.seatsLeft ?? softwareSeats.seatsLeft ?? null),
+        soldOut: Boolean(powertrainSeats.soldOut || softwareSeats.soldOut)
+    }), [powertrainSeats, softwareSeats]);
 
     // Live fetch of seat counts
     useEffect(() => {
@@ -337,8 +389,9 @@ export default function WorkshopPage({ onBack }) {
                 const res = await fetch(apiUrl('/api/workshop/packages'));
                 if (res.ok) {
                     const data = await res.json();
-                    if (data.powertrainSeats && isMounted) {
-                        setPowertrainSeats(data.powertrainSeats);
+                    if (isMounted) {
+                        if (data.powertrainSeats) setPowertrainSeats(data.powertrainSeats);
+                        if (data.softwareSeats) setSoftwareSeats(data.softwareSeats);
                     }
                 }
             } catch {
@@ -353,11 +406,33 @@ export default function WorkshopPage({ onBack }) {
         };
     }, []);
 
+    const isPackageSoldOut = (pkgId) => {
+        if (pkgId === 'powertrain') return powertrainSeats.soldOut;
+        if (pkgId === 'software') return softwareSeats.soldOut;
+        if (pkgId === 'combo') return comboSeats.soldOut;
+        return false;
+    };
+
     const openRegister = (packageId) => {
         if (typeof packageId === 'string' && packageId) {
-            if ((packageId === 'powertrain' || packageId === 'combo') && powertrainSeats.soldOut) {
-                setForm(prev => ({ ...prev, package: 'software' }));
-                setError('Electronics & Powertrain (and Combo) registrations are fully booked (160 seats filled). You can still register for Software & Perception.');
+            if (isPackageSoldOut(packageId)) {
+                if (packageId === 'powertrain' || packageId === 'combo') {
+                    if (!softwareSeats.soldOut) {
+                        setForm(prev => ({ ...prev, package: 'software' }));
+                        setError('Electronics & Powertrain is fully booked! Only Software & Autonomous Systems track is available — learn ROS, Computer Vision, and autonomous vehicle stacks to master full vehicle intelligence! Stay tuned for future workshops by our team.');
+                    } else {
+                        setForm(prev => ({ ...prev, package: '' }));
+                        setError('Workshop registrations are fully booked. Stay tuned for future workshops by our team!');
+                    }
+                } else if (packageId === 'software') {
+                    if (!powertrainSeats.soldOut) {
+                        setForm(prev => ({ ...prev, package: 'powertrain' }));
+                        setError('Software track is fully booked. You can still register for Electronics & Powertrain! Stay tuned for future workshops by our team.');
+                    } else {
+                        setForm(prev => ({ ...prev, package: '' }));
+                        setError('Workshop registrations are fully booked. Stay tuned for future workshops by our team!');
+                    }
+                }
             } else {
                 setForm(prev => ({ ...prev, package: packageId }));
                 setFieldErrors(prev => ({ ...prev, package: undefined }));
@@ -391,7 +466,7 @@ export default function WorkshopPage({ onBack }) {
 
     const handleConfirm = (event) => {
         event.preventDefault();
-        const errors = validate(form, powertrainSeats.soldOut);
+        const errors = validate(form, { powertrainSoldOut: powertrainSeats.soldOut, softwareSoldOut: softwareSeats.soldOut });
         setFieldErrors(errors);
         const keys = Object.keys(errors);
         if (keys.length > 0) {
@@ -407,7 +482,7 @@ export default function WorkshopPage({ onBack }) {
         }
         setError('');
         // One track picked: offer the combo once before moving on (if not sold out).
-        if (upsellFor(selectedPkg, powertrainSeats.soldOut) && !upsellOpen) {
+        if (upsellFor(selectedPkg, { powertrainSoldOut: powertrainSeats.soldOut, softwareSoldOut: softwareSeats.soldOut }) && !upsellOpen) {
             setUpsellOpen(true);
             return;
         }
@@ -416,7 +491,7 @@ export default function WorkshopPage({ onBack }) {
     };
 
     const acceptUpsell = () => {
-        if (powertrainSeats.soldOut) return;
+        if (powertrainSeats.soldOut || softwareSeats.soldOut) return;
         updateField('package', COMBO_PACKAGE.id);
         setStage('review');
     };
@@ -667,6 +742,9 @@ export default function WorkshopPage({ onBack }) {
                             {TRACK_ORDER.map((id) => {
                                 const t = WORKSHOP_TRACKS[id];
                                 const active = id === activeTrack;
+                                const trackSeatStats = id === 'powertrain' ? powertrainSeats : softwareSeats;
+                                const badgeInfo = getSeatBadgeInfo(trackSeatStats);
+
                                 return (
                                     <button
                                         key={id}
@@ -682,7 +760,7 @@ export default function WorkshopPage({ onBack }) {
                                         <div className="flex items-center justify-between gap-1">
                                             <span className={`inline-flex items-center gap-1 font-mono text-[10px] sm:text-xs font-black uppercase tracking-wider ${active ? 'text-amber-300' : 'text-sky-600 group-hover:text-sky-700'
                                                 }`}>
-                                                <span>{active ? '● Selected' : '○ View Track'}</span>
+                                            <span>{active ? '● Selected' : '○ View Track'}</span>
                                             </span>
                                             <span className={`font-mono text-xs font-black ${active ? 'text-amber-300' : 'text-slate-400 group-hover:text-slate-900'
                                                 }`}>
@@ -692,22 +770,17 @@ export default function WorkshopPage({ onBack }) {
                                         <span className="mt-1.5 sm:mt-2 block text-sm sm:text-2xl lg:text-3xl font-black uppercase leading-tight">
                                             {t.name}
                                         </span>
-                                        {/* Display seats left only for powertrain; for software do not mention anything */}
-                                        {id === 'powertrain' && powertrainSeats?.seatsLeft !== null && (
+                                        {/* Display seats left: >25 -> 'Limited seats available', <=25 -> 'x seats left' */}
+                                        {badgeInfo && (
                                             <div className="mt-2 flex items-center gap-1.5 flex-wrap">
                                                 <span className={`inline-flex items-center gap-1 font-mono text-[10px] sm:text-xs font-black uppercase px-2 py-0.5 border-2 border-slate-900 ${
-                                                    powertrainSeats.soldOut
+                                                    badgeInfo.isSoldOut
                                                         ? 'bg-rose-500 text-white'
                                                         : 'bg-amber-400 text-slate-950 shadow-[2px_2px_0px_#0f172a]'
                                                 }`}>
-                                                    <span>{powertrainSeats.soldOut ? '✕' : '⚡'}</span>
-                                                    <span>{powertrainSeats.soldOut ? 'Sold Out (160/160)' : `${powertrainSeats.seatsLeft} seats left`}</span>
+                                                    <span>{badgeInfo.isSoldOut ? '✕' : '⚡'}</span>
+                                                    <span>{badgeInfo.text}</span>
                                                 </span>
-                                                {!powertrainSeats.soldOut && (
-                                                    <span className={`font-mono text-[10px] font-bold ${active ? 'text-amber-200' : 'text-slate-500'}`}>
-                                                        (Cap: 160)
-                                                    </span>
-                                                )}
                                             </div>
                                         )}
                                         <span className={`mt-2 hidden text-sm font-bold sm:block ${active ? 'text-slate-300' : 'text-slate-600'
@@ -723,6 +796,7 @@ export default function WorkshopPage({ onBack }) {
                             key={track.id}
                             track={track}
                             powertrainSeats={powertrainSeats}
+                            softwareSeats={softwareSeats}
                             onRegister={openRegister}
                             onPreviewSyllabus={(url, name) => setPreviewSyllabus({ url, name })}
                         />
@@ -735,13 +809,17 @@ export default function WorkshopPage({ onBack }) {
                                         <span className="inline-block border-2 border-slate-900 bg-slate-900 px-2.5 py-0.5 font-mono text-[10px] sm:text-xs font-black uppercase text-amber-300">
                                             ★ Flexible Upgrade Policy
                                         </span>
-                                        {powertrainSeats?.seatsLeft !== null && (
-                                            <span className={`inline-block border-2 border-slate-900 px-2 py-0.5 font-mono text-[10px] sm:text-xs font-black uppercase ${
-                                                powertrainSeats.soldOut ? 'bg-rose-500 text-white' : 'bg-slate-900 text-amber-300'
-                                            }`}>
-                                                {powertrainSeats.soldOut ? 'Powertrain Full' : `${powertrainSeats.seatsLeft} Powertrain Seats Left`}
-                                            </span>
-                                        )}
+                                        {(() => {
+                                            const comboBadge = getSeatBadgeInfo(comboSeats);
+                                            if (!comboBadge) return null;
+                                            return (
+                                                <span className={`inline-block border-2 border-slate-900 px-2 py-0.5 font-mono text-[10px] sm:text-xs font-black uppercase ${
+                                                    comboBadge.isSoldOut ? 'bg-rose-500 text-white' : 'bg-slate-900 text-amber-300'
+                                                }`}>
+                                                    {comboBadge.isSoldOut ? 'Combo Sold Out' : comboBadge.text}
+                                                </span>
+                                            );
+                                        })()}
                                     </div>
                                     <h3 className="text-lg sm:text-2xl font-black uppercase leading-tight text-slate-900">
                                         You can upgrade anytime later for 750
@@ -753,14 +831,14 @@ export default function WorkshopPage({ onBack }) {
                                 <button
                                     type="button"
                                     onClick={() => openRegister('combo')}
-                                    disabled={powertrainSeats?.soldOut}
+                                    disabled={comboSeats.soldOut}
                                     className={`press shrink-0 border-2 border-slate-900 px-5 py-3 font-mono text-xs font-black uppercase shadow-[3px_3px_0px_#0284c7] ${
-                                        powertrainSeats?.soldOut
+                                        comboSeats.soldOut
                                             ? 'bg-slate-300 text-slate-500 cursor-not-allowed'
                                             : 'bg-slate-900 text-amber-300 hover:bg-slate-800 cursor-pointer'
                                     }`}
                                 >
-                                    {powertrainSeats?.soldOut ? 'Combo Sold Out ✕' : 'Get Dual-Track (1,750) ✦'}
+                                    {comboSeats.soldOut ? 'Combo Sold Out ✕' : 'Get Dual-Track (1,750) ✦'}
                                 </button>
                             </div>
                         </div>
@@ -949,12 +1027,20 @@ export default function WorkshopPage({ onBack }) {
                                 {/* Package first: it is what they came here to pick. */}
                                 <fieldset data-field-wrap>
                                     <legend className="mb-2 font-mono text-xs font-black uppercase tracking-widest text-slate-700">1. Choose your track</legend>
+                                    {powertrainSeats?.soldOut && !softwareSeats?.soldOut && (
+                                        <div className="mb-3 border-2 border-slate-900 bg-amber-100 p-2.5 font-mono text-xs font-bold text-slate-800 space-y-1">
+                                            <p className="font-black text-rose-700 uppercase">⚡ Powertrain seats are filled!</p>
+                                            <p>Only the Software &amp; Autonomous Systems track is currently available. Learn ROS, Computer Vision, and autonomous algorithms. Stay tuned for future workshops by our team!</p>
+                                        </div>
+                                    )}
                                     <div className="grid grid-cols-1 gap-2.5">
                                         {WORKSHOP_PACKAGES.map((pkg, index) => {
                                             const selected = form.package === pkg.id;
                                             const isCombo = pkg.id === COMBO_PACKAGE?.id;
-                                            const isPowertrainOrCombo = pkg.id === 'powertrain' || pkg.id === 'combo';
-                                            const isSoldOut = isPowertrainOrCombo && (powertrainSeats.soldOut || (powertrainSeats.seatsLeft !== null && powertrainSeats.seatsLeft <= 0));
+                                            const trackSeats = pkg.id === 'powertrain' ? powertrainSeats : pkg.id === 'software' ? softwareSeats : comboSeats;
+                                            const badgeInfo = getSeatBadgeInfo(trackSeats);
+                                            const isSoldOut = badgeInfo?.isSoldOut;
+
                                             return (
                                                 <label
                                                     key={pkg.id}
@@ -985,12 +1071,12 @@ export default function WorkshopPage({ onBack }) {
                                                                         )}
                                                                     </>
                                                                 )}
-                                                                {/* Show seats left ONLY for powertrain and combo; for software do not mention anything */}
-                                                                {isPowertrainOrCombo && powertrainSeats.seatsLeft !== null && (
+                                                                {/* Show seats left badge for both tracks and combo */}
+                                                                {badgeInfo && (
                                                                     <span className={`border-2 border-slate-900 px-1.5 py-0.5 font-mono text-[10px] font-black uppercase ${
                                                                         isSoldOut ? 'bg-rose-500 text-white' : 'bg-amber-400 text-slate-950'
                                                                     }`}>
-                                                                        {isSoldOut ? 'Sold Out (160/160 filled)' : `${powertrainSeats.seatsLeft} seats left`}
+                                                                        {isSoldOut ? 'Sold Out' : badgeInfo.text}
                                                                     </span>
                                                                 )}
                                                             </span>
@@ -1108,10 +1194,21 @@ export default function WorkshopPage({ onBack }) {
     );
 }
 
-function TrackDetail({ track, powertrainSeats, onRegister, onPreviewSyllabus }) {
+function TrackDetail({ track, powertrainSeats, softwareSeats, onRegister, onPreviewSyllabus }) {
     const isSoftware = track.id === 'software';
     const isPowertrain = track.id === 'powertrain';
     const otherTrackName = isSoftware ? 'Powertrain' : 'Software';
+    const trackSeats = isPowertrain ? powertrainSeats : softwareSeats;
+    const badgeInfo = getSeatBadgeInfo(trackSeats);
+
+    const comboSeats = {
+        seatsLeft: (powertrainSeats?.seatsLeft !== null && softwareSeats?.seatsLeft !== null)
+            ? Math.min(powertrainSeats.seatsLeft, softwareSeats.seatsLeft)
+            : (powertrainSeats?.seatsLeft ?? softwareSeats?.seatsLeft ?? null),
+        soldOut: Boolean(powertrainSeats?.soldOut || softwareSeats?.soldOut)
+    };
+    const comboBadgeInfo = getSeatBadgeInfo(comboSeats);
+
     const facts = [
         ['Dates', track.dates],
         ['Schedule', track.days],
@@ -1119,11 +1216,10 @@ function TrackDetail({ track, powertrainSeats, onRegister, onPreviewSyllabus }) 
         ['Price', formatPrice(WORKSHOP_PACKAGES.find(p => p.id === track.id))]
     ];
 
-    // For powertrain: show seat availability; for software do not mention anything
-    if (isPowertrain && powertrainSeats?.seatsLeft !== null) {
+    if (badgeInfo) {
         facts.push([
             'Seats Left',
-            powertrainSeats.soldOut ? 'Sold Out' : `${powertrainSeats.seatsLeft} of 160 left`
+            badgeInfo.fullText
         ]);
     }
 
@@ -1140,18 +1236,47 @@ function TrackDetail({ track, powertrainSeats, onRegister, onPreviewSyllabus }) 
                 <p className="mt-2 text-base font-bold text-sky-700 sm:text-lg">{track.tagline}</p>
             )}
 
-            {/* Prominent seat limit display for Powertrain (strictly omitted for software) */}
-            {isPowertrain && powertrainSeats?.seatsLeft !== null && (
+            {/* Prominent seat limit display: >25 -> 'Limited seats available', <=25 -> 'x seats left' */}
+            {badgeInfo && (
                 <div className="mt-4 flex items-center gap-2.5 flex-wrap">
                     <span className={`inline-flex items-center gap-1.5 border-2 border-slate-900 px-3.5 py-1.5 font-mono text-xs font-black uppercase shadow-[3px_3px_0px_#0f172a] ${
-                        powertrainSeats.soldOut ? 'bg-rose-500 text-white' : 'bg-amber-300 text-slate-950'
+                        badgeInfo.isSoldOut ? 'bg-rose-500 text-white' : 'bg-amber-300 text-slate-950'
                     }`}>
-                        <span>{powertrainSeats.soldOut ? '🚫' : '⚡'}</span>
-                        <span>{powertrainSeats.soldOut ? 'SOLD OUT (160/160 FILLED)' : `${powertrainSeats.seatsLeft} SEATS LEFT`}</span>
+                        <span>{badgeInfo.isSoldOut ? '🚫' : '⚡'}</span>
+                        <span>{badgeInfo.isSoldOut ? 'SOLD OUT' : badgeInfo.text.toUpperCase()}</span>
                     </span>
-                    <span className="font-mono text-xs font-bold text-slate-600">
-                        Limited to 160 participants (powertrain alone &amp; combo combined)
-                    </span>
+                </div>
+            )}
+
+            {/* When Powertrain is full: display prominent notice that only Software is available, encourage registering for Software, and stay tuned note */}
+            {isPowertrain && powertrainSeats?.soldOut && (
+                <div className="mt-5 border-3 border-slate-900 bg-amber-100 p-4 sm:p-5 shadow-[4px_4px_0px_#0f172a] space-y-2.5">
+                    <div className="flex items-center gap-2 flex-wrap">
+                        <span className="border-2 border-slate-900 bg-rose-500 text-white px-2 py-0.5 font-mono text-[11px] font-black uppercase">
+                            ✕ Powertrain Track Sold Out
+                        </span>
+                        <span className="border-2 border-slate-900 bg-slate-900 text-amber-300 px-2 py-0.5 font-mono text-[11px] font-black uppercase">
+                            ⚡ Only Software Track Available
+                        </span>
+                    </div>
+                    <h4 className="text-base sm:text-lg font-black uppercase text-slate-900">
+                        Powertrain seats are completely filled!
+                    </h4>
+                    <p className="text-xs sm:text-sm font-bold leading-relaxed text-slate-700">
+                        Missed a seat in Powertrain? Don't worry — the <strong className="text-slate-950">Software &amp; Autonomous Systems</strong> track is still open! Understanding perception stacks, ROS navigation, and real-time computer vision is what brings vehicle electronics and motors to life. Mastering the software layer gives you the complete picture of how autonomous machines think and act.
+                    </p>
+                    <p className="text-xs font-mono font-bold text-slate-600">
+                        ★ Stay tuned for future workshops and bootcamps by our team.
+                    </p>
+                    <div className="pt-1">
+                        <button
+                            type="button"
+                            onClick={() => onRegister('software')}
+                            className="press border-2 border-slate-900 bg-slate-900 px-4 py-2 font-mono text-xs font-black uppercase text-amber-300 shadow-[3px_3px_0px_#0284c7] hover:bg-slate-800 cursor-pointer"
+                        >
+                            Register for Software Track Instead →
+                        </button>
+                    </div>
                 </div>
             )}
 
@@ -1162,11 +1287,11 @@ function TrackDetail({ track, powertrainSeats, onRegister, onPreviewSyllabus }) 
                 </p>
             )}
 
-            <dl className={`mt-6 grid grid-cols-2 gap-3 ${isPowertrain ? 'lg:grid-cols-5' : 'lg:grid-cols-4'}`}>
+            <dl className={`mt-6 grid grid-cols-2 gap-3 ${badgeInfo ? 'lg:grid-cols-5' : 'lg:grid-cols-4'}`}>
                 {facts.map(([label, value]) => (
-                    <div key={label} className={`border-2 border-slate-900 p-3 ${label === 'Price' ? 'bg-amber-300' : label === 'Seats Left' ? (powertrainSeats?.soldOut ? 'bg-rose-100' : 'bg-amber-100') : 'bg-sky-50'}`}>
+                    <div key={label} className={`border-2 border-slate-900 p-3 ${label === 'Price' ? 'bg-amber-300' : label === 'Seats Left' ? (badgeInfo?.isSoldOut ? 'bg-rose-100' : 'bg-amber-100') : 'bg-sky-50'}`}>
                         <dt className="font-mono text-[10px] font-black uppercase tracking-widest text-slate-600">{label}</dt>
-                        <dd className={`mt-1 text-sm font-black ${label === 'Seats Left' && powertrainSeats?.soldOut ? 'text-rose-600' : ''}`}>{value}</dd>
+                        <dd className={`mt-1 text-sm font-black ${label === 'Seats Left' && badgeInfo?.isSoldOut ? 'text-rose-600' : ''}`}>{value}</dd>
                     </div>
                 ))}
             </dl>
@@ -1178,67 +1303,22 @@ function TrackDetail({ track, powertrainSeats, onRegister, onPreviewSyllabus }) 
             </p>
             <p className="mt-1 text-xs font-bold text-slate-500">Full topic list, weekly lab breakdown, and milestone schedule in the syllabus PDF.</p>
 
-            {/* Dedicated Syllabus & Curriculum Document Card */}
+            {/* Simplified Curriculum Document Card: title alone, one download button, no description */}
             {hasSyllabus && (
-                <div className="mt-6 border-3 border-slate-900 bg-sky-50 p-4 sm:p-5 shadow-[4px_4px_0px_#0f172a]">
-                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                        <div className="space-y-1">
-                            <div className="flex items-center gap-2 flex-wrap">
-                                <span className="border-2 border-slate-900 bg-sky-400 px-2 py-0.5 font-mono text-[10px] font-black uppercase text-slate-900">
-                                    ✦ Official Curriculum Document
-                                </span>
-                                {isImageKit ? (
-                                    <span className="font-mono text-[10px] font-black uppercase text-emerald-700 bg-emerald-100 px-1.5 py-0.5 border border-emerald-400">
-                                        Cloud Verified PDF
-                                    </span>
-                                ) : (
-                                    <span className="font-mono text-[10px] font-bold text-slate-500 uppercase">
-                                        PDF Document
-                                    </span>
-                                )}
-                            </div>
-                            <h4 className="text-base sm:text-lg font-black uppercase text-slate-900">
-                                {track.name} Syllabus &amp; Weekly Plan
-                            </h4>
-                            <p className="text-xs font-bold text-slate-600 max-w-xl">
-                                Full breakdown of the 4-week roadmap, lecture topics, hands-on lab modules, milestone deliverables, and bonus session schedule.
-                            </p>
-                        </div>
-
-                        <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 shrink-0">
-                            {onPreviewSyllabus && (
-                                <button
-                                    type="button"
-                                    onClick={() => onPreviewSyllabus(track.syllabus, track.name)}
-                                    className="press border-2 border-slate-900 bg-white px-3.5 py-2.5 font-mono text-xs font-black uppercase text-slate-900 shadow-[3px_3px_0px_#0f172a] hover:bg-amber-100 flex items-center gap-1.5 cursor-pointer"
-                                >
-                                    <span>👁</span>
-                                    <span>Preview</span>
-                                </button>
-                            )}
-
-                            <a
-                                href={track.syllabus}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="press border-2 border-slate-900 bg-sky-500 px-3.5 py-2.5 font-mono text-xs font-black uppercase text-white shadow-[3px_3px_0px_#0f172a] hover:bg-sky-600 flex items-center gap-1.5 no-underline cursor-pointer"
-                            >
-                                <span>View PDF</span>
-                                <span>↗</span>
-                            </a>
-
-                            <a
-                                href={downloadUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                download={`${track.id}_syllabus.pdf`}
-                                className="press border-2 border-slate-900 bg-slate-900 px-3.5 py-2.5 font-mono text-xs font-black uppercase text-amber-300 shadow-[3px_3px_0px_#0284c7] hover:bg-slate-800 flex items-center gap-1.5 no-underline cursor-pointer"
-                            >
-                                <span>Download</span>
-                                <span>↓</span>
-                            </a>
-                        </div>
-                    </div>
+                <div className="mt-6 border-3 border-slate-900 bg-sky-50 p-3.5 sm:p-4 shadow-[4px_4px_0px_#0f172a] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <h4 className="text-sm sm:text-base font-black uppercase text-slate-900">
+                        {track.name} Syllabus &amp; Weekly Plan
+                    </h4>
+                    <a
+                        href={downloadUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        download={`${track.id}_syllabus.pdf`}
+                        className="press border-2 border-slate-900 bg-slate-900 px-4 py-2 font-mono text-xs font-black uppercase text-amber-300 shadow-[2px_2px_0px_#0284c7] hover:bg-slate-800 inline-flex items-center justify-center gap-1.5 no-underline cursor-pointer shrink-0"
+                    >
+                        <span>Download Syllabus</span>
+                        <span>↓</span>
+                    </a>
                 </div>
             )}
 
@@ -1256,11 +1336,11 @@ function TrackDetail({ track, powertrainSeats, onRegister, onPreviewSyllabus }) 
                             <span className="font-mono text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-amber-900">
                                 ★ Dual-Track Bundle Discount
                             </span>
-                            {powertrainSeats?.seatsLeft !== null && (
+                            {comboBadgeInfo && (
                                 <span className={`font-mono text-[10px] font-black uppercase px-2 py-0.5 border ${
-                                    powertrainSeats.soldOut ? 'bg-rose-500 text-white border-rose-700' : 'bg-amber-300 text-slate-900 border-slate-900'
+                                    comboBadgeInfo.isSoldOut ? 'bg-rose-500 text-white border-rose-700' : 'bg-amber-300 text-slate-900 border-slate-900'
                                 }`}>
-                                    {powertrainSeats.soldOut ? 'Powertrain Full' : `${powertrainSeats.seatsLeft} Powertrain Seats Left`}
+                                    {comboBadgeInfo.isSoldOut ? 'Combo Full' : comboBadgeInfo.text}
                                 </span>
                             )}
                         </div>
@@ -1274,51 +1354,30 @@ function TrackDetail({ track, powertrainSeats, onRegister, onPreviewSyllabus }) 
                     <button
                         type="button"
                         onClick={() => onRegister('combo')}
-                        disabled={powertrainSeats?.soldOut}
+                        disabled={comboSeats.soldOut}
                         className={`press shrink-0 border-2 border-slate-900 px-4 py-2.5 font-mono text-xs font-black uppercase shadow-[3px_3px_0px_#0f172a] ${
-                            powertrainSeats?.soldOut
+                            comboSeats.soldOut
                                 ? 'bg-slate-300 text-slate-500 cursor-not-allowed'
                                 : 'bg-amber-300 text-slate-900 hover:bg-amber-400 cursor-pointer'
                         }`}
                     >
-                        {powertrainSeats?.soldOut ? 'Combo Sold Out ✕' : 'Get Combo (1,750) ✦'}
+                        {comboSeats.soldOut ? 'Combo Sold Out ✕' : 'Get Combo (1,750) ✦'}
                     </button>
                 </div>
             </div>
 
             <div className="mt-8 flex flex-wrap gap-3">
-                {hasSyllabus && (
-                    <>
-                        <a
-                            href={track.syllabus}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="press inline-flex items-center gap-2 border-2 border-slate-900 bg-white px-5 py-3 font-mono text-xs font-black uppercase text-slate-900 no-underline shadow-[4px_4px_0px_#0f172a] hover:bg-sky-100 cursor-pointer"
-                        >
-                            View syllabus &amp; plan (PDF) ↗
-                        </a>
-                        <a
-                            href={downloadUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            download={`${track.id}_syllabus.pdf`}
-                            className="press inline-flex items-center gap-2 border-2 border-slate-900 bg-slate-100 px-5 py-3 font-mono text-xs font-black uppercase text-slate-900 no-underline shadow-[4px_4px_0px_#0f172a] hover:bg-slate-200 cursor-pointer"
-                        >
-                            Download PDF ↓
-                        </a>
-                    </>
-                )}
                 <button
                     type="button"
                     onClick={() => onRegister(track.id)}
-                    disabled={isPowertrain && powertrainSeats?.soldOut}
+                    disabled={badgeInfo?.isSoldOut}
                     className={`press border-2 border-slate-900 px-5 py-3 font-mono text-xs font-black uppercase shadow-[4px_4px_0px_#0f172a] ${
-                        isPowertrain && powertrainSeats?.soldOut
+                        badgeInfo?.isSoldOut
                             ? 'bg-slate-300 text-slate-500 cursor-not-allowed'
                             : 'bg-amber-300 hover:bg-amber-400 cursor-pointer text-slate-900'
                     }`}
                 >
-                    {isPowertrain && powertrainSeats?.soldOut ? 'Sold Out (160/160) ✕' : 'Register ✦'}
+                    {badgeInfo?.isSoldOut ? 'Sold Out ✕' : 'Register ✦'}
                 </button>
             </div>
             <p className="mt-4 font-mono text-[10px] font-bold uppercase text-slate-500">
