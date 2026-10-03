@@ -682,19 +682,19 @@ export default function WorkshopPage({ onBack }) {
                         <button type="button" onClick={onBack} className="press border-2 border-slate-900 bg-amber-300 px-3 py-2 font-mono text-xs font-black uppercase shadow-[3px_3px_0px_#0f172a] hover:bg-amber-400 sm:px-4">
                             ← Main<span className="hidden sm:inline"> Website</span>
                         </button>
-                        {/* Downloadable receipt button with clear icon */}
+                        {/* Check registration & receipt lookup button */}
                         <button
                             type="button"
                             onClick={() => setLookupOpen(true)}
                             aria-haspopup="dialog"
-                            aria-label="Download receipt"
+                            aria-label="Check registration"
                             className="press inline-flex items-center gap-1.5 border-2 border-slate-900 bg-emerald-400 px-2.5 py-2 font-mono text-xs font-black uppercase text-slate-900 shadow-[3px_3px_0px_#0f172a] hover:bg-emerald-300 sm:px-4"
                         >
                             <svg className="h-3.5 w-3.5 shrink-0 stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
                             </svg>
-                            <span className="sm:hidden">Receipt ↓</span>
-                            <span className="hidden sm:inline">Download Receipt ↓</span>
+                            <span className="sm:hidden">Check Reg</span>
+                            <span className="hidden sm:inline">Check Registration</span>
                         </button>
                     </div>
                 </div>
@@ -2008,7 +2008,7 @@ function ReceiptLookupDialog({ onClose }) {
                 <div className="flex items-center justify-between gap-3 bg-slate-900 px-4 py-3 text-white">
                     <div className="min-w-0">
                         <span className="block font-mono text-[10px] font-black uppercase tracking-widest text-green-400">Already registered?</span>
-                        <h2 id="workshop-receipt-title" className="truncate text-base font-black uppercase sm:text-lg">Download your receipt</h2>
+                        <h2 id="workshop-receipt-title" className="truncate text-base font-black uppercase sm:text-lg">Check registration & receipt</h2>
                     </div>
                     <button
                         type="button"
