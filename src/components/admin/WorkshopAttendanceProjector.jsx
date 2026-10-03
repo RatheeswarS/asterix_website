@@ -58,7 +58,7 @@ export default function WorkshopAttendanceProjector({ onExit, initialTrack = 'so
 
             // Generate crisp high-resolution QR Code
             const url = await QRCode.toDataURL(data.scanUrl, {
-                width: 900,
+                width: 1000,
                 margin: 2,
                 color: {
                     dark: '#0f172a',
@@ -137,125 +137,22 @@ export default function WorkshopAttendanceProjector({ onExit, initialTrack = 'so
     return (
         <div
             ref={projectorRef}
-            className="min-h-screen bg-slate-950 text-white font-mono flex flex-col justify-between p-4 sm:p-8 select-none"
+            className="min-h-screen bg-slate-950 text-white font-mono p-4 sm:p-6 lg:p-8 select-none flex flex-col justify-center"
         >
-            {/* Top Control Bar */}
-            <header className="flex flex-wrap items-center justify-between gap-4 border-b-2 border-slate-800 pb-4">
-                <div className="flex items-center gap-3">
-                    <span className="w-3.5 h-3.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                    <div>
-                        <h1 className="text-lg sm:text-2xl font-black uppercase tracking-wider text-white">
-                            Team Asterix — Workshop Attendance Projector
-                        </h1>
-                        <p className="text-xs text-slate-400 font-bold">
-                            Live dynamic QR code rotates every 12 seconds.
-                        </p>
-                    </div>
-                </div>
-
-                {/* Session Selectors */}
-                <div className="flex flex-wrap items-center gap-2 text-xs">
-                    {/* Track Toggle */}
-                    <div className="inline-flex border-2 border-slate-700 bg-slate-900 p-0.5 font-black uppercase">
-                        <button
-                            type="button"
-                            onClick={() => setTrack('software')}
-                            className={`px-3 py-1.5 cursor-pointer transition-colors ${
-                                track === 'software' ? 'bg-sky-400 text-slate-950 shadow-[1px_1px_0px_#ffffff]' : 'text-slate-400 hover:text-white'
-                            }`}
-                        >
-                            Software
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setTrack('powertrain')}
-                            className={`px-3 py-1.5 cursor-pointer transition-colors ${
-                                track === 'powertrain' ? 'bg-amber-400 text-slate-950 shadow-[1px_1px_0px_#ffffff]' : 'text-slate-400 hover:text-white'
-                            }`}
-                        >
-                            Powertrain
-                        </button>
-                    </div>
-
-                    {/* Session Number */}
-                    <div className="flex items-center gap-1 bg-slate-900 border-2 border-slate-700 px-2 py-1">
-                        <span className="text-[10px] text-slate-400 uppercase font-bold">Session:</span>
-                        <input
-                            type="number"
-                            min="1"
-                            max="20"
-                            value={sessionNumber}
-                            onChange={(e) => setSessionNumber(Math.max(1, parseInt(e.target.value, 10) || 1))}
-                            className="w-12 bg-transparent text-white font-black text-center focus:outline-none"
-                        />
-                    </div>
-
-                    {/* Session Date */}
-                    <div className="flex items-center gap-1 bg-slate-900 border-2 border-slate-700 px-2 py-1">
-                        <span className="text-[10px] text-slate-400 uppercase font-bold">Date:</span>
-                        <input
-                            type="date"
-                            value={sessionDate}
-                            onChange={(e) => setSessionDate(e.target.value)}
-                            className="bg-transparent text-white font-mono text-xs focus:outline-none cursor-pointer"
-                        />
-                    </div>
-
-                    {/* Session Topic */}
-                    <div className="hidden xl:flex items-center gap-1 bg-slate-900 border-2 border-slate-700 px-2 py-1">
-                        <span className="text-[10px] text-slate-400 uppercase font-bold">Topic:</span>
-                        <input
-                            type="text"
-                            value={sessionTopic}
-                            placeholder="Optional topic..."
-                            onChange={(e) => setSessionTopic(e.target.value)}
-                            className="bg-transparent text-white font-mono text-xs focus:outline-none w-32"
-                        />
-                    </div>
-
-                    {/* Fullscreen Button */}
-                    <button
-                        type="button"
-                        onClick={toggleFullscreen}
-                        className="press px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border-2 border-slate-700 text-white font-black uppercase text-xs cursor-pointer"
-                    >
-                        {isFullscreen ? 'Exit Fullscreen ↙' : 'Fullscreen ↗'}
-                    </button>
-
-                    {/* Exit Projector View */}
-                    {onExit && (
-                        <button
-                            type="button"
-                            onClick={onExit}
-                            className="press px-3 py-1.5 bg-rose-500 hover:bg-rose-400 border-2 border-slate-700 text-white font-black uppercase text-xs cursor-pointer"
-                        >
-                            Close ✕
-                        </button>
-                    )}
-                </div>
-            </header>
-
-            {/* Main Center Area */}
-            <main className="my-auto py-6 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center max-w-[1600px] w-full mx-auto">
-                {/* QR Code Presentation (Dominant Left / Center - 8 cols) */}
-                <div className="lg:col-span-8 flex flex-col items-center justify-center space-y-4">
-                    {/* Track & Session Header Banner */}
-                    <div className={`px-4 py-1.5 border-2 border-slate-900 font-black text-xs sm:text-sm uppercase tracking-widest ${
-                        track === 'software' ? 'bg-sky-400 text-slate-950' : 'bg-amber-400 text-slate-950'
-                    }`}>
-                        {track === 'software' ? 'Software & Perception Workshop' : 'Electronics & Powertrain Workshop'} · Session {String(sessionNumber).padStart(2, '0')}
-                    </div>
-
-                    {/* Dynamic QR Container - Enlarged for Large Screen Visibility */}
-                    <div className="p-4 sm:p-6 lg:p-8 bg-white border-4 border-slate-900 shadow-[10px_10px_0px_#38bdf8] flex flex-col items-center">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10 items-center max-w-[1700px] w-full mx-auto my-auto">
+                
+                {/* LEFT: ONLY THE QR CODE */}
+                <div className="lg:col-span-7 xl:col-span-8 flex flex-col items-center justify-center my-auto py-2">
+                    {/* Dynamic QR Container */}
+                    <div className="p-4 sm:p-6 lg:p-8 bg-white border-4 border-slate-900 shadow-[12px_12px_0px_#38bdf8] flex flex-col items-center max-w-full">
                         {qrDataUrl ? (
                             <img
                                 src={qrDataUrl}
                                 alt="Live Attendance QR Code"
-                                className="w-[300px] h-[300px] sm:w-[460px] sm:h-[460px] md:w-[540px] md:h-[540px] lg:w-[580px] lg:h-[580px] xl:w-[640px] xl:h-[640px] object-contain transition-opacity duration-200"
+                                className="w-[300px] h-[300px] sm:w-[460px] sm:h-[460px] md:w-[540px] md:h-[540px] lg:w-[600px] lg:h-[600px] xl:w-[680px] xl:h-[680px] 2xl:w-[740px] 2xl:h-[740px] object-contain transition-opacity duration-200"
                             />
                         ) : (
-                            <div className="w-[300px] h-[300px] sm:w-[460px] sm:h-[460px] md:w-[540px] md:h-[540px] lg:w-[580px] lg:h-[580px] xl:w-[640px] xl:h-[640px] flex items-center justify-center text-slate-400 font-bold text-base">
+                            <div className="w-[300px] h-[300px] sm:w-[460px] sm:h-[460px] md:w-[540px] md:h-[540px] lg:w-[600px] lg:h-[600px] xl:w-[680px] xl:h-[680px] flex items-center justify-center text-slate-400 font-bold text-base">
                                 Generating QR Code...
                             </div>
                         )}
@@ -263,37 +160,145 @@ export default function WorkshopAttendanceProjector({ onExit, initialTrack = 'so
                         {/* Clean 12-Second Countdown Timer */}
                         <div className="mt-4 flex items-center gap-2 font-mono text-xs sm:text-sm font-black text-slate-800 bg-slate-100 px-4 py-1.5 border border-slate-400">
                             <span>⏱ Code refreshes in:</span>
-                            <span className="text-rose-600 text-base font-black w-7 text-center">
+                            <span className="text-rose-600 text-base sm:text-lg font-black w-8 text-center">
                                 {countdownSeconds}s
                             </span>
                         </div>
                     </div>
 
-                    <div className="text-center text-xs sm:text-sm text-slate-400 space-y-1">
-                        <p className="font-bold text-slate-200">
+                    <div className="text-center text-xs sm:text-sm text-slate-400 mt-4 space-y-1">
+                        <p className="font-bold text-slate-200 text-sm sm:text-base">
                             Scan with your mobile camera to check in
                         </p>
-                        <p className="text-[11px] sm:text-xs text-slate-400">
+                        <p className="text-xs text-slate-400">
                             Enter your Roll Number and College Email to record attendance
                         </p>
                     </div>
 
                     {error && (
-                        <div className="px-3 py-1.5 bg-rose-950 border border-rose-600 text-rose-300 text-xs font-bold">
+                        <div className="mt-3 px-4 py-2 bg-rose-950 border border-rose-600 text-rose-300 text-xs font-bold">
                             ⚠️ {error}
                         </div>
                     )}
                 </div>
 
-                {/* Right Column: Live Attendance Stats & Recent Ticker (4 cols) */}
-                <div className="lg:col-span-4 space-y-4">
+                {/* RIGHT: ALL HEADERS, CONTROLS, AND STATS */}
+                <div className="lg:col-span-5 xl:col-span-4 flex flex-col justify-between space-y-4 my-auto">
+                    
+                    {/* Header Block (All headers moved here) */}
+                    <div className="space-y-3 bg-slate-900/80 p-4 border-2 border-slate-800 shadow-[4px_4px_0px_#0f172a]">
+                        {/* Top Title & Controls */}
+                        <div className="flex items-center justify-between gap-2 border-b border-slate-800 pb-3">
+                            <div className="flex items-center gap-2.5">
+                                <span className="w-3 h-3 rounded-full bg-emerald-400 animate-pulse shrink-0"></span>
+                                <div>
+                                    <h1 className="text-base sm:text-lg font-black uppercase tracking-wider text-white leading-tight">
+                                        Team Asterix
+                                    </h1>
+                                    <p className="text-[11px] text-slate-400 font-bold">
+                                        Workshop Attendance Projector
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-1.5">
+                                <button
+                                    type="button"
+                                    onClick={toggleFullscreen}
+                                    className="press px-2.5 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white font-black uppercase text-[10px] cursor-pointer"
+                                    title="Toggle Fullscreen"
+                                >
+                                    {isFullscreen ? 'Exit ↙' : 'Full ↗'}
+                                </button>
+                                {onExit && (
+                                    <button
+                                        type="button"
+                                        onClick={onExit}
+                                        className="press px-2.5 py-1 bg-rose-600 hover:bg-rose-500 border border-slate-600 text-white font-black uppercase text-[10px] cursor-pointer"
+                                        title="Close Projector"
+                                    >
+                                        ✕
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Controls: Track Toggle & Session Selectors */}
+                        <div className="flex flex-wrap items-center gap-2 text-xs pt-1">
+                            {/* Track Toggle */}
+                            <div className="inline-flex border-2 border-slate-700 bg-slate-900 p-0.5 font-black uppercase text-xs">
+                                <button
+                                    type="button"
+                                    onClick={() => setTrack('software')}
+                                    className={`px-3 py-1 cursor-pointer transition-colors ${
+                                        track === 'software' ? 'bg-sky-400 text-slate-950 shadow-[1px_1px_0px_#ffffff]' : 'text-slate-400 hover:text-white'
+                                    }`}
+                                >
+                                    Software
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setTrack('powertrain')}
+                                    className={`px-3 py-1 cursor-pointer transition-colors ${
+                                        track === 'powertrain' ? 'bg-amber-400 text-slate-950 shadow-[1px_1px_0px_#ffffff]' : 'text-slate-400 hover:text-white'
+                                    }`}
+                                >
+                                    Powertrain
+                                </button>
+                            </div>
+
+                            {/* Session Number */}
+                            <div className="flex items-center gap-1 bg-slate-900 border-2 border-slate-700 px-2 py-1">
+                                <span className="text-[10px] text-slate-400 uppercase font-bold">Session:</span>
+                                <input
+                                    type="number"
+                                    min="1"
+                                    max="20"
+                                    value={sessionNumber}
+                                    onChange={(e) => setSessionNumber(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                                    className="w-10 bg-transparent text-white font-black text-center focus:outline-none"
+                                />
+                            </div>
+
+                            {/* Session Date */}
+                            <div className="flex items-center gap-1 bg-slate-900 border-2 border-slate-700 px-2 py-1">
+                                <span className="text-[10px] text-slate-400 uppercase font-bold">Date:</span>
+                                <input
+                                    type="date"
+                                    value={sessionDate}
+                                    onChange={(e) => setSessionDate(e.target.value)}
+                                    className="bg-transparent text-white font-mono text-xs focus:outline-none cursor-pointer"
+                                />
+                            </div>
+
+                            {/* Session Topic */}
+                            <div className="flex items-center gap-1 bg-slate-900 border-2 border-slate-700 px-2 py-1 flex-1 min-w-[120px]">
+                                <span className="text-[10px] text-slate-400 uppercase font-bold">Topic:</span>
+                                <input
+                                    type="text"
+                                    value={sessionTopic}
+                                    placeholder="Optional topic..."
+                                    onChange={(e) => setSessionTopic(e.target.value)}
+                                    className="bg-transparent text-white font-mono text-xs focus:outline-none w-full"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Track & Session Header Banner */}
+                        <div className={`px-3 py-1.5 border-2 border-slate-900 font-black text-xs uppercase tracking-wider text-center ${
+                            track === 'software' ? 'bg-sky-400 text-slate-950' : 'bg-amber-400 text-slate-950'
+                        }`}>
+                            {track === 'software' ? 'Software & Perception Workshop' : 'Electronics & Powertrain Workshop'} · Session {String(sessionNumber).padStart(2, '0')}
+                        </div>
+                    </div>
+
                     {/* Live Metric Cards */}
                     <div className="grid grid-cols-2 gap-3">
                         <div className="p-4 bg-slate-900 border-2 border-slate-800 shadow-[4px_4px_0px_#0284c7]">
                             <span className="text-[10px] uppercase tracking-wider text-sky-400 font-black block">
                                 Present In Class
                             </span>
-                            <span className="text-4xl font-black text-white">
+                            <span className="text-3xl sm:text-4xl font-black text-white">
                                 {liveStats.totalPresent}
                             </span>
                             <span className="text-[10px] text-slate-400 block mt-1">
@@ -305,7 +310,7 @@ export default function WorkshopAttendanceProjector({ onExit, initialTrack = 'so
                             <span className="text-[10px] uppercase tracking-wider text-emerald-400 font-black block">
                                 Attendance Rate
                             </span>
-                            <span className="text-4xl font-black text-emerald-400">
+                            <span className="text-3xl sm:text-4xl font-black text-emerald-400">
                                 {liveStats.percentage}%
                             </span>
                             <span className="text-[10px] text-slate-400 block mt-1">
@@ -327,11 +332,11 @@ export default function WorkshopAttendanceProjector({ onExit, initialTrack = 'so
                         </div>
 
                         {liveStats.recentCheckins.length === 0 ? (
-                            <div className="py-8 text-center text-xs text-slate-500">
+                            <div className="py-6 text-center text-xs text-slate-500">
                                 Awaiting student scans...
                             </div>
                         ) : (
-                            <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+                            <div className="space-y-2 max-h-[220px] xl:max-h-[260px] overflow-y-auto pr-1">
                                 {liveStats.recentCheckins.map((item, idx) => (
                                     <div
                                         key={item.rollNo || idx}
@@ -359,18 +364,18 @@ export default function WorkshopAttendanceProjector({ onExit, initialTrack = 'so
                             </div>
                         )}
                     </div>
-                </div>
-            </main>
 
-            {/* Bottom Status Bar */}
-            <footer className="border-t-2 border-slate-800 pt-3 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500 font-bold">
-                <div>
-                    Session ID: <strong className="text-slate-300 font-mono">{sessionId}</strong>
+                    {/* Bottom Status within right panel */}
+                    <div className="pt-1 flex items-center justify-between text-[10px] text-slate-500 font-bold border-t border-slate-800">
+                        <div>
+                            Session ID: <strong className="text-slate-300 font-mono">{sessionId}</strong>
+                        </div>
+                        <div>
+                            Indian Standard Time (IST)
+                        </div>
+                    </div>
                 </div>
-                <div>
-                    Indian Standard Time (IST)
-                </div>
-            </footer>
+            </div>
         </div>
     );
 }
