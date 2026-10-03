@@ -23,8 +23,8 @@ function getOrCreateDeviceId() {
 
 export default function WorkshopAttendanceCheckin({ onGoHome }) {
     const [token, setToken] = useState('');
-    const [rollNo, setRollNo] = useState('');
-    const [email, setEmail] = useState('');
+    const [rollNo, setRollNo] = useState('715526');
+    const [email, setEmail] = useState('@psgitech.ac.in');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState('');
     const [successData, setSuccessData] = useState(null);
@@ -243,7 +243,7 @@ export default function WorkshopAttendanceCheckin({ onGoHome }) {
                                 required
                                 value={rollNo}
                                 onChange={(e) => setRollNo(e.target.value.toUpperCase())}
-                                placeholder="e.g. 24IT105 or 7155..."
+                                placeholder="715526..."
                                 className="w-full px-3 py-2 border-2 border-slate-900 font-mono text-sm font-bold bg-slate-50 focus:bg-white focus:outline-none"
                             />
                         </div>
@@ -258,7 +258,7 @@ export default function WorkshopAttendanceCheckin({ onGoHome }) {
                                 required
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                placeholder="e.g. yourname@psgitech.ac.in"
+                                placeholder="rollno@psgitech.ac.in"
                                 className="w-full px-3 py-2 border-2 border-slate-900 font-mono text-sm font-medium bg-slate-50 focus:bg-white focus:outline-none"
                             />
                             <span className="text-[10px] text-slate-400 font-medium block mt-1">

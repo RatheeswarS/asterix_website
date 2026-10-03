@@ -56,9 +56,9 @@ export default function WorkshopAttendanceProjector({ onExit, initialTrack = 'so
             setScanUrl(data.scanUrl);
             setCountdownSeconds(12);
 
-            // Generate crisp SVG / DataURL QR Code
+            // Generate crisp high-resolution QR Code
             const url = await QRCode.toDataURL(data.scanUrl, {
-                width: 480,
+                width: 900,
                 margin: 2,
                 color: {
                     dark: '#0f172a',
@@ -148,7 +148,7 @@ export default function WorkshopAttendanceProjector({ onExit, initialTrack = 'so
                             Team Asterix — Workshop Attendance Projector
                         </h1>
                         <p className="text-xs text-slate-400 font-bold">
-                            Live dynamic QR code rotates every 12 seconds to prevent proxy attendance.
+                            Live dynamic QR code rotates every 12 seconds.
                         </p>
                     </div>
                 </div>
@@ -236,9 +236,9 @@ export default function WorkshopAttendanceProjector({ onExit, initialTrack = 'so
             </header>
 
             {/* Main Center Area */}
-            <main className="my-auto py-6 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center max-w-7xl w-full mx-auto">
-                {/* QR Code Presentation (Left / Center - 7 cols) */}
-                <div className="lg:col-span-7 flex flex-col items-center justify-center space-y-4">
+            <main className="my-auto py-6 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center max-w-[1600px] w-full mx-auto">
+                {/* QR Code Presentation (Dominant Left / Center - 8 cols) */}
+                <div className="lg:col-span-8 flex flex-col items-center justify-center space-y-4">
                     {/* Track & Session Header Banner */}
                     <div className={`px-4 py-1.5 border-2 border-slate-900 font-black text-xs sm:text-sm uppercase tracking-widest ${
                         track === 'software' ? 'bg-sky-400 text-slate-950' : 'bg-amber-400 text-slate-950'
@@ -246,35 +246,35 @@ export default function WorkshopAttendanceProjector({ onExit, initialTrack = 'so
                         {track === 'software' ? 'Software & Perception Workshop' : 'Electronics & Powertrain Workshop'} · Session {String(sessionNumber).padStart(2, '0')}
                     </div>
 
-                    {/* Dynamic QR Container */}
-                    <div className="p-4 sm:p-6 bg-white border-4 border-slate-900 shadow-[8px_8px_0px_#38bdf8] flex flex-col items-center">
+                    {/* Dynamic QR Container - Enlarged for Large Screen Visibility */}
+                    <div className="p-4 sm:p-6 lg:p-8 bg-white border-4 border-slate-900 shadow-[10px_10px_0px_#38bdf8] flex flex-col items-center">
                         {qrDataUrl ? (
                             <img
                                 src={qrDataUrl}
                                 alt="Live Attendance QR Code"
-                                className="w-[280px] h-[280px] sm:w-[380px] sm:h-[380px] object-contain transition-opacity duration-200"
+                                className="w-[300px] h-[300px] sm:w-[460px] sm:h-[460px] md:w-[540px] md:h-[540px] lg:w-[580px] lg:h-[580px] xl:w-[640px] xl:h-[640px] object-contain transition-opacity duration-200"
                             />
                         ) : (
-                            <div className="w-[280px] h-[280px] sm:w-[380px] sm:h-[380px] flex items-center justify-center text-slate-400 font-bold text-sm">
+                            <div className="w-[300px] h-[300px] sm:w-[460px] sm:h-[460px] md:w-[540px] md:h-[540px] lg:w-[580px] lg:h-[580px] xl:w-[640px] xl:h-[640px] flex items-center justify-center text-slate-400 font-bold text-base">
                                 Generating QR Code...
                             </div>
                         )}
 
-                        {/* Clean 12-Second Countdown Timer (No pulsing ring as requested) */}
-                        <div className="mt-3 flex items-center gap-2 font-mono text-xs font-black text-slate-800 bg-slate-100 px-3 py-1 border border-slate-400">
+                        {/* Clean 12-Second Countdown Timer */}
+                        <div className="mt-4 flex items-center gap-2 font-mono text-xs sm:text-sm font-black text-slate-800 bg-slate-100 px-4 py-1.5 border border-slate-400">
                             <span>⏱ Code refreshes in:</span>
-                            <span className="text-rose-600 text-sm font-black w-6 text-center">
+                            <span className="text-rose-600 text-base font-black w-7 text-center">
                                 {countdownSeconds}s
                             </span>
                         </div>
                     </div>
 
-                    <div className="text-center text-xs text-slate-400 space-y-1">
-                        <p className="font-bold text-slate-300">
-                            Scan with your mobile camera · Enter Roll No & Email
+                    <div className="text-center text-xs sm:text-sm text-slate-400 space-y-1">
+                        <p className="font-bold text-slate-200">
+                            Scan with your mobile camera to check in
                         </p>
-                        <p className="text-[11px] text-slate-500">
-                            One check-in per device. Link auto-expires on next code rotation.
+                        <p className="text-[11px] sm:text-xs text-slate-400">
+                            Enter your Roll Number and College Email to record attendance
                         </p>
                     </div>
 
@@ -285,8 +285,8 @@ export default function WorkshopAttendanceProjector({ onExit, initialTrack = 'so
                     )}
                 </div>
 
-                {/* Right Column: Live Attendance Stats & Recent Ticker (5 cols) */}
-                <div className="lg:col-span-5 space-y-4">
+                {/* Right Column: Live Attendance Stats & Recent Ticker (4 cols) */}
+                <div className="lg:col-span-4 space-y-4">
                     {/* Live Metric Cards */}
                     <div className="grid grid-cols-2 gap-3">
                         <div className="p-4 bg-slate-900 border-2 border-slate-800 shadow-[4px_4px_0px_#0284c7]">
@@ -331,7 +331,7 @@ export default function WorkshopAttendanceProjector({ onExit, initialTrack = 'so
                                 Awaiting student scans...
                             </div>
                         ) : (
-                            <div className="space-y-2 max-h-[260px] overflow-y-auto pr-1">
+                            <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
                                 {liveStats.recentCheckins.map((item, idx) => (
                                     <div
                                         key={item.rollNo || idx}
@@ -359,14 +359,6 @@ export default function WorkshopAttendanceProjector({ onExit, initialTrack = 'so
                             </div>
                         )}
                     </div>
-
-                    {/* Scan URL fallback display */}
-                    <div className="p-3 bg-slate-900 border border-slate-800 text-[10px] text-slate-400 space-y-1">
-                        <div className="font-bold text-slate-300 uppercase">Scanner Direct Link:</div>
-                        <div className="font-mono text-sky-400 truncate select-all bg-slate-950 p-1.5 border border-slate-800">
-                            {scanUrl || 'Generating...'}
-                        </div>
-                    </div>
                 </div>
             </main>
 
@@ -376,7 +368,7 @@ export default function WorkshopAttendanceProjector({ onExit, initialTrack = 'so
                     Session ID: <strong className="text-slate-300 font-mono">{sessionId}</strong>
                 </div>
                 <div>
-                    Indian Standard Time (IST) · Automated Proxy Defense Active
+                    Indian Standard Time (IST)
                 </div>
             </footer>
         </div>

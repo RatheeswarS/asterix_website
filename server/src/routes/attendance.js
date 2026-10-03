@@ -6,48 +6,59 @@ import { authenticateToken } from '../middleware/auth.js';
 
 const router = Router();
 
-const ROTATION_INTERVAL_MS = 12000; // 12 seconds
+const ROTATION_INTERVAL_MS = 12000; // 12 seconds projector rotation
+const TOKEN_EXPIRY_MS = 25000; // 25 seconds validity for scanned token
 const ATTENDANCE_SECRET = process.env.ATTENDANCE_SECRET
     || process.env.JWT_SECRET
     || 'asterix-attendance-dynamic-secret-key-2026';
 
 /**
- * Computes an HMAC signature for a track + sessionId + timeBucket
+ * Computes an HMAC signature for a track + sessionId + timeVal
  */
-function signToken(track, sessionId, bucket) {
+function signToken(track, sessionId, timeVal) {
     return crypto
         .createHmac('sha256', ATTENDANCE_SECRET)
-        .update(`${track}|${sessionId}|${bucket}`)
+        .update(`${track}|${sessionId}|${timeVal}`)
         .digest('hex')
         .slice(0, 24);
 }
 
 /**
  * Validates a rotating attendance token
- * Allows current bucket and previous bucket (12s + 12s grace window)
+ * Allows up to 25 seconds from generation/scan time
  */
 function verifyToken(token) {
     if (!token || typeof token !== 'string') return null;
     const parts = token.split('.');
     if (parts.length !== 4) return null;
 
-    const [track, sessionId, bucketStr, signature] = parts;
-    const bucket = parseInt(bucketStr, 10);
-    if (isNaN(bucket)) return null;
+    const [track, sessionId, timeValStr, signature] = parts;
+    const timeVal = parseInt(timeValStr, 10);
+    if (isNaN(timeVal)) return null;
 
-    const currentBucket = Math.floor(Date.now() / ROTATION_INTERVAL_MS);
+    const now = Date.now();
+    let isValidTime = false;
 
-    // Accept current bucket or previous bucket (grace period for students who scanned at second 11)
-    if (bucket !== currentBucket && bucket !== currentBucket - 1) {
+    if (timeVal > 1000000000000) {
+        // Full millisecond timestamp: valid for 25 seconds
+        const ageMs = now - timeVal;
+        isValidTime = (ageMs >= -5000 && ageMs <= TOKEN_EXPIRY_MS);
+    } else {
+        // Bucket format: allows current + previous 2 buckets (~25s)
+        const currentBucket = Math.floor(now / ROTATION_INTERVAL_MS);
+        isValidTime = (timeVal === currentBucket || timeVal === currentBucket - 1 || timeVal === currentBucket - 2);
+    }
+
+    if (!isValidTime) {
         return null;
     }
 
-    const expectedSig = signToken(track, sessionId, bucket);
+    const expectedSig = signToken(track, sessionId, timeVal);
     if (signature !== expectedSig) {
         return null;
     }
 
-    return { track, sessionId, bucket };
+    return { track, sessionId, timeVal };
 }
 
 /**
@@ -66,10 +77,9 @@ router.get('/session-token', authenticateToken, async (req, res) => {
         }
 
         const sessionId = `${track}-s${String(sessionNumber).padStart(2, '0')}-${sessionDate}`;
-        const currentBucket = Math.floor(Date.now() / ROTATION_INTERVAL_MS);
-        const nextRotationMs = (currentBucket + 1) * ROTATION_INTERVAL_MS - Date.now();
-        const signature = signToken(track, sessionId, currentBucket);
-        const token = `${track}.${sessionId}.${currentBucket}.${signature}`;
+        const now = Date.now();
+        const signature = signToken(track, sessionId, now);
+        const token = `${track}.${sessionId}.${now}.${signature}`;
 
         // Construct scan URL for the student
         const hostUrl = process.env.PUBLIC_APP_URL || req.headers.origin || `http://${req.headers.host}`;
@@ -82,7 +92,8 @@ router.get('/session-token', authenticateToken, async (req, res) => {
             sessionNumber,
             sessionDate,
             sessionTopic,
-            expiresInMs: Math.max(1000, nextRotationMs),
+            expiresInMs: ROTATION_INTERVAL_MS,
+            tokenExpiryMs: TOKEN_EXPIRY_MS,
             rotationIntervalMs: ROTATION_INTERVAL_MS,
             scanUrl
         });
